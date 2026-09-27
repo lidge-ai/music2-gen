@@ -1,6 +1,7 @@
 /** Analysis contract (devlog 030 "New TypeScript types"). */
 import type { Section, Track } from "../song/index.ts";
 import type { LoudnessMetrics } from "../audio-io/index.ts";
+import type { FlowAnalysis } from "./flow/flow.schema.ts";
 
 export type { LoudnessMetrics };
 export const ANALYSIS_VERSION = 1;
@@ -52,15 +53,15 @@ export interface AnalysisJson {
   tempoConfidence: number; tempoCandidates: TempoCandidate[];
   declaredKey: string | null; estimatedKey: string | null;
   keyConfidence: number; keyCandidates: KeyCandidate[]; chroma: number[];
-  bands: BandValue[]; sections: SectionMetrics[]; tracks: TrackDensity[];
+  bands: BandValue[]; flow: FlowAnalysis; sections: SectionMetrics[]; tracks: TrackDensity[];
   targetLufs: number | null; warnings: AnalysisWarning[];
 }
 export interface AnalysisResult {
-  analysis: AnalysisJson; reportMarkdown: string; spectrogramPng: Buffer;
+  analysis: AnalysisJson; reportMarkdown: string; spectrogramPng: Buffer; overviewPng: Buffer;
   pianoRollPng?: Buffer; beatMap?: BeatMap;
 }
 export interface AnalysisArtifacts {
-  analysisJson: string; analysisMd: string; spectrogramPng: string;
+  analysisJson: string; analysisMd: string; spectrogramPng: string; overviewPng: string;
   pianoRollPng: string | null; beatsJson: string | null;
   summary: { declaredBpm: number | null; estimatedBpm: number | null; integratedLufs: number | null; warnings: AnalysisWarning[] };
 }

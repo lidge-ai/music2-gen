@@ -64,12 +64,14 @@ function artifact(path: unknown, directory: string): string {
   return file;
 }
 
-function assertPng(path: unknown, directory: string): void {
+function assertPng(path: unknown, directory: string, expectedWidth?: number, expectedHeight?: number): void {
   const bytes = readFileSync(artifact(path, directory));
   assert.ok(bytes.subarray(0, 8).equals(PNG_SIGNATURE));
   assert.equal(bytes.toString("ascii", 12, 16), "IHDR");
   assert.ok(bytes.readUInt32BE(16) > 0);
   assert.ok(bytes.readUInt32BE(20) > 0);
+  if (expectedWidth !== undefined) assert.equal(bytes.readUInt32BE(16), expectedWidth);
+  if (expectedHeight !== undefined) assert.equal(bytes.readUInt32BE(20), expectedHeight);
 }
 
 for (const example of examples) {
@@ -109,11 +111,24 @@ for (const example of examples) {
       artifact(analyzed["analysisMd"], directory);
       artifact(analyzed["beatsJson"], directory);
       assert.equal(basename(analyzed["spectrogramPng"] as string), "spectrogram.png");
+      assert.equal(basename(analyzed["overviewPng"] as string), "overview.png");
       assert.equal(basename(analyzed["pianoRollPng"] as string), "pianoroll.png");
       assertPng(analyzed["spectrogramPng"], directory);
+      assertPng(analyzed["overviewPng"], directory, 1600, 1400);
       assertPng(analyzed["pianoRollPng"], directory);
 
       if (example.genre === "drill_uk") {
+        const songAgain = data(cli("analyze", [wav, "--song", song, "--out", join(directory, "analysis-again")]));
+        assert.deepEqual(readFileSync(songAgain["overviewPng"] as string), readFileSync(analyzed["overviewPng"] as string));
+        const wavOnlyFirst = data(cli("analyze", [wav, "--out", join(directory, "wav-only-first")]));
+        const wavOnlySecond = data(cli("analyze", [wav, "--out", join(directory, "wav-only-second")]));
+        assertPng(wavOnlyFirst["overviewPng"], directory, 1600, 1400);
+        assert.deepEqual(readFileSync(wavOnlyFirst["overviewPng"] as string), readFileSync(wavOnlySecond["overviewPng"] as string));
+        const wavFlow = (JSON.parse(readFileSync(wavOnlyFirst["analysisJson"] as string, "utf8")) as {
+          flow: { axisKind: string; sectionMeans: unknown[]; annotations: string[] } }).flow;
+        assert.ok(wavFlow.axisKind === "beats" || wavFlow.axisKind === "0.5 s");
+        assert.deepEqual(wavFlow.sectionMeans, []);
+        assert.ok(wavFlow.annotations.every((line) => !/HOOK|BARS/.test(line)));
         const second = join(directory, "drill-again.wav");
         cli("render", [song, "-o", second]);
         assert.deepEqual(readFileSync(second), pcm, "same song and seed must render byte-identically");

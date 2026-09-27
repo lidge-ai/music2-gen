@@ -61,6 +61,13 @@ The `Op` column describes implementation work planned by this unit, not edits ma
 
 ## New TypeScript contracts
 
+> **Implementation amendments (wp2 B, main, after visual inspection of rendered drill/trap/house overviews).**
+> 1. Rail rows are 50 px (`RAIL_ROW`) instead of 44 px: two 21 px lines at 44 px touched with no gap. The height rule becomes `1400 + 50*max(0, occurrences-20)` (21 occurrences give 1600×1450).
+> 2. The self-similarity matrix compares **mean-centered** interval features: each nonsilent 20-value vector minus the song mean, renormalized; score `(1+cos)/2`, silent pairs 0, two vectors equal to the mean 1, one of them 0.5. Uncentered cosine left every cell near 0.85–1.0 because a looped chord and the overall band balance are constant, so trap reported no novelty peaks and a false "bars 1–12 repeat 13–24". Centered, trap and house recover every declared boundary. Repeat and novelty thresholds are unchanged and now apply to the centered score.
+> 3. The SSM inset stretches display values from the lowest nonsilent off-diagonal cell (capped at 0.9) to 1 and prints `DARK = x.xx  PALE = 1.00`; detection never uses the stretch.
+> 4. The novelty plot scales to its own maximum (at least 0.1) and prints `MAX x.xx`. Section block labels that do not fit at 3× drop to 2× before truncating. `FlowContext` gains optional `metered` PCM so flow loudness reuses the meter's resampled input for sample rates outside 8–192 kHz.
+> 5. The 16-bar drill example yields no novelty peak: its 2-bar snare cycle makes bar-level features alternate, and the kernel radius is 2 bars. This is recorded as a measurement limit; the image-only gate reads declared sections from the section band and rail.
+
 Declare these once in `flow.schema.ts`; use imports rather than copies in feature modules. Existing `StereoBuffer`, `Timeline`, `BeatMap`, `AnalysisWarning`, `SectionMetrics`, and `BandValue` retain their current owners.
 
 ```ts

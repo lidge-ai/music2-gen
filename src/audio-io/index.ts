@@ -3,3 +3,4 @@ export { createStereo, peakLinear, truePeakLinear, truePeakLinearOf, resampleLin
 export { readWav, writeWav } from "./wav.tool.ts";
 export type { LoudnessMetrics } from "./loudness.schema.ts";
 export { measureLoudness } from "./loudness.tool.ts";
+export { kWeightedPower } from "./kweight.tool.ts";

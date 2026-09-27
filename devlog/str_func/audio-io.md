@@ -11,6 +11,8 @@ src/audio-io/
 ├── buffer.tool.ts     # validation, peaks, buffer allocation, resampling
 ├── buffer.test.ts     # sample-rate, shape, peak, and resampling cases
 ├── loudness.schema.ts # LUFS, LRA, and true-peak result type
+├── kweight.tool.ts   # continuous K-filter scan and 100 ms block sums
+├── kweight.test.ts   # mono/stereo power, blocks, silence, invalid PCM
 ├── loudness.tool.ts   # K-weighting, gated loudness, 4x true-peak estimate
 ├── loudness.test.ts   # loudness, peaks, silence, and invalid input
 ├── wav.tool.ts        # RIFF/WAVE reader and PCM writer
@@ -31,11 +33,12 @@ returns metadata describing the output. Its seeded 16-bit dither and the peak
 estimators are deterministic. `measureLoudness` computes gated integrated LUFS,
 LRA, sample peak, and a 4x true-peak estimate. This folder does not interpret song notation,
 mix tracks, or invoke ffmpeg.
+`kWeightedPower` owns the continuous two-stage K-filter scan shared with flow measurement.
 
 ## Key Function Signatures
 
 These are the exact exported signatures in `src/audio-io/*.tool.ts`.
-`src/audio-io/index.ts` re-exports eight public functions, the three types
+`src/audio-io/index.ts` re-exports nine public functions, the three types
 from `buffer.schema.ts`, and `LoudnessMetrics` from `loudness.schema.ts`.
 The two validators are exported from
 `buffer.tool.ts` for local use but are not re-exported by the barrel.
@@ -48,6 +51,7 @@ The two validators are exported from
 | `export function truePeakLinearOf(channel: Float32Array, rate: number): number` | `buffer.tool.ts` | Estimate one channel's intersample peak. |
 | `export function resampleLinear(input: Float32Array, fromRate: number, toRate: number): Float32Array` | `buffer.tool.ts` | Linearly resample one channel. |
 | `export function measureLoudness(pcm: StereoBuffer): LoudnessMetrics` | `loudness.tool.ts` | Measure gated loudness and peaks. |
+| `export function kWeightedPower(pcm: StereoBuffer, visit?: (frame: number, power: number) => void): Float64Array` | `kweight.tool.ts` | Visit sample-ordered channel power and return 100 ms block sums, retaining a final partial block. |
 | `export async function readWav(path: string): Promise<StereoBuffer>` | `wav.tool.ts` | Decode a supported WAV file. |
 | `export async function writeWav(path: string, audio: StereoBuffer, options: WavWriteOptions): Promise<WavInfo>` | `wav.tool.ts` | Write stereo PCM WAV. |
 | `export function validateStereo(audio: StereoBuffer): void` | `buffer.tool.ts` | Validate channel shape and finite samples. |
@@ -97,6 +101,7 @@ metadata with `bitsPerSample` equal to the requested 16 or 24 bits.
   `Float32Array` channels and finite samples; invalid input raises `E_INPUT`.
 - Mono energy and true peak use only the left channel; stereo sums K-weighted
   channel powers.
+- The shared scanner invokes the visitor before adding each frame to a 100 ms block. `measureLoudness` keeps its original sample-ordered prefix and prefix-difference gate arithmetic, so existing loudness outputs remain unchanged.
 - Integrated LUFS uses 400 ms blocks at 100 ms hops, a -70 LUFS absolute
   gate, and a -10 LU relative gate. Silence or short input can return `null`.
 - LRA uses 3 s blocks, a -20 LU relative gate, and the 95th minus 10th
@@ -157,6 +162,7 @@ and temporary files from Node's standard library.
 | `src/render/fx.tool.ts` | `../audio-io/index.ts` | Create and type stereo buffers. |
 | `src/render/mixer.tool.ts` | `../audio-io/index.ts` | Measure pre-master LUFS for `lufs` mode. |
 | `src/analyze/analyze.tool.ts` | `../audio-io/index.ts` | Read WAV and measure whole-song and section loudness. |
+| `src/analyze/flow/loudness-curve.tool.ts` | `../../audio-io/kweight.tool.ts` | Continuous exact interval and placement K-power means and trailing curves. |
 | `src/analyze/index.ts` | `../audio-io/index.ts` | Re-export loudness measurement. |
 | `src/render/render.schema.ts` | `../audio-io/index.ts` | Refer to `StereoBuffer` in render types. |
 | `src/render/kit.test.ts` | `../audio-io/index.ts` | Build WAV fixtures for kit tests. |

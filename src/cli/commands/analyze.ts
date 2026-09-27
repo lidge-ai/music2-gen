@@ -22,7 +22,7 @@ export const analyze: CommandSpec = {
       ...(typeof song === "string" ? { songPath: resolve(cwd, song) } : {}),
       ...(typeof out === "string" ? { outDir: resolve(cwd, out) } : {}),
     });
-    const artifacts = [result.analysisJson, result.analysisMd, result.spectrogramPng,
+    const artifacts = [result.analysisJson, result.analysisMd, result.spectrogramPng, result.overviewPng,
       ...(result.pianoRollPng ? [result.pianoRollPng] : []), ...(result.beatsJson ? [result.beatsJson] : [])];
     const text = json ? undefined : `${readFileSync(result.analysisMd, "utf8").trimEnd()}\n\nArtifacts:\n${artifacts.map((path) => `  ${path}`).join("\n")}`;
     return { command: "analyze", data: { ...result }, artifacts, ...(text === undefined ? {} : { text }) };

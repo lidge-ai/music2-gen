@@ -41,6 +41,12 @@ function checkPng(bytes: Buffer): void {
   for (let y = 0; y < height; y++) assert.equal(raw[y * (1 + width * 3)], 0);
 }
 
+function checkOverview(bytes: Buffer): void {
+  checkPng(bytes);
+  assert.equal(bytes.readUInt32BE(16), 1600);
+  assert.equal(bytes.readUInt32BE(20), 1400);
+}
+
 test("PCM validation and ordered threshold warnings", () => {
   const audio = sine(1, 50, 1.2);
   assert.throws(() => analyzeAudio({ ...audio, right: new Float32Array(0) }), { code: "E_INPUT" });
@@ -63,7 +69,7 @@ test("analysis accepts finite PCM rates outside the shared meter range", () => {
   }
 });
 
-test("WAV-only steady tone has three artifacts and no beat map", async () => {
+test("WAV-only steady tone has four artifacts and no beat map", async () => {
   const dir = await mkdtemp(join(tmpdir(), "music2-analysis-wav-"));
   try {
     const wav = join(dir, "tone.wav");
@@ -81,27 +87,38 @@ test("WAV-only steady tone has three artifacts and no beat map", async () => {
     assert.equal(artifacts.pianoRollPng, null);
     assert.equal(artifacts.beatsJson, null);
     checkPng(await readFile(artifacts.spectrogramPng));
+    checkOverview(await readFile(artifacts.overviewPng));
     assert.match(await readFile(artifacts.analysisMd, "utf8"), /No song timeline supplied/);
-    const analysis = JSON.parse(await readFile(artifacts.analysisJson, "utf8")) as { warnings: { code: string }[] };
+    const analysis = JSON.parse(await readFile(artifacts.analysisJson, "utf8")) as { warnings: { code: string }[];
+      flow: { axisKind: string; sectionMeans: unknown[]; shortTermLufs1Hz: unknown[] } };
     assert.ok(analysis.warnings.some(({ code }) => code === "NO_BEATS"));
+    assert.equal(analysis.flow.axisKind, "0.5 s");
+    assert.deepEqual(analysis.flow.sectionMeans, []);
+    assert.deepEqual(analysis.flow.shortTermLufs1Hz, []);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test("drill song produces five reproducible artifacts with independent 140 BPM estimate", async () => {
+test("drill song produces six reproducible artifacts with independent 140 BPM estimate", async () => {
   const dir = await mkdtemp(join(tmpdir(), "music2-analysis-song-"));
   try {
     const artifacts = await analyzeFile(drill, { outDir: dir });
     assert.ok(artifacts.pianoRollPng && artifacts.beatsJson);
-    const paths = [artifacts.analysisJson, artifacts.analysisMd, artifacts.spectrogramPng,
+    const paths = [artifacts.analysisJson, artifacts.analysisMd, artifacts.spectrogramPng, artifacts.overviewPng,
       artifacts.pianoRollPng, artifacts.beatsJson] as string[];
     const first = await Promise.all(paths.map((path) => readFile(path)));
-    checkPng(first[2]!); checkPng(first[3]!);
-    const analysis = JSON.parse(first[0]!.toString()) as { declaredBpm: number; estimatedBpm: number; sections: unknown[]; tracks: unknown[] };
+    checkPng(first[2]!); checkOverview(first[3]!); checkPng(first[4]!);
+    const analysis = JSON.parse(first[0]!.toString()) as { declaredBpm: number; estimatedBpm: number; sections: unknown[]; tracks: unknown[];
+      flow: { sectionMeans: unknown[]; annotations: string[] } };
+    assert.ok(first[0]!.toString().indexOf('"bands"') < first[0]!.toString().indexOf('"flow"'));
+    assert.ok(first[0]!.toString().indexOf('"flow"') < first[0]!.toString().indexOf('"sections"'));
     assert.equal(analysis.declaredBpm, 140);
     assert.ok(analysis.estimatedBpm >= 138 && analysis.estimatedBpm <= 142, `estimated BPM ${analysis.estimatedBpm}`);
     assert.ok(analysis.sections.length > 0 && analysis.tracks.length > 0);
+    assert.equal(analysis.flow.sectionMeans.length, analysis.sections.length);
+    assert.match(first[1]!.toString(), /## Flow/);
+    for (const annotation of analysis.flow.annotations) assert.ok(first[1]!.toString().includes(`- ${annotation}`));
     assert.match(first[1]!.toString(), /\| hook#0 \| hook \|/);
-    const map = JSON.parse(first[4]!.toString()) as { source: string; meter: number };
+    const map = JSON.parse(first[5]!.toString()) as { source: string; meter: number };
     assert.equal(map.source, "song"); assert.equal(map.meter, 4);
     await analyzeFile(drill, { outDir: dir });
     const second = await Promise.all(paths.map((path) => readFile(path)));

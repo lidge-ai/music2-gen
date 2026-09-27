@@ -23,6 +23,24 @@ export function renderAnalysisReport(a: AnalysisJson, beatMap?: BeatMap): string
     "## Warnings",
     ...(a.warnings.length ? a.warnings.map((warning) => `- ${warning.code}: ${warning.message} (observed ${number(warning.observed)}, threshold ${number(warning.threshold)})`) : ["- None"]),
     "",
+    "## Flow",
+    `Axis: ${a.flow.axisKind}${a.flow.axisKind === "bars" ? " (declared song timeline)" : a.flow.axisKind === "beats" ? " (measured audio beats)" : " (fixed audio frames)"}`,
+    "| Interval | Start (s) | End (s) | Ungated LUFS | Onsets | Onsets/s | Centroid (Hz) |",
+    "| ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ...a.flow.intervals.map((row) => `| ${row.barNumber === null ? row.beatNumber === null ? row.index + 1 : `beat ${row.beatNumber}` : `bar ${row.barNumber}`} | ${number(row.startSeconds)} | ${number(row.endSeconds)} | ${number(row.lufs)} | ${row.onsetCount} | ${number(row.onsetsPerSecond)} | ${number(row.centroidHz, 0)} |`),
+    "",
+    `Short-term LUFS (1 Hz): ${a.flow.shortTermLufs1Hz.length ? a.flow.shortTermLufs1Hz.map((point) => `${number(point.timeSeconds, 0)}s ${number(point.lufs)}`).join(", ") : "n/a"}`,
+    "Section deltas:",
+    ...(a.flow.sectionDeltas.length ? a.flow.sectionDeltas.map((delta) => `- ${delta.fromId} → ${delta.toId} at ${number(delta.atSeconds)}s: ${delta.deltaLu !== null && delta.deltaLu > 0 ? "+" : ""}${number(delta.deltaLu)} LU`) : ["- n/a"]),
+    "Novelty peaks:",
+    ...(a.flow.noveltyPeaks.length ? a.flow.noveltyPeaks.map((peak) => `- ${peak.atBar === null ? `${number(peak.atSeconds)}s` : `B${String(peak.atBar).padStart(2, "0")}`}: ${number(peak.score)}${peak.declaredHit === null ? "" : peak.declaredHit ? " matched" : " missed"}`) : ["- n/a"]),
+    "Repeats:",
+    ...(a.flow.repeats.length ? a.flow.repeats.map((repeat) => `- ${repeat.firstStartBar === null ? `${number(repeat.firstStartSeconds)}–${number(repeat.firstEndSeconds)}s` : `bars ${repeat.firstStartBar}–${repeat.firstEndBar}`} repeat ${repeat.secondStartBar === null ? `${number(repeat.secondStartSeconds)}–${number(repeat.secondEndSeconds)}s` : `bars ${repeat.secondStartBar}–${repeat.secondEndBar}`}; similarity ${number(repeat.meanSimilarity)}`) : ["- n/a"]),
+    "Verdicts:",
+    ...a.flow.verdicts.map((verdict) => `- ${verdict}`),
+    "Annotations:",
+    ...a.flow.annotations.map((annotation) => `- ${annotation}`),
+    "",
   ];
   if (a.source === "wav" && a.sections.length === 0) lines.push("No song timeline supplied", "");
   else {
@@ -32,7 +50,7 @@ export function renderAnalysisReport(a: AnalysisJson, beatMap?: BeatMap): string
       "", "## Tracks", "| Track | Kind | Events | Events/bar | Events/s |", "| --- | --- | ---: | ---: | ---: |",
       ...a.tracks.map((t) => `| ${t.id} | ${t.kind} | ${t.eventCount} | ${number(t.eventsPerBar)} | ${number(t.eventsPerSecond)} |`), "");
   }
-  lines.push("## Images", "- spectrogram.png", ...(a.sections.length ? ["- pianoroll.png"] : []), "",
+  lines.push("## Images", "- spectrogram.png", "- overview.png", ...(a.sections.length ? ["- pianoroll.png"] : []), "",
     "Audio estimates are provisional; song labels reflect the supplied timeline.", "");
   return lines.join("\n");
 }

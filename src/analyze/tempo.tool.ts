@@ -12,7 +12,7 @@ const MAX_BPM = 220;
 const NO_TEMPO: TempoEstimate = { bpm: null, confidence: 0, candidates: [], beatsSeconds: [], downbeatsSeconds: [] };
 
 type Peak = { bpm: number; score: number; relation: TempoCandidate["relation"] };
-type Envelopes = { onset: Float64Array; hats: Float64Array; low: Float64Array };
+export interface OnsetEnvelopes { onset: Float64Array; hats: Float64Array; low: Float64Array; frameRate: 100 }
 
 function percentile95(values: Float64Array): number {
   const ordered = Array.from(values).sort((a, b) => a - b);
@@ -34,7 +34,7 @@ function normalize(raw: Float64Array): Float64Array {
   return out;
 }
 
-function envelopes(pcm: StereoBuffer): Envelopes {
+export function onsetEnvelopes(pcm: StereoBuffer): OnsetEnvelopes {
   const mono = new Float32Array(pcm.left.length);
   for (let i = 0; i < mono.length; i++) mono[i] = pcm.sourceChannels === 1 ? pcm.left[i]! : (pcm.left[i]! + pcm.right[i]!) / 2;
   const samples = pcm.sampleRate === RATE ? mono : resampleLinear(mono, pcm.sampleRate, RATE);
@@ -68,8 +68,8 @@ function envelopes(pcm: StereoBuffer): Envelopes {
     hats[frame] = hats[frame]! / (lastBin - hatBin + 1);
     low[frame] = low[frame]! / (lowLast - lowFirst + 1);
   }
-  if (percentile95(raw) < 1e-4) return { onset: new Float64Array(frameCount), hats: new Float64Array(frameCount), low: new Float64Array(frameCount) };
-  return { onset: normalize(raw), hats: normalize(hats), low: normalize(low) };
+  if (percentile95(raw) < 1e-4) return { onset: new Float64Array(frameCount), hats: new Float64Array(frameCount), low: new Float64Array(frameCount), frameRate: 100 };
+  return { onset: normalize(raw), hats: normalize(hats), low: normalize(low), frameRate: 100 };
 }
 
 function autocorrelation(onset: Float64Array): Float64Array {
@@ -213,7 +213,13 @@ function beatsAndDownbeats(onset: Float64Array, low: Float64Array, bpm: number, 
 /** Estimate pulse from PCM only; no song metadata enters this path. */
 export function estimateTempo(pcm: StereoBuffer, meterNumerator = 4): TempoEstimate {
   if (pcm.left.length === 0) return { ...NO_TEMPO };
-  const { onset, hats, low } = envelopes(pcm);
+  return estimateTempoFromEnvelopes(pcm, onsetEnvelopes(pcm), meterNumerator);
+}
+
+/** Reuse an already measured onset envelope without changing tempo ranking. */
+export function estimateTempoFromEnvelopes(pcm: StereoBuffer, envelopes: OnsetEnvelopes, meterNumerator = 4): TempoEstimate {
+  if (pcm.left.length === 0) return { ...NO_TEMPO };
+  const { onset, hats, low } = envelopes;
   const scores = autocorrelation(onset);
   const possible = peaks(scores);
   if (possible.length === 0 || possible[0]!.score < .025) return { ...NO_TEMPO };

@@ -1,50 +1,12 @@
 import { Music2Error } from "../shared/index.ts";
 import type { StereoBuffer } from "./buffer.schema.ts";
 import type { LoudnessMetrics } from "./loudness.schema.ts";
-
-type Biquad = readonly [number, number, number, number, number];
+import { kWeightedPower } from "./kweight.tool.ts";
 
 const LOUDNESS_OFFSET = -0.691;
 const ABSOLUTE_GATE = -70;
 const TRUE_PEAK_TAPS = 48;
 const TRUE_PEAK_PHASES = 4;
-
-function kWeighting(rate: number): readonly [Biquad, Biquad] {
-  const shelfK = Math.tan(Math.PI * 1681.97445095553 / rate);
-  const shelfQ = 0.707175236955419;
-  const vh = 10 ** (3.99984385397 / 20);
-  const vb = vh ** 0.499666774155;
-  const shelfA0 = 1 + shelfK / shelfQ + shelfK * shelfK;
-  const shelf: Biquad = [
-    (vh + vb * shelfK / shelfQ + shelfK * shelfK) / shelfA0,
-    2 * (shelfK * shelfK - vh) / shelfA0,
-    (vh - vb * shelfK / shelfQ + shelfK * shelfK) / shelfA0,
-    2 * (shelfK * shelfK - 1) / shelfA0,
-    (1 - shelfK / shelfQ + shelfK * shelfK) / shelfA0,
-  ];
-  const highK = Math.tan(Math.PI * 38.13547087614 / rate);
-  const highQ = 0.500327037325395;
-  const highA0 = 1 + highK / highQ + highK * highK;
-  const highPass: Biquad = [1, -2, 1,
-    2 * (highK * highK - 1) / highA0,
-    (1 - highK / highQ + highK * highK) / highA0];
-  return [shelf, highPass];
-}
-
-class Filter {
-  private z1 = 0;
-  private z2 = 0;
-  private readonly coefficients: Biquad;
-  constructor(coefficients: Biquad) { this.coefficients = coefficients; }
-
-  process(input: number): number {
-    const [b0, b1, b2, a1, a2] = this.coefficients;
-    const output = b0 * input + this.z1;
-    this.z1 = b1 * input - a1 * output + this.z2;
-    this.z2 = b2 * input - a2 * output;
-    return output;
-  }
-}
 
 function loudness(power: number): number {
   return power > 0 ? LOUDNESS_OFFSET + 10 * Math.log10(power) : -Infinity;
@@ -132,26 +94,14 @@ export function measureLoudness(pcm: StereoBuffer): LoudnessMetrics {
       (sourceChannels !== 1 && sourceChannels !== 2)) {
     throw new Music2Error("E_INPUT", "invalid PCM for loudness measurement");
   }
-  const [shelf, highPass] = kWeighting(sampleRate);
-  const leftShelf = new Filter(shelf); const leftHigh = new Filter(highPass);
-  const rightShelf = new Filter(shelf); const rightHigh = new Filter(highPass);
   const prefix = new Float64Array(left.length + 1);
   let samplePeak = 0;
-  for (let frame = 0; frame < left.length; frame++) {
+  kWeightedPower(pcm, (frame, power) => {
     const l = left[frame]!;
     const r = right[frame]!;
-    if (!Number.isFinite(l) || !Number.isFinite(r)) {
-      throw new Music2Error("E_INPUT", "nonfinite audio sample", { details: { frame } });
-    }
     samplePeak = Math.max(samplePeak, Math.abs(l), sourceChannels === 2 ? Math.abs(r) : 0);
-    const filteredLeft = leftHigh.process(leftShelf.process(l));
-    let power = filteredLeft * filteredLeft;
-    if (sourceChannels === 2) {
-      const filteredRight = rightHigh.process(rightShelf.process(r));
-      power += filteredRight * filteredRight;
-    }
     prefix[frame + 1] = prefix[frame]! + power;
-  }
+  });
   const integratedPower = gatedMean(blockPowers(prefix, sampleRate, .4), 10);
   const range = loudnessRange(blockPowers(prefix, sampleRate, 3));
   const truePeak = samplePeak === 0 ? 0 : Math.max(

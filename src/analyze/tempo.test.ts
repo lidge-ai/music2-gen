@@ -3,7 +3,7 @@ import { test } from "node:test";
 import type { StereoBuffer } from "../audio-io/buffer.schema.ts";
 import { renderSong } from "../render/index.ts";
 import { loadSong } from "../song/index.ts";
-import { estimateTempo } from "./tempo.tool.ts";
+import { estimateTempo, estimateTempoFromEnvelopes, onsetEnvelopes } from "./tempo.tool.ts";
 
 function mulberry32(seed: number): () => number {
   let state = seed;
@@ -41,6 +41,13 @@ function hasCandidate(bpm: number, candidates: { bpm: number }[]): boolean {
 }
 
 for (const rate of [44100, 48000]) {
+  test(`shared 10 ms envelopes preserve tempo output at ${rate} Hz`, () => {
+    const pcm = synth(140, 4, rate, 4, (_, add) => { add(0, "kick"); add(2, "snare"); });
+    const shared = onsetEnvelopes(pcm);
+    assert.equal(shared.frameRate, 100);
+    assert.equal(shared.onset.length, Math.ceil(pcm.left.length / pcm.sampleRate * 100));
+    assert.deepEqual(estimateTempoFromEnvelopes(pcm, shared), estimateTempo(pcm));
+  });
   test(`140 BPM drill accents and rolls at ${rate} Hz`, () => {
     const pcm = synth(140, 16, rate, 4, (_, add) => {
       for (let beat = 0; beat < 4; beat += .5) add(beat, "hat", .55);
@@ -102,6 +109,7 @@ test("steady tone has no pulse", () => {
 
 test("silence has no pulse", () => {
   const zeros = new Float32Array(44100 * 3);
+  assert.equal(onsetEnvelopes({ sampleRate: 44100, left: zeros, right: zeros, sourceChannels: 2 }).onset.length, 300);
   const result = estimateTempo({ sampleRate: 44100, left: zeros, right: zeros, sourceChannels: 2 });
   assert.equal(result.bpm, null); assert.equal(result.confidence, 0);
   assert.deepEqual(result.candidates, []); assert.deepEqual(result.beatsSeconds, []);

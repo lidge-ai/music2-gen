@@ -20,6 +20,8 @@ test("analyze command returns artifact paths in the CLI envelope", async () => {
       cwd: process.cwd(), json: true, stderr: process.stderr });
     assert.equal(result.command, "analyze");
     assert.ok(result.artifacts?.includes(join(out, "analysis.json")));
+    assert.deepEqual(result.artifacts?.slice(2, 4), [join(out, "spectrogram.png"), join(out, "overview.png")]);
+    assert.equal(result.data["overviewPng"], join(out, "overview.png"));
     assert.ok(result.artifacts?.includes(join(out, "pianoroll.png")));
     assert.equal((result.data["summary"] as { declaredBpm: number }).declaredBpm, 120);
   } finally { await rm(out, { recursive: true, force: true }); }

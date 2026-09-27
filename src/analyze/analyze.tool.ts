@@ -10,11 +10,13 @@ import { ANALYSIS_VERSION } from "./analysis.schema.ts";
 import type { AnalysisArtifacts, AnalysisJson, AnalysisResult, AnalysisWarning, SectionMetrics, TrackDensity } from "./analysis.schema.ts";
 import { measureBands } from "./bands.tool.ts";
 import { makeBeatMap } from "./beats.tool.ts";
+import { analyzeFlow } from "./flow/flow.tool.ts";
 import { estimateKey } from "./key.tool.ts";
+import { renderOverview } from "./overview/overview.tool.ts";
 import { renderPianoRoll } from "./pianoroll.tool.ts";
 import { renderAnalysisReport } from "./report.tool.ts";
 import { renderSpectrogram } from "./spectrogram.tool.ts";
-import { estimateTempo } from "./tempo.tool.ts";
+import { estimateTempoFromEnvelopes, onsetEnvelopes } from "./tempo.tool.ts";
 
 let temporaryCounter = 0;
 const db = (linear: number): number | null => linear > 0 ? 20 * Math.log10(linear) : null;
@@ -93,7 +95,8 @@ function trackDensity(song: ResolvedSong, timeline: Timeline): TrackDensity[] {
     eventsPerSecond: counts[index]! / timeline.durationSeconds }));
 }
 
-function warnings(a: AnalysisJson, beatSource: "song" | "audio" | null): AnalysisWarning[] {
+function warnings(a: Pick<AnalysisJson, "clippedSamples" | "targetLufs" | "integratedLufs" | "bands" | "keyConfidence">,
+  beatSource: "song" | "audio" | null): AnalysisWarning[] {
   const result: AnalysisWarning[] = [];
   const push = (code: AnalysisWarning["code"], observed: number | null, threshold: number | null, message: string): void => {
     result.push({ code, observed, threshold, message });
@@ -122,10 +125,18 @@ export function analyzeAudio(pcm: StereoBuffer, opts: { song?: ResolvedSong; tim
   const stats = amplitude(pcm);
   const metered = meterPcm(pcm);
   const loudness = measureLoudness(metered);
-  const tempo = estimateTempo(metered, opts.song?.meter.numerator ?? 4);
+  const onset = onsetEnvelopes(metered);
+  const tempo = estimateTempoFromEnvelopes(metered, onset, opts.song?.meter.numerator ?? 4);
   const key = estimateKey(pcm);
   const bands = measureBands(pcm);
   const beatMap = makeBeatMap(tempo, pcm.left.length / pcm.sampleRate, opts.song, timeline);
+  const sections = timeline ? sectionMetrics(pcm, timeline, metered) : [];
+  const tracks = opts.song && timeline ? trackDensity(opts.song, timeline) : [];
+  const targetLufs = opts.targetLufs ?? opts.song?.master.targetLufs ?? null;
+  const warningRows = warnings({ clippedSamples: stats.clipped, targetLufs,
+    integratedLufs: loudness.integratedLufs, bands: bands.bands, keyConfidence: key.confidence }, beatMap?.source ?? null);
+  const flow = analyzeFlow(pcm, { beatMap, onset, warnings: warningRows, sections, bands: bands.bands, metered,
+    ...(opts.song ? { song: opts.song } : {}), ...(timeline ? { timeline } : {}) });
   const analysis: AnalysisJson = {
     version: ANALYSIS_VERSION, source: opts.source ?? (opts.song ? "song" : "wav"), sampleRate: pcm.sampleRate,
     channels: pcm.sourceChannels, durationSeconds: pcm.left.length / pcm.sampleRate,
@@ -137,14 +148,12 @@ export function analyzeAudio(pcm: StereoBuffer, opts: { song?: ResolvedSong; tim
     declaredBpm: opts.song?.bpm ?? null, estimatedBpm: tempo.bpm,
     tempoConfidence: tempo.confidence, tempoCandidates: tempo.candidates,
     declaredKey: opts.song?.key ?? null, estimatedKey: key.key, keyConfidence: key.confidence,
-    keyCandidates: key.candidates, chroma: key.chroma, bands: bands.bands,
-    sections: timeline ? sectionMetrics(pcm, timeline, metered) : [],
-    tracks: opts.song && timeline ? trackDensity(opts.song, timeline) : [],
-    targetLufs: opts.targetLufs ?? opts.song?.master.targetLufs ?? null, warnings: [],
+    keyCandidates: key.candidates, chroma: key.chroma, bands: bands.bands, flow: flow.analysis,
+    sections, tracks, targetLufs, warnings: warningRows,
   };
-  analysis.warnings = warnings(analysis, beatMap?.source ?? null);
   return { analysis, reportMarkdown: renderAnalysisReport(analysis, beatMap ?? undefined),
     spectrogramPng: renderSpectrogram(pcm, timeline),
+    overviewPng: renderOverview(analysis, flow, opts.song, timeline),
     ...(opts.song && timeline ? { pianoRollPng: renderPianoRoll(opts.song, timeline) } : {}),
     ...(beatMap ? { beatMap } : {}) };
 }
@@ -178,7 +187,7 @@ export async function analyzeFile(inputPath: string, opts: { songPath?: string; 
   await writableInput(input);
   const stem = basename(input, extension).replace(/\.song$/i, "");
   const dir = resolve(opts.outDir ?? join(dirname(input), `${stem}.analysis`));
-  for (const name of ["analysis.json", "analysis.md", "spectrogram.png", "pianoroll.png", "beats.json"]) {
+  for (const name of ["analysis.json", "analysis.md", "spectrogram.png", "overview.png", "pianoroll.png", "beats.json"]) {
     const output = join(dir, name);
     if (await sameFile(output, input) || (opts.songPath && await sameFile(output, resolve(opts.songPath)))) {
       throw new Music2Error("E_INPUT", `analysis output would overwrite an input: ${output}`);
@@ -212,6 +221,7 @@ export async function analyzeFile(inputPath: string, opts: { songPath?: string; 
   const artifacts: AnalysisArtifacts = {
     analysisJson: join(dir, "analysis.json"), analysisMd: join(dir, "analysis.md"),
     spectrogramPng: join(dir, "spectrogram.png"),
+    overviewPng: join(dir, "overview.png"),
     pianoRollPng: result.pianoRollPng ? join(dir, "pianoroll.png") : null,
     beatsJson: result.beatMap ? join(dir, "beats.json") : null,
     summary: { declaredBpm: result.analysis.declaredBpm, estimatedBpm: result.analysis.estimatedBpm,
@@ -221,6 +231,7 @@ export async function analyzeFile(inputPath: string, opts: { songPath?: string; 
     { path: artifacts.analysisJson, content: roundedJson(result.analysis) },
     { path: artifacts.analysisMd, content: result.reportMarkdown },
     { path: artifacts.spectrogramPng, content: result.spectrogramPng },
+    { path: artifacts.overviewPng, content: result.overviewPng },
   ];
   if (artifacts.pianoRollPng && result.pianoRollPng) files.push({ path: artifacts.pianoRollPng, content: result.pianoRollPng });
   if (artifacts.beatsJson && result.beatMap) files.push({ path: artifacts.beatsJson, content: roundedJson(result.beatMap) });

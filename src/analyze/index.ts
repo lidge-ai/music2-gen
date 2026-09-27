@@ -10,3 +10,5 @@ export { encodeRgbPng } from "./png.tool.ts";
 export type { ComplexSpectrum, LoudnessMetrics, TempoCandidate, TempoEstimate, KeyCandidate,
   KeyEstimate, BandValue, BandMetrics, BeatSection, BeatMap, SectionMetrics, TrackDensity,
   AnalysisWarning, AnalysisJson, AnalysisResult, AnalysisArtifacts } from "./analysis.schema.ts";
+export type { FlowAnalysis, FlowInterval, FlowCurvePoint, FlowSectionMean, FlowSectionDelta,
+  FlowNoveltyPeak, FlowRepeat, FlowAxisKind } from "./flow/flow.schema.ts";

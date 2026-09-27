@@ -16,4 +16,4 @@ export type { RecipeCard, RecipeRole, RecipePaletteEntry, RecipeProgression, Rec
 export { critique } from "./critic/index.ts";
 export type { CritiqueOptions, CriticReview, CritiqueReport } from "./critic/index.ts";
 export { analyzeAudio, analyzeFile } from "./analyze/index.ts";
-export type { AnalysisJson, AnalysisArtifacts, BeatMap } from "./analyze/index.ts";
+export type { AnalysisJson, AnalysisArtifacts, BeatMap, FlowAnalysis } from "./analyze/index.ts";
