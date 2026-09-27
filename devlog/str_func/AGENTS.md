@@ -7,3 +7,7 @@ The index table below is kept in sync with `src/`.
 
 | Feature folder | Document | Status |
 |---|---|---|
+| shared | shared.md | active |
+| pattern | pattern.md | active |
+| song | song.md | active |
+| cli | cli.md | active |

@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "title": "Minimal C minor groove",
+  "bpm": 120,
+  "key": "C minor",
+  "tracks": [
+    { "id": "drums", "kind": "drums", "instrument": "drums", "pattern": "bd hh sd hh" },
+    { "id": "sub", "kind": "notes", "instrument": "808", "pattern": "c2 ~ c2 ~" }
+  ],
+  "sections": [
+    { "id": "groove", "bars": 1, "role": "groove" }
+  ],
+  "arrangement": [
+    { "section": "groove", "repeats": 2 }
+  ]
+}

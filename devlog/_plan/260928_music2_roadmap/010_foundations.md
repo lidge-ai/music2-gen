@@ -279,3 +279,26 @@ issues (song with bad bpm and unknown key), unknown-key rejection (extra `foo` f
 (arrangement names a missing section), Fraction overflow (constructed in rational.test.ts), dist-vs-src bin branch
 (build then run bin; before build run `node src/cli/index.ts`).
 
+
+
+## Execution lanes (wp2 P, 2026-09-28)
+
+Stale check: the repository holds only .gitignore and devlog/ (commits c065cd5, fb71271); no file named in this doc exists yet, so
+every row stays NEW except devlog/str_func/AGENTS.md (MODIFY). Lanes run inside this checkout with disjoint write scopes; main owns
+integration, `npm install`, lockfile and every commit.
+
+| Lane | Owner | Write scope (exclusive) | Starts after |
+|---|---|---|---|
+| L0 | main | package.json, package-lock.json, tsconfig.json, tsconfig.build.json, eslint.config.js, .editorconfig, .gitattributes, LICENSE, bin/music2.js, scripts/test.mjs, src/shared/** | — |
+| LA | sol | src/pattern/** | L0 |
+| LC | sol | src/cli/{index,main,args,output,registry}.ts, src/cli/commands/{version,help}.ts, src/cli/main.test.ts (framework cases only) | L0 |
+| LD | sol | AGENTS.md, README.md, CHANGELOG.md, .env.example, config/.gitkeep, docs/.gitkeep, tests/e2e/.gitkeep, .github/**, scripts/structure-audit.mjs, scripts/structure-audit.test.mjs | L0 |
+| LB | sol | src/song/**, schema/song.v1.json, examples/minimal.song.json, src/cli/commands/{schema,validate,events}.ts (+ their cases appended to src/cli/main.test.ts), registry list entries for those three | LA done, and LC done **and its diff verified by main** (LC and LB both touch src/cli/registry.ts and src/cli/main.test.ts, so they are sequential, never concurrent) |
+| L9 | main | src/index.ts, devlog/str_func/{shared,pattern,song,cli}.md + AGENTS.md rows, integration fixes | all lanes |
+
+Every lane runs `npm run typecheck` and its own tests before reporting, never commits, never runs git branch operations, and
+reports changed paths. Main verifies each lane's diff, then runs the full wp2 acceptance table.
+
+Deviation record: main built L0 (package, tooling, src/shared + 13 passing tests) during P while the architect reviewed the lane split; it is
+listed in the B→C attestation as pre-B work and re-verified in C with the rest.
+

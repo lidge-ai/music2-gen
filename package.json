@@ -1,0 +1,69 @@
+{
+  "name": "music2-gen",
+  "version": "0.1.0",
+  "description": "The music CLI for coding agents: write a song in mini-notation, render it offline, and see it as numbers and pictures. No browser.",
+  "type": "module",
+  "license": "MIT",
+  "author": "lidge-ai",
+  "homepage": "https://github.com/lidge-ai/music2-gen#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lidge-ai/music2-gen.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lidge-ai/music2-gen/issues"
+  },
+  "keywords": [
+    "music",
+    "audio",
+    "cli",
+    "agents",
+    "codex",
+    "claude-code",
+    "strudel",
+    "mini-notation",
+    "synth",
+    "beats"
+  ],
+  "bin": {
+    "music2": "bin/music2.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./schema/song.v1.json": "./schema/song.v1.json",
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "bin",
+    "dist",
+    "schema",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "node scripts/test.mjs",
+    "schema:json": "node bin/music2.js schema --out schema/song.v1.json",
+    "audit:structure": "node scripts/structure-audit.mjs",
+    "prepack": "npm run build",
+    "music2": "node src/cli/index.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "^22.20.1",
+    "eslint": "10.11.0",
+    "globals": "17.12.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "8.70.1"
+  }
+}
