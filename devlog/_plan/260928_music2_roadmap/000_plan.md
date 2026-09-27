@@ -88,5 +88,12 @@ fixed before round 2.
 
 ## Attestation log
 
-(filled at each D)
+- **wp1 D (2026-09-28):** roadmap unit committed as c065cd5 and verified by the unit check (12 numbered docs, 0 failures, receipt
+  .codexclaw/evidence/<session>/test-receipt.json). Conclusion: the roadmap is locked; implementation starts with wp2 from 010 as audited.
+  Direction for wp2: main writes the package/tooling skeleton and src/shared first (every other feature imports it), then parallel sol
+  lanes with disjoint write scopes: pattern (parse/query/euclid/values), song (schema/arrange/timeline/load + schema JSON), cli
+  (registry/args/output/commands) and repo meta (AGENTS.md, README stub, CI, scripts/test.mjs, scripts/structure-audit.mjs).
+  Still unproven (pessimist note): the drill tempo criterion rests on the guarded octave rule measured on one PoC render; the audio
+  critic is n = 2; Windows byte-identity of renders is untested. Evidence that would show the direction is wrong: the 75 BPM vector
+  promoting to 150, or a Windows CI render hash differing between two runs.
 
