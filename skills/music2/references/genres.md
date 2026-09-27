@@ -164,7 +164,7 @@ Sources:
 - Roles: kick, snare, hats, bass, melody.
 - Drum grid: 16 steps/bar; snares on 5 and 13, soft kick and sparse swung offbeat hats.
 - Bass: Soft bass around C2-C4; follow roots without long distorted glides.
-- Palette: kick `drums` `decayMs`=140 `noise`=0.22 `tone`=0.35; snare `drums` `noise`=0.42; hats `drums` `noise`=0.35; bass `bass` `cutoffHz`=360 `releaseMs`=110; melody `keys` `index`=0.8 `releaseMs`=280.
+- Palette: kick `drums` `decayMs`=140 `noise`=0.22 `tone`=0.35; snare `drums` `noise`=0.42; hats `drums` `noise`=0.35; bass `bass` `cutoffHz`=260 `releaseMs`=110; melody `keys` `index`=0.8 `releaseMs`=280.
 - Arrangement: intro 4 bars → groove 16 bars → breakdown 8 bars → groove 16 bars → outro 4 bars.
 - Mix target: -14 LUFS, -1 dBTP; Preserve dynamics and keep texture quiet.
 
