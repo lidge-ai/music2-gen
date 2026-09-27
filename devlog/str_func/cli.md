@@ -148,7 +148,7 @@ they have no separately exported `run` function.
 | `doctor` | `commands/doctor.ts` | No positional args; returns `DoctorData` for ffmpeg and required encoders. |
 | `analyze` | `commands/analyze.ts` | One WAV or song JSON path; optional `--song` and `--out`; returns artifacts and summary. |
 | `recipes` | `commands/recipes.ts` | Zero or one recipe ID; returns summaries or a full card. |
-| `new` | `commands/new.ts` | Required `--genre`; optional BPM, key, seed, title, and output path. |
+| `new` | `commands/new.ts` | Required `--genre`; optional arrangement, preset, seconds, BPM, key, seed, title, and output path. |
 | `lint` | `commands/lint.ts` | One song JSON path; optional genre override and strict QA policy. |
 | `critique` | `commands/critique.ts` | One WAV/song path; optional model, base URL, and excerpt seconds. |
 | `skill` | `commands/skill-path.ts` | Sole positional argument `path`; returns `{ path }` and prints the directory in human mode. |
@@ -171,8 +171,12 @@ given. One ID returns the complete card, including palette, arrangement, mix
 targets, and sources. An unknown ID raises `E_NOT_FOUND` (exit 2), and more
 than one positional argument raises `E_INPUT`.
 
-`music2 new --genre <id> [--bpm n] [--key 'C minor'] [--seed n]
+`music2 new --genre <id> [--arrangement id] [--use preset] [--seconds n] [--bpm n] [--key 'C minor'] [--seed n]
 [--title text] [-o song.json] [--json]` generates a validated starter.
+`--arrangement` selects a named form. `--use` selects one use-case preset;
+`--seconds` is accepted only for an exact-duration preset. The preset recommends
+a form before an explicit arrangement override, and an explicit BPM locks the
+duration search. Result data includes arrangement, use case and duration.
 `--bpm` and `--seed` use nonnegative integer argument spelling; the recipe
 boundary checks the card BPM range and uint32 seed. A key override retains
 the card's major/minor mode and transposes note patterns. Without `--out`,

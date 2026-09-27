@@ -17,7 +17,7 @@ node bin/music2.js render examples/drill-140.song.json -o /tmp/music2-drill.wav 
 node bin/music2.js analyze /tmp/music2-drill.wav --song examples/drill-140.song.json --out /tmp/music2-analysis --json
 ```
 
-Open `/tmp/music2-analysis/analysis.md` or `analysis.json` for a text-only agent. A vision-capable agent can also inspect `spectrogram.png` and `pianoroll.png` there. The directory also contains `beats.json` with the declared song grid. An audio-capable model can use `critique` through a configured Responses route and should trust its comments only when `review.heard_audio` is true. The critic cannot reliably hear sub-bass; check the low-end measurements and listen separately if that matters. Text and image outputs are measurements and views, not proof of hearing.
+Open `/tmp/music2-analysis/analysis.md` or `analysis.json` for a text-only agent. A vision-capable agent can inspect `overview.png` for labeled section order, boundary bars, loudness flow, density, and warnings, then `spectrogram.png` and the song-backed `pianoroll.png`. The directory also contains `beats.json` with the declared song grid. An audio-capable model can use `critique` through a configured Responses route and should trust its comments only when `review.heard_audio` is true. The critic cannot reliably hear sub-bass; check the low-end measurements and listen separately if that matters. Text and image outputs are measurements and views, not proof of hearing.
 
 The [composition skill](skills/music2/SKILL.md) gives agents a full edit-and-check workflow. `node bin/music2.js skill path` prints the installed skill directory when the skill is shipped with this copy.
 
@@ -28,9 +28,9 @@ Use `node bin/music2.js <command>`; add `--json` to get one machine-readable obj
 | Command | Purpose |
 | --- | --- |
 | `help [command]`, `version`, `schema` | Inspect usage, version, or Song v1 JSON Schema. |
-| `recipes [id]`, `new --genre id` | Inspect a genre card or make an editable starter song. |
+| `recipes [id]`, `new --genre id` | Inspect a genre card or make an editable starter song; choose `--arrangement id` or `--use preset` for a structure or destination preset. |
 | `validate song.json`, `events song.json`, `lint song.json` | Check schema and timing, inspect timed events, or apply genre/static rules. |
-| `render song.json`, `analyze audio.wav` | Produce WAV and optional encoded copies; measure audio and write reports/PNG views. |
+| `render song.json`, `analyze audio.wav` | Produce WAV and optional encoded copies; measure audio and write reports, an overview, and PNG views. |
 | `doctor`, `critique audio.wav` | Check ffmpeg; optionally request an audio-model review. |
 | `skill path` | Print the packaged composition skill directory. |
 

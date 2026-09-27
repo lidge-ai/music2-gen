@@ -70,6 +70,47 @@ test("peak and true peak remain below ceiling", async () => {
   assert.ok(Math.abs(result.truePeakDbtp - 20 * Math.log10(truePeakLinear(result.audio))) < 1e-8);
 });
 
+test("loop folds the rendered release, trims stems, and rejects partial bars", async () => {
+  const source = fixture({ loop: true, tailSeconds: 2, master: { ceilingDb: -3 },
+    tracks: [{ id: "hit", kind: "notes", instrument: "bell", pattern: "~ ~ ~ c4",
+      sends: { reverb: .4, delay: .3 } }] });
+  const loop = validateSong(source);
+  const timeline = buildTimeline(loop);
+  const rendered = await mixTracks(loop, timeline, "fixture.song.json", { stems: true });
+  const frames = Math.ceil(timeline.durationSeconds * loop.sampleRate);
+  assert.deepEqual(rendered.loop, { startSample: 0, endSample: frames });
+  assert.equal(rendered.audio.left.length, frames);
+  assert.equal(rendered.stems[0]!.audio.left.length, frames);
+  assert.ok(rendered.truePeakDbtp <= -2.9);
+  const normal = validateSong({ ...source, loop: false });
+  const unwrapped = await mixTracks(normal, buildTimeline(normal), "fixture.song.json", { stems: true });
+  assert.equal(unwrapped.loop, null);
+  assert.equal(unwrapped.audio.left.length, Math.ceil((timeline.durationSeconds + 2) * loop.sampleRate));
+  assert.notDeepEqual(rendered.audio.left.subarray(0, 100), unwrapped.audio.left.subarray(0, 100));
+  await assert.rejects(mixTracks(loop, timeline, "fixture.song.json", { bars: { start: 0, end: 1 } }), { code: "E_INPUT" });
+});
+
+test("loop tail longer than body adds each stereo frame at its modulo position exactly once", async () => {
+  const source = fixture({ loop: true, tailSeconds: 5,
+    tracks: [{ id: "hit", kind: "notes", instrument: "bell", gain: -30, pan: -.5,
+      pattern: "~ ~ ~ c4", sends: { reverb: .5, delay: .4 } }] });
+  const loop = validateSong(source);
+  const normal = validateSong({ ...source, loop: false });
+  const timeline = buildTimeline(loop);
+  const wrapped = await mixTracks(loop, timeline, "fixture.song.json", { mastering: "lufs" });
+  const expanded = await mixTracks(normal, buildTimeline(normal), "fixture.song.json", { mastering: "lufs" });
+  const body = wrapped.audio.left.length;
+  const unmaster = (value: number): number => Math.atanh(value * 1.2) / 1.2;
+  for (const side of ["left", "right"] as const) for (let i = 0; i < 1000; i++) {
+    let expected = 0;
+    for (let sourceFrame = i; sourceFrame < expanded.audio[side].length; sourceFrame += body) {
+      expected += unmaster(expanded.audio[side][sourceFrame]!);
+    }
+    assert.ok(Math.abs(unmaster(wrapped.audio[side][i]!) - expected) < 2e-6,
+      `${side} frame ${i}`);
+  }
+});
+
 test("drill target -14 LUFS uses static loudness gain before limiting", async () => {
   const song = validateSong(fixture({ master: { targetLufs: -14 },
     tracks: [{ id: "kick", kind: "drums", instrument: "drums", pattern: "bd ~ sd ~" },

@@ -1,0 +1,197 @@
+{
+  "version": 1,
+  "title": "Corner Notebook",
+  "genre": "boom_bap",
+  "bpm": 90,
+  "meter": {
+    "numerator": 4,
+    "denominator": 4
+  },
+  "key": "C minor",
+  "seed": 9002,
+  "swing": 0.57,
+  "sampleRate": 44100,
+  "tailSeconds": 2,
+  "master": {
+    "ceilingDb": -1,
+    "targetLufs": -14
+  },
+  "tracks": [
+    {
+      "id": "kick",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "bd ~ ~ ~ ~ ~ ~ ~ ~ ~ bd ~ ~ ~ ~ ~",
+      "velocity": 0.8,
+      "gain": -7,
+      "pan": 0,
+      "gate": 0.9,
+      "mono": false,
+      "glide": 0,
+      "swing": false,
+      "sends": {
+        "reverb": 0,
+        "delay": 0
+      },
+      "params": {}
+    },
+    {
+      "id": "snare",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~",
+      "velocity": 0.8,
+      "gain": -7,
+      "pan": 0,
+      "gate": 0.9,
+      "mono": false,
+      "glide": 0,
+      "swing": false,
+      "sends": {
+        "reverb": 0,
+        "delay": 0
+      },
+      "params": {}
+    },
+    {
+      "id": "hats",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh ~",
+      "velocity": 0.8,
+      "gain": -7,
+      "pan": 0,
+      "gate": 0.9,
+      "mono": false,
+      "glide": 0,
+      "swing": true,
+      "sends": {
+        "reverb": 0,
+        "delay": 0
+      },
+      "params": {}
+    },
+    {
+      "id": "bass",
+      "kind": "notes",
+      "instrument": "bass",
+      "pattern": "<[c2 ~ ~ ~ ~ ~ g1 ~ c2 ~ ~ ~ bb1 ~ ~ ~] [ab1 ~ ~ ~ ~ ~ eb2 ~ ab1 ~ ~ ~ g1 ~ ~ ~] [f1 ~ ~ ~ ~ ~ c2 ~ f1 ~ ~ ~ eb2 ~ ~ ~] [g1 ~ ~ ~ ~ ~ d2 ~ g1 ~ ~ ~ ~ ~ ~ ~]>",
+      "velocity": 0.75,
+      "gain": -10,
+      "pan": 0,
+      "gate": 0.9,
+      "mono": true,
+      "glide": 0,
+      "swing": false,
+      "sends": {
+        "reverb": 0,
+        "delay": 0
+      },
+      "params": {}
+    },
+    {
+      "id": "melody",
+      "kind": "notes",
+      "instrument": "keys",
+      "pattern": "<[c4 ~ ~ ~ eb4 ~ ~ ~ g4 ~ ~ ~ bb4 ~ ~ ~] [ab3 ~ ~ ~ c4 ~ ~ ~ eb4 ~ ~ ~ c4 ~ ~ ~] [f3 ~ ~ ~ ab3 ~ ~ ~ c4 ~ ~ ~ eb4 ~ ~ ~] [g3 ~ ~ ~ bb3 ~ ~ ~ d4 ~ ~ ~ g4 ~ ~ ~]>",
+      "velocity": 0.65,
+      "gain": -13,
+      "pan": 0,
+      "gate": 0.8,
+      "mono": false,
+      "glide": 0,
+      "swing": false,
+      "sends": {
+        "reverb": 0.25,
+        "delay": 0
+      },
+      "params": {}
+    }
+  ],
+  "sections": [
+    {
+      "id": "intro",
+      "bars": 4,
+      "role": "intro",
+      "patterns": {
+        "bass": null,
+        "melody": null
+      }
+    },
+    {
+      "id": "verse_24",
+      "bars": 24,
+      "role": "verse",
+      "patterns": {
+        "melody": null
+      }
+    },
+    {
+      "id": "hook_4",
+      "bars": 4,
+      "role": "hook",
+      "patterns": {
+        "melody": "[c5,eb5] ~ ~ ~ ~ ~ [g4,bb4] ~ ~ ~ [ab4,c5] ~ ~ ~ ~ ~"
+      }
+    },
+    {
+      "id": "verse",
+      "bars": 16,
+      "role": "verse",
+      "patterns": {
+        "melody": null
+      }
+    },
+    {
+      "id": "hook",
+      "bars": 8,
+      "role": "hook",
+      "patterns": {
+        "melody": "[c5,eb5] ~ ~ ~ ~ ~ [g4,bb4] ~ ~ ~ [ab4,c5] ~ ~ ~ ~ ~"
+      }
+    },
+    {
+      "id": "outro",
+      "bars": 4,
+      "role": "outro",
+      "patterns": {
+        "bass": null,
+        "melody": null
+      }
+    }
+  ],
+  "arrangement": [
+    {
+      "section": "intro",
+      "repeats": 1
+    },
+    {
+      "section": "verse_24",
+      "repeats": 1
+    },
+    {
+      "section": "hook_4",
+      "repeats": 1
+    },
+    {
+      "section": "verse_24",
+      "repeats": 1
+    },
+    {
+      "section": "hook_4",
+      "repeats": 1
+    },
+    {
+      "section": "verse",
+      "repeats": 1
+    },
+    {
+      "section": "hook",
+      "repeats": 1
+    },
+    {
+      "section": "outro",
+      "repeats": 1
+    }
+  ]
+}

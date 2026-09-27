@@ -80,7 +80,7 @@ is the voice contract; individual render methods are object members.
 | Type | Source | Shape and use |
 |---|---|---|
 | `RenderOptions` | `render.schema.ts` | Optional `bars`, `stems`, `mastering: "peak" \| "loudnorm" \| "lufs"`. |
-| `RenderResult` | `render.schema.ts` | `audio`, `stems`, `bars`, `durationSeconds`, `peakDbfs`, `truePeakDbtp`, `ceilingDb`, `events`. |
+| `RenderResult` | `render.schema.ts` | `audio`, `stems`, `bars`, `durationSeconds`, peak fields, `ceilingDb`, `events`, and nullable whole-song `loop` sample points. |
 | `RenderStem` | `render.schema.ts` | `trackId` and stereo `audio`. |
 | `VoiceEvent` | `render.schema.ts` | MIDI/sample, velocity, frame timing, event index, seed. |
 | `VoiceContext` | `render.schema.ts` | Sample rate, frame count, resolved track, selected events. |
@@ -88,7 +88,7 @@ is the voice contract; individual render methods are object members.
 | `VoiceSpec` | `render.schema.ts` | ID, track kind, mono default, parameter specs, render method. |
 | `KitManifest` | `render.schema.ts` | Version 1, named sample arrays, optional gain dB/root MIDI. |
 | `LoadedKit` | `render.schema.ts` | Manifest, decoded mono variants, sample rate. |
-| `RenderData` | `render.schema.ts` | CLI output paths and render measurements; imported directly by CLI. |
+| `RenderData` | `render.schema.ts` | CLI output paths and render measurements, with optional `loopStartSample`/`loopEndSample`; imported directly by CLI. |
 
 The schema also names `DrumsParams`, `EightOhEightParams`, `BassParams`,
 `BellParams`, `KeysParams`, `PluckParams`, `PadParams`, and `LeadParams`.
@@ -125,8 +125,14 @@ overrides the voice's mono default.
   audio allocation and mixing.
 - `mixTracks` requires `0 <= start < end <= timeline.bars`; an invalid
   requested range raises `E_INPUT`.
-- Frame count is `ceil((selected bars * secondsPerBar + tailSeconds) *
+- Normal frame count is `ceil((selected bars * secondsPerBar + tailSeconds) *
   sampleRate)`; an unsafe or overlarge RIFF allocation raises `E_RENDER`.
+- For `song.loop`, the whole song is one body: after wet FX, tail frames wrap
+  modulo the body length into its start before mastering. Master PCM and dry
+  stems end at `ceil(timeline.durationSeconds * sampleRate)` frames. `RenderResult.loop`
+  is `{startSample:0,endSample:bodyFrames}`; non-loop renders return `null`.
+  CLI JSON adds `loopStartSample` and `loopEndSample` for loop songs. `--bars`
+  on a loop is `E_INPUT`.
 - Event indices count all events per track before bar filtering. Seeds use
   `fnv1a32(song.seed, track.id, eventIndex)` for stable addressed noise.
 - Monophonic events stop at the next onset. Other note voices use bounded

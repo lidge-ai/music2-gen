@@ -12,7 +12,9 @@ export type { RenderOptions, RenderResult, RenderStem, KitManifest } from "./ren
 export { discoverFfmpeg, encodeAudio, loudnormWav } from "./probe/index.ts";
 export type { FfmpegInfo, DoctorData } from "./probe/index.ts";
 export { RECIPE_IDS, listRecipes, getRecipe, newSong, lintSong } from "./recipes/index.ts";
-export type { RecipeCard, RecipeRole, RecipePaletteEntry, RecipeProgression, RecipeArrangementBlock, RecipeMixTargets, NewSongOptions, LintOptions, LintResult, LintReport } from "./recipes/index.ts";
+export type { RecipeCard, RecipeRole, RecipePaletteEntry, RecipeProgression, RecipeArrangementBlock, RecipeArrangement, RecipeMixTargets, NewSongOptions, LintOptions, LintResult, LintReport } from "./recipes/index.ts";
+export { USE_CASE_IDS, USE_CASES, isUseCaseId, recommendedArrangement, applyUseCase } from "./usecases/index.ts";
+export type { UseCaseId, UseCasePreset } from "./usecases/index.ts";
 export { critique } from "./critic/index.ts";
 export type { CritiqueOptions, CriticReview, CritiqueReport } from "./critic/index.ts";
 export { analyzeAudio, analyzeFile } from "./analyze/index.ts";

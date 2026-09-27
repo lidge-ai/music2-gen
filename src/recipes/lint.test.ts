@@ -23,6 +23,15 @@ test("drill example has zero UK drill warnings and wrong-genre names tempo/backb
   assert.ok(ids(fixture("wrong-genre.song.json"), { genre: "house" }).every((id) => !id.startsWith("drill_uk/")));
 });
 
+test("UK drill moving snare: step 13 counts only without a step-5 backbeat", () => {
+  const moving = base();
+  moving.tracks[1]!.pattern = "<[~ ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~] [~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~]>";
+  assert.ok(!ids(moving).includes("drill_uk/2"));
+  const backbeat = base();
+  backbeat.tracks[1]!.pattern = "~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~";
+  assert.ok(ids(backbeat).includes("drill_uk/2"));
+});
+
 test("75% step-9 boundary and muted intro exclusion", () => {
   const song = base();
   song.sections = Array.from({ length: 4 }, (_, i) => ({ id: `s${i}`, bars: 1, role: "hook", patterns: { snare: i === 0 ? "~" : song.tracks[1]!.pattern } }));
@@ -149,6 +158,23 @@ test("trap reports hat, scale and 808 failures; adjacent verse can outrank hook"
   song.arrangement = [{ section: "verse" }, { section: "hook" }];
   const found = ids(song);
   for (const id of ["trap/2", "trap/3", "trap/4", "trap/5", "trap/6", "trap/7"]) assert.ok(found.includes(id), id);
+  assert.ok(!found.includes("generic/no_density_contrast"));
+});
+
+test("genre density findings suppress the matching generic warning only", () => {
+  const song = base(); song.genre = "house"; song.bpm = 124;
+  song.sections = [{ id: "breakdown", bars: 8, role: "breakdown", patterns: {} },
+    { id: "groove", bars: 16, role: "groove", patterns: {} }];
+  song.arrangement = [{ section: "breakdown" }, { section: "groove" }];
+  const house = ids(song);
+  assert.ok(house.includes("house/6"));
+  // house/6 is an 8-bar phrase rule; a flat groove-vs-breakdown contrast is a separate cause and stays visible.
+  assert.ok(house.includes("generic/no_density_contrast"));
+  song.genre = "techno"; song.bpm = 130;
+  const techno = ids(song);
+  assert.ok(techno.includes("techno/5"));
+  assert.ok(!techno.includes("generic/no_density_contrast"));
+  assert.ok(techno.includes("generic/clipping_risk"));
 });
 
 test("boom-bap and lo-fi report swing, melody loop, and clipping proxies", () => {

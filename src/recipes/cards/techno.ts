@@ -86,11 +86,27 @@ export const techno: RecipeCard = {
   "arrangement": [
     {
       "role": "intro",
-      "bars": 16
+      "bars": 8
     },
     {
       "role": "build",
+      "bars": 8
+    },
+    {
+      "role": "groove",
       "bars": 16
+    },
+    {
+      "role": "breakdown",
+      "bars": 2
+    },
+    {
+      "role": "groove",
+      "bars": 32
+    },
+    {
+      "role": "bridge",
+      "bars": 4
     },
     {
       "role": "groove",
@@ -98,7 +114,7 @@ export const techno: RecipeCard = {
     },
     {
       "role": "breakdown",
-      "bars": 16
+      "bars": 4
     },
     {
       "role": "groove",
@@ -247,34 +263,65 @@ export const techno: RecipeCard = {
     ],
     "sections": [
       {
-        "id": "intro",
-        "bars": 16,
+        "id": "intro_8",
+        "bars": 8,
         "role": "intro",
         "patterns": {
           "bass": null,
-          "melody": null
+          "snare": null,
+          "hats": null
         }
       },
       {
-        "id": "build",
-        "bars": 16,
+        "id": "build_8",
+        "bars": 8,
         "role": "build",
         "patterns": {
-          "melody": null
+          "melody": null,
+          "bass": null,
+          "snare": null
+        }
+      },
+      {
+        "id": "groove_16",
+        "bars": 16,
+        "role": "groove",
+        "patterns": {}
+      },
+      {
+        "id": "breakdown_2",
+        "bars": 2,
+        "role": "breakdown",
+        "patterns": {
+          "bass": null,
+          "snare": null,
+          "hats": null
         }
       },
       {
         "id": "groove",
         "bars": 32,
         "role": "groove",
-        "patterns": {}
+        "patterns": { "melody": null }
       },
       {
-        "id": "breakdown",
-        "bars": 16,
+        "id": "bridge_4",
+        "bars": 4,
+        "role": "bridge",
+        "patterns": {
+          "hats": null,
+          "bass": null,
+          "snare": null
+        }
+      },
+      {
+        "id": "breakdown_4",
+        "bars": 4,
         "role": "breakdown",
         "patterns": {
-          "melody": null
+          "bass": null,
+          "snare": null,
+          "hats": null
         }
       },
       {
@@ -289,11 +336,19 @@ export const techno: RecipeCard = {
     ],
     "arrangement": [
       {
-        "section": "intro",
+        "section": "intro_8",
         "repeats": 1
       },
       {
-        "section": "build",
+        "section": "build_8",
+        "repeats": 1
+      },
+      {
+        "section": "groove_16",
+        "repeats": 1
+      },
+      {
+        "section": "breakdown_2",
         "repeats": 1
       },
       {
@@ -301,7 +356,15 @@ export const techno: RecipeCard = {
         "repeats": 1
       },
       {
-        "section": "breakdown",
+        "section": "bridge_4",
+        "repeats": 1
+      },
+      {
+        "section": "groove",
+        "repeats": 1
+      },
+      {
+        "section": "breakdown_4",
         "repeats": 1
       },
       {
@@ -318,5 +381,14 @@ export const techno: RecipeCard = {
     "https://www.beatportal.com/articles/783088-step-by-step-guide-to-producing-techno-peak-time-driving-in-the-style-of-layton-giordani-eli-brown-and-adam-beyer",
     "https://www.attackmagazine.com/technique/deconstructed/jeff-mills-the-bells/",
     "https://www.attackmagazine.com/technique/beat-dissected/spastik-style-percussive-techno/"
-  ]
+  ],
+  "arrangements": [
+    { "id": "detroit_linear", "title": "Detroit Linear",
+      "blocks": [{ "role": "intro", "bars": 8 }, { "role": "build", "bars": 8 }, { "role": "groove", "bars": 16 }, { "role": "breakdown", "bars": 2 }, { "role": "groove", "bars": 32 }, { "role": "bridge", "bars": 4 }, { "role": "groove", "bars": 32 }, { "role": "breakdown", "bars": 4 }, { "role": "groove", "bars": 32 }, { "role": "outro", "bars": 16 }],
+      "basis": ["A.7/The Bells", "A.7/Track Sensei"] },
+    { "id": "plateau", "title": "Plateau",
+      "blocks": [{ "role": "intro", "bars": 32 }, { "role": "build", "bars": 32 }, { "role": "groove", "bars": 32 }, { "role": "breakdown", "bars": 32 }, { "role": "groove", "bars": 32 }, { "role": "outro", "bars": 32 }],
+      "basis": ["A.7/Spastik", "A.7/Track Sensei"] },
+  ],
+  "defaultArrangement": "detroit_linear"
 };

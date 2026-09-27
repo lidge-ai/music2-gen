@@ -1,5 +1,15 @@
 # Analyze — Structure & Functions
 
+Song-backed analysis uses `flow.sectionMeans` occurrence LUFS for
+`SECTION_LOUDNESS_FLAT`: loudest hook minus quietest verse must reach 1 LU
+for trap/drill/boom bap; house/techno use hook-or-groove minus breakdown
+with a 3 LU minimum. `loopSeam(pcm)` compares first/last 50 ms for endpoint
+jump (>0.1 FS), RMS step (>3 dB), and low/mid/high spectral steps (>6 dB)
+with a -60 dBFS floor. A loop warning contains all metrics in `details`.
+Both checks require a supplied song. Existing warnings precede these new
+warnings, and flow annotations are refreshed before JSON, Markdown, or PNG.
+Song-backed loop WAV alignment expects body frames, excluding `tailSeconds`.
+
 Measure audio, estimate musical features, and write deterministic analysis reports and images.
 
 ## File Tree
@@ -10,6 +20,8 @@ src/analyze/
 ├── analysis.schema.ts    # analysis JSON, beat map, metric, and artifact contracts
 ├── analyze.tool.ts       # PCM analysis and WAV/song artifact workflow
 ├── analyze.test.ts       # analysis values, warnings, files, and input validation
+├── loop-seam.tool.ts     # pure 50 ms endpoint, RMS, and three-band seam metrics
+├── loop-seam.test.ts     # activation, exact boundaries, and silent windows
 ├── fft.tool.ts           # cached Hann windows and radix-2 spectral transform
 ├── fft.test.ts           # transform and spectrum vectors
 ├── tempo.tool.ts         # onset envelopes, BPM candidates, and beat phase
@@ -72,6 +84,7 @@ drawing, and colormap are internal to this feature.
 | `export function onsetEnvelopes(pcm: StereoBuffer): OnsetEnvelopes` | `tempo.tool.ts` | Reusable normalized 100 Hz onset, hats, and low envelopes. |
 | `export function estimateTempoFromEnvelopes(pcm: StereoBuffer, envelopes: OnsetEnvelopes, meterNumerator = 4): TempoEstimate` | `tempo.tool.ts` | Reuse one spectral-flux pass without changing tempo ranking. |
 | `export function analyzeFlow(pcm: StereoBuffer, ctx: FlowContext): FlowRenderData` | `flow/flow.tool.ts` | Measure time flow with no file I/O. |
+| `export function loopSeam(pcm: StereoBuffer): LoopSeamResult` | `loop-seam.tool.ts` | Measure whole-song loop boundary discontinuity without I/O. |
 | `export function renderOverview(analysis: AnalysisJson, flow: FlowRenderData, song?: ResolvedSong, timeline?: Timeline): Buffer` | `overview/overview.tool.ts` | Encode the aligned RGB overview. |
 | `export function estimateKey(pcm: StereoBuffer): KeyEstimate` | `key.tool.ts` | Estimate chroma and major/minor key candidates. |
 | `export function measureBands(pcm: StereoBuffer): BandMetrics` | `bands.tool.ts` | Split spectral power into six named bands. |

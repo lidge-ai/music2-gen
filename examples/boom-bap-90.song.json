@@ -71,6 +71,17 @@
         "index": 0.9,
         "releaseMs": 260
       }
+    },
+    {
+      "id": "stab",
+      "kind": "notes",
+      "instrument": "pluck",
+      "velocity": 0.7,
+      "gain": -10,
+      "sends": {
+        "reverb": 0.2,
+        "delay": 0
+      }
     }
   ],
   "sections": [
@@ -87,14 +98,18 @@
     {
       "id": "verse",
       "bars": 8,
-      "role": "verse"
+      "role": "verse",
+      "patterns": {
+        "keys": "<[c4,eb4,g4 ~ ~ ~ ~ ~ ~ ~ eb4,g4,bb4 ~ ~ ~ ~ ~ ~ ~] [f3,ab3,c4 ~ ~ ~ ~ ~ ~ ~ ab3,c4,eb4 ~ ~ ~ ~ ~ ~ ~] [ab3,c4,eb4 ~ ~ ~ ~ ~ ~ ~ c4,eb4,g4 ~ ~ ~ ~ ~ ~ ~] [g3,bb3,d4 ~ ~ ~ ~ ~ ~ ~ bb3,d4,f4 ~ ~ ~ ~ ~ ~ ~]>"
+      }
     },
     {
       "id": "hook",
       "bars": 8,
       "role": "hook",
       "patterns": {
-        "keys": "<[c4,eb4,g4,bb4 ~ ~ ~ g4,bb4,d5 ~ ~ ~ eb4,g4,bb4 ~ ~ ~ d4,f4,ab4 ~ ~ ~] [f3,ab3,c4,eb4 ~ ~ ~ c4,eb4,ab4 ~ ~ ~ ab3,c4,eb4 ~ ~ ~ g3,bb3,d4 ~ ~ ~]>"
+        "keys": "<[c4,eb4,g4,bb4 ~ ~ ~ g4,bb4,d5 ~ ~ ~ eb4,g4,bb4 ~ ~ ~ d4,f4,ab4 ~ ~ ~] [f3,ab3,c4,eb4 ~ ~ ~ c4,eb4,ab4 ~ ~ ~ ab3,c4,eb4 ~ ~ ~ g3,bb3,d4 ~ ~ ~]>",
+        "stab": "<[~ ~ ~ ~ eb5 ~ ~ c5 ~ ~ ~ ~ bb4 ~ ~ ~] [~ ~ ~ ~ c5 ~ ~ ab4 ~ ~ ~ ~ g4 ~ ~ ~]>"
       }
     },
     {

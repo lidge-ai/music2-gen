@@ -76,8 +76,24 @@ export const drillNy: RecipeCard = {
       bars: 4
     },
     {
+      role: "build",
+      bars: 4
+    },
+    {
       role: "hook",
-      bars: 8
+      bars: 16
+    },
+    {
+      role: "verse",
+      bars: 16
+    },
+    {
+      role: "build",
+      bars: 4
+    },
+    {
+      role: "hook",
+      bars: 16
     },
     {
       role: "verse",
@@ -85,15 +101,7 @@ export const drillNy: RecipeCard = {
     },
     {
       role: "hook",
-      bars: 8
-    },
-    {
-      role: "verse",
       bars: 16
-    },
-    {
-      role: "hook",
-      bars: 8
     },
     {
       role: "outro",
@@ -235,8 +243,16 @@ export const drillNy: RecipeCard = {
         }
       },
       {
-        id: "hook",
-        bars: 8,
+        id: "prehook",
+        bars: 4,
+        role: "build",
+        patterns: {
+          bass: null
+        }
+      },
+      {
+        id: "hook_16",
+        bars: 16,
         role: "hook",
         patterns: {}
       },
@@ -244,7 +260,7 @@ export const drillNy: RecipeCard = {
         id: "verse",
         bars: 16,
         role: "verse",
-        patterns: {}
+        patterns: { melody: null }
       },
       {
         id: "outro",
@@ -262,7 +278,11 @@ export const drillNy: RecipeCard = {
         repeats: 1
       },
       {
-        section: "hook",
+        section: "prehook",
+        repeats: 1
+      },
+      {
+        section: "hook_16",
         repeats: 1
       },
       {
@@ -270,7 +290,11 @@ export const drillNy: RecipeCard = {
         repeats: 1
       },
       {
-        section: "hook",
+        section: "prehook",
+        repeats: 1
+      },
+      {
+        section: "hook_16",
         repeats: 1
       },
       {
@@ -278,7 +302,7 @@ export const drillNy: RecipeCard = {
         repeats: 1
       },
       {
-        section: "hook",
+        section: "hook_16",
         repeats: 1
       },
       {
@@ -291,5 +315,14 @@ export const drillNy: RecipeCard = {
     "https://www.complex.com/music/brooklyn-drill-the-new-sound-of-new-york/",
     "https://djmag.com/longreads/these-are-most-exciting-uk-drill-producers-right-now",
     "https://splice.com/blog/drum-patterns-different-genres/"
-  ]
+  ],
+  arrangements: [
+    { id: "pre_hook", title: "Pre Hook",
+      blocks: [{ role: "intro", bars: 4 }, { role: "build", bars: 4 }, { role: "hook", bars: 16 }, { role: "verse", bars: 16 }, { role: "build", bars: 4 }, { role: "hook", bars: 16 }, { role: "verse", bars: 16 }, { role: "hook", bars: 16 }, { role: "outro", bars: 4 }],
+      basis: ["A.2/Dior", "A.2/Welcome to the Party"] },
+    { id: "hook_first", title: "Hook First",
+      blocks: [{ role: "intro", bars: 4 }, { role: "hook", bars: 8 }, { role: "verse", bars: 16 }, { role: "hook", bars: 8 }, { role: "verse", bars: 16 }, { role: "hook", bars: 8 }, { role: "outro", bars: 4 }],
+      basis: ["A.2/Welcome to the Party"] },
+  ],
+  defaultArrangement: "pre_hook"
 };

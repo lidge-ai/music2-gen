@@ -2,6 +2,8 @@ import type { TimedEvent } from "../song/index.ts";
 import { GRID_TOLERANCE, is808, phase } from "./lint-geometry.tool.ts";
 import type { LintGeometry } from "./lint-geometry.tool.ts";
 import type { LintResult } from "./lint.tool.ts";
+import type { Placement } from "../song/index.ts";
+import { mean } from "./lint-geometry.tool.ts";
 
 const CLIP_RISK_SUM = 1.5;
 const ROOTS: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -60,6 +62,35 @@ export function genericRules(g: LintGeometry, unknownGenre: boolean): LintResult
   if (polyphony.length) add("808_polyphony", "tracks", polyphony.join(", "), "monophonic 808", "Set mono true; shorten/revoice overlaps.");
   const peak = clippingRisk(g);
   if (peak > CLIP_RISK_SUM) add("clipping_risk", "tracks", Number(peak.toFixed(3)), `static onset sum <= ${CLIP_RISK_SUM}`, "Lower gains/velocities, then verify with analyze.");
+  const genre = g.song.genre;
+  const dance = genre === "house" || genre === "techno";
+  const short = g.song.useCase?.startsWith("short_") ?? false;
+  const hookLimit: Record<string, number> = { trap: 9, drill_ny: 9, drill_uk: 13, house: 65, boom_bap: 41 };
+  if (genre) {
+    const limit = short ? 1 : hookLimit[genre];
+    if (limit !== undefined) {
+      const hook = g.placements.find((placement) => placement.role === "hook");
+      const drop = hook ?? (genre === "house" ? g.placements.find((placement, index) => placement.role === "groove" &&
+        g.placements.slice(0, index).some((previous) => previous.role === "breakdown")) : undefined);
+      if (drop && drop.startBar + 1 > limit) add("hook_too_late", `arrangement.${drop.section}`,
+        drop.startBar + 1, limit, "Move the first hook earlier or choose an intentional alternate arrangement.");
+    }
+    if (["trap", "drill_ny", "drill_uk", "boom_bap", "house", "techno"].includes(genre)) {
+      const count = (placement: Placement): number => {
+        const start = placement.startBar * g.timeline.secondsPerBar;
+        const end = (placement.startBar + placement.bars) * g.timeline.secondsPerBar;
+        return new Set(g.timeline.events.filter((event) => event.time >= start && event.time < end).map((event) => event.track)).size;
+      };
+      const loud = g.placements.filter((placement) => dance ? placement.role === "hook" || placement.role === "groove" : placement.role === "hook");
+      const quiet = g.placements.filter((placement) => placement.role === (dance ? "breakdown" : "verse"));
+      if (loud.length && quiet.length) {
+        const difference = mean(loud.map(count)) - mean(quiet.map(count));
+        const threshold = dance ? 2 : 1;
+        if (difference < threshold) add("no_density_contrast", "arrangement", difference, threshold,
+          "Mute a layer in verse/breakdown or restore one in hook/groove; rerender to confirm.");
+      }
+    }
+  }
   return results;
 }
 export function has808(g: LintGeometry): boolean { return g.song.tracks.some((track) => track.kind === "notes" && track.instrument === "808"); }

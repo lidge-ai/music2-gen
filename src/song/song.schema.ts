@@ -2,10 +2,16 @@ import { Music2Error } from "../shared/index.ts";
 import { noteToMidi, parseMini, parseNumber, parseSampleRef } from "../pattern/index.ts";
 import type { Node } from "../pattern/index.ts";
 
+/** Delivery presets (devlog/_plan/260928_music2_flow_practice/020_real_world_checks.md). Owned here so song validation needs no usecases import. */
+export const USE_CASE_IDS = ["short_15", "short_30", "short_60", "vo_bed", "podcast_sting", "podcast_theme", "game_loop", "type_beat", "study_lofi"] as const;
+export type UseCaseId = (typeof USE_CASE_IDS)[number];
+
 export interface Song {
   version: 1; title?: string; genre?: string; bpm: number;
   meter?: { numerator: number; denominator: 4 }; key?: string; seed?: number; swing?: number;
   sampleRate?: 44100 | 48000; tailSeconds?: number;
+  /** Whole song is a loop body: render wraps the tail onto the start and exports exactly the timeline length. */
+  loop?: boolean; useCase?: UseCaseId;
   master?: { gainDb?: number; ceilingDb?: number; targetLufs?: number };
   tracks: Track[]; sections: Section[]; arrangement: { section: string; repeats?: number }[];
 }
@@ -34,7 +40,7 @@ export interface ResolvedSection { id: string; bars: number; role: Section["role
 export interface ResolvedSong {
   version: 1; title: string; genre: string | null; bpm: number;
   meter: { numerator: number; denominator: 4 }; key: string | null; seed: number; swing: number;
-  sampleRate: 44100 | 48000; tailSeconds: number;
+  sampleRate: 44100 | 48000; tailSeconds: number; loop: boolean; useCase: UseCaseId | null;
   master: { gainDb: number; ceilingDb: number; targetLufs: number | null };
   tracks: ResolvedTrack[]; sections: ResolvedSection[];
   arrangement: { section: string; repeats: number }[];
@@ -69,6 +75,7 @@ const songProperties = {
   seed: { type: "integer", minimum: 0, maximum: 4294967295 },
   swing: { type: "number", minimum: 0.5, maximum: 0.75 },
   sampleRate: { enum: [44100, 48000] }, tailSeconds: { type: "number", minimum: 0, maximum: 10 },
+  loop: { type: "boolean" }, useCase: { enum: [...USE_CASE_IDS] },
   master: { type: "object", additionalProperties: false, properties: {
     gainDb: { type: "number", minimum: -24, maximum: 12 },
     ceilingDb: { type: "number", minimum: -6, maximum: 0 },
@@ -240,7 +247,7 @@ export function validateSong(input: unknown): ResolvedSong {
     version: 1, title: song.title ?? "untitled", genre: song.genre ?? null, bpm: song.bpm,
     meter: song.meter ?? { numerator: 4, denominator: 4 }, key: song.key ?? null,
     seed: song.seed ?? 1, swing: song.swing ?? 0.5, sampleRate: song.sampleRate ?? 44100,
-    tailSeconds: song.tailSeconds ?? 2,
+    tailSeconds: song.tailSeconds ?? 2, loop: song.loop ?? false, useCase: song.useCase ?? null,
     master: { gainDb: song.master?.gainDb ?? 0, ceilingDb: song.master?.ceilingDb ?? -1, targetLufs: song.master?.targetLufs ?? null },
     tracks: song.tracks.map((track) => ({
       id: track.id, kind: track.kind, instrument: track.instrument, pattern: track.pattern ?? null,

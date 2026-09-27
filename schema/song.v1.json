@@ -69,6 +69,22 @@
       "minimum": 0,
       "maximum": 10
     },
+    "loop": {
+      "type": "boolean"
+    },
+    "useCase": {
+      "enum": [
+        "short_15",
+        "short_30",
+        "short_60",
+        "vo_bed",
+        "podcast_sting",
+        "podcast_theme",
+        "game_loop",
+        "type_beat",
+        "study_lofi"
+      ]
+    },
     "master": {
       "type": "object",
       "additionalProperties": false,

@@ -11,7 +11,9 @@ import type { AnalysisArtifacts, AnalysisJson, AnalysisResult, AnalysisWarning, 
 import { measureBands } from "./bands.tool.ts";
 import { makeBeatMap } from "./beats.tool.ts";
 import { analyzeFlow } from "./flow/flow.tool.ts";
+import { flowAnnotations } from "./flow/annotate.tool.ts";
 import { estimateKey } from "./key.tool.ts";
+import { loopSeam } from "./loop-seam.tool.ts";
 import { renderOverview } from "./overview/overview.tool.ts";
 import { renderPianoRoll } from "./pianoroll.tool.ts";
 import { renderAnalysisReport } from "./report.tool.ts";
@@ -116,6 +118,35 @@ function warnings(a: Pick<AnalysisJson, "clippedSamples" | "targetLufs" | "integ
   return result;
 }
 
+function songWarnings(song: ResolvedSong, flow: AnalysisJson["flow"], pcm: StereoBuffer): AnalysisWarning[] {
+  const result: AnalysisWarning[] = [];
+  const dance = song.genre === "house" || song.genre === "techno";
+  if (song.genre && ["trap", "drill_ny", "drill_uk", "boom_bap", "house", "techno"].includes(song.genre)) {
+    const loudRole = dance ? "hook-or-groove" : "hook";
+    const quietRole = dance ? "breakdown" : "verse";
+    const loud = flow.sectionMeans.filter((row) => row.meanLufs !== null && Number.isFinite(row.meanLufs) && (dance ? row.role === "hook" || row.role === "groove" : row.role === "hook"))
+      .map((row) => row.meanLufs!);
+    const quiet = flow.sectionMeans.filter((row) => row.meanLufs !== null && Number.isFinite(row.meanLufs) && row.role === quietRole)
+      .map((row) => row.meanLufs!);
+    const threshold = dance ? 3 : 1;
+    if (loud.length && quiet.length) {
+      const observed = Math.max(...loud) - Math.min(...quiet);
+      if (observed < threshold) result.push({ code: "SECTION_LOUDNESS_FLAT", observed, threshold,
+        message: "Section loudness contrast is below the genre guide.",
+        fix: "Change section layers or gain, then rerender and compare ungated section means.",
+        details: { loudRole, quietRole } });
+    }
+  }
+  if (song.loop) {
+    const seam = loopSeam(pcm);
+    if (seam.threshold !== null) result.push({ code: "LOOP_SEAM_DISCONTINUITY", observed: seam.observed,
+      threshold: seam.threshold, message: "Loop seam has a click, level step, or spectral change.",
+      fix: "Shorten the final release or return harmony to bar 1; rerender and inspect the seam.",
+      details: seam.metrics });
+  }
+  return result;
+}
+
 /** Analyze finite PCM; song metadata never enters the audio estimators. */
 export function analyzeAudio(pcm: StereoBuffer, opts: { song?: ResolvedSong; timeline?: Timeline; targetLufs?: number; source?: "wav" | "song" } = {}): AnalysisResult {
   validatePcm(pcm);
@@ -137,6 +168,10 @@ export function analyzeAudio(pcm: StereoBuffer, opts: { song?: ResolvedSong; tim
     integratedLufs: loudness.integratedLufs, bands: bands.bands, keyConfidence: key.confidence }, beatMap?.source ?? null);
   const flow = analyzeFlow(pcm, { beatMap, onset, warnings: warningRows, sections, bands: bands.bands, metered,
     ...(opts.song ? { song: opts.song } : {}), ...(timeline ? { timeline } : {}) });
+  if (opts.song) warningRows.push(...songWarnings(opts.song, flow.analysis, pcm));
+  const annotations = flowAnnotations(flow.analysis, warningRows, sections, timeline);
+  flow.analysis.verdicts = annotations.verdicts;
+  flow.analysis.annotations = annotations.annotations;
   const analysis: AnalysisJson = {
     version: ANALYSIS_VERSION, source: opts.source ?? (opts.song ? "song" : "wav"), sampleRate: pcm.sampleRate,
     channels: pcm.sourceChannels, durationSeconds: pcm.left.length / pcm.sampleRate,
@@ -207,8 +242,8 @@ export async function analyzeFile(inputPath: string, opts: { songPath?: string; 
     if (opts.songPath) {
       song = await loadSong(resolve(opts.songPath));
       timeline = buildTimeline(song);
-      const expected = Math.ceil((timeline.durationSeconds + song.tailSeconds) * pcm.sampleRate);
-      if (pcm.sampleRate !== song.sampleRate || Math.abs(pcm.left.length - expected) > 1) {
+      const expected = Math.ceil((timeline.durationSeconds + (song.loop ? 0 : song.tailSeconds)) * pcm.sampleRate);
+      if (pcm.sampleRate !== song.sampleRate || (song.loop ? pcm.left.length !== expected : Math.abs(pcm.left.length - expected) > 1)) {
         throw new Music2Error("E_INPUT", "WAV does not align with the supplied song", {
           fix: "render the full song without --bars, then analyze that WAV",
           details: { expectedFrames: expected, actualFrames: pcm.left.length, sampleRate: pcm.sampleRate, songSampleRate: song.sampleRate },

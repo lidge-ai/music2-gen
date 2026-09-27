@@ -1,0 +1,188 @@
+{
+  "version": 1,
+  "title": "Lantern Loop",
+  "genre": "house",
+  "bpm": 120,
+  "meter": {
+    "numerator": 4,
+    "denominator": 4
+  },
+  "key": "A minor",
+  "seed": 12016,
+  "swing": 0.5,
+  "sampleRate": 44100,
+  "tailSeconds": 2,
+  "master": {
+    "ceilingDb": -1,
+    "targetLufs": -16
+  },
+  "tracks": [
+    {
+      "id": "kick",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "bd ~ ~ ~ bd ~ ~ ~ bd ~ ~ ~ bd ~ ~ ~",
+      "velocity": 0.8,
+      "gain": -7,
+      "pan": 0,
+      "gate": 0.9,
+      "mono": false,
+      "glide": 0,
+      "swing": false,
+      "sends": {
+        "reverb": 0,
+        "delay": 0
+      },
+      "params": {
+        "tone": 0.55,
+        "decayMs": 150,
+        "noise": 0.3
+      }
+    },
+    {
+      "id": "snare",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "~ ~ ~ ~ cp ~ ~ ~ ~ ~ ~ ~ cp ~ ~ ~",
+      "velocity": 0.8,
+      "gain": -7,
+      "pan": 0,
+      "gate": 0.9,
+      "mono": false,
+      "glide": 0,
+      "swing": false,
+      "sends": {
+        "reverb": 0,
+        "delay": 0
+      },
+      "params": {
+        "noise": 0.6
+      }
+    },
+    {
+      "id": "hats",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "~ ~ oh ~ ~ ~ oh ~ ~ ~ oh ~ ~ ~ oh ~",
+      "velocity": 0.8,
+      "gain": -7,
+      "pan": 0,
+      "gate": 0.9,
+      "mono": false,
+      "glide": 0,
+      "swing": false,
+      "sends": {
+        "reverb": 0,
+        "delay": 0
+      },
+      "params": {
+        "noise": 0.55
+      }
+    },
+    {
+      "id": "bass",
+      "kind": "notes",
+      "instrument": "bass",
+      "pattern": "<[a1 ~ ~ ~ ~ ~ e2 ~ a1 ~ ~ ~ e2 ~ ~ ~] [f1 ~ ~ ~ ~ ~ c2 ~ f1 ~ ~ ~ c2 ~ ~ ~] [g1 ~ ~ ~ ~ ~ d2 ~ g1 ~ ~ ~ d2 ~ ~ ~] [a1 ~ ~ ~ ~ ~ e2 ~ a1 ~ ~ ~ e2 ~ ~ ~]>",
+      "velocity": 0.75,
+      "gain": -10,
+      "pan": 0,
+      "gate": 0.9,
+      "mono": true,
+      "glide": 0,
+      "swing": false,
+      "sends": {
+        "reverb": 0,
+        "delay": 0
+      },
+      "params": {
+        "cutoffHz": 520,
+        "releaseMs": 90
+      }
+    },
+    {
+      "id": "melody",
+      "kind": "notes",
+      "instrument": "keys",
+      "pattern": "<[a4 ~ ~ ~ c5 ~ ~ ~ e5 ~ ~ ~ c5 ~ ~ ~] [f4 ~ ~ ~ a4 ~ ~ ~ c5 ~ ~ ~ a4 ~ ~ ~] [g4 ~ ~ ~ b4 ~ ~ ~ d5 ~ ~ ~ b4 ~ ~ ~] [e4 ~ ~ ~ g4 ~ ~ ~ a4 ~ ~ ~ a4 ~ ~ ~]>",
+      "velocity": 0.65,
+      "gain": -13,
+      "pan": 0,
+      "gate": 0.8,
+      "mono": false,
+      "glide": 0,
+      "swing": false,
+      "sends": {
+        "reverb": 0.16,
+        "delay": 0.12
+      },
+      "params": {
+        "index": 1.2
+      }
+    },
+    {
+      "id": "seam_motif",
+      "kind": "notes",
+      "instrument": "keys",
+      "pattern": "a4 ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~",
+      "gain": -33,
+      "gate": 0.5,
+      "sends": {
+        "reverb": 0.1
+      }
+    }
+  ],
+  "sections": [
+    {
+      "id": "groove_pickup",
+      "bars": 1,
+      "role": "groove",
+      "patterns": {
+        "kick": null,
+        "bass": null,
+        "melody": null
+      }
+    },
+    {
+      "id": "groove",
+      "bars": 7,
+      "role": "groove",
+      "patterns": {
+        "seam_motif": null
+      }
+    },
+    {
+      "id": "groove_soft",
+      "bars": 7,
+      "role": "groove",
+      "patterns": {
+        "melody": null,
+        "seam_motif": null
+      }
+    },
+    {
+      "id": "groove_return",
+      "bars": 1,
+      "role": "groove",
+      "patterns": {
+        "seam_motif": null
+      }
+    }
+  ],
+  "arrangement": [
+    {
+      "section": "groove_pickup"
+    },
+    {
+      "section": "groove"
+    },
+    {
+      "section": "groove_soft"
+    },
+    {
+      "section": "groove_return"
+    }
+  ],
+  "loop": true,
+  "useCase": "game_loop"
+}

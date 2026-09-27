@@ -1,0 +1,176 @@
+{
+  "version": 1,
+  "title": "Southbound Steps",
+  "genre": "drill_uk",
+  "bpm": 144,
+  "meter": {
+    "numerator": 4,
+    "denominator": 4
+  },
+  "key": "C minor",
+  "seed": 14401,
+  "swing": 0.5,
+  "sampleRate": 44100,
+  "tailSeconds": 2,
+  "master": {
+    "ceilingDb": -1,
+    "targetLufs": -14
+  },
+  "tracks": [
+    {
+      "id": "kick",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "bd ~ ~ ~ ~ ~ bd ~ ~ ~ ~ ~ ~ ~ bd ~",
+      "velocity": 0.8,
+      "gain": -7,
+      "pan": 0,
+      "gate": 0.9,
+      "mono": false,
+      "glide": 0,
+      "swing": false,
+      "sends": {
+        "reverb": 0,
+        "delay": 0
+      },
+      "params": {}
+    },
+    {
+      "id": "snare",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "<[~ ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~] [~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~]>",
+      "velocity": 0.8,
+      "gain": -7,
+      "pan": 0,
+      "gate": 0.9,
+      "mono": false,
+      "glide": 0,
+      "swing": false,
+      "sends": {
+        "reverb": 0,
+        "delay": 0
+      },
+      "params": {}
+    },
+    {
+      "id": "hats",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "hh ~ ~ hh ~ ~ hh ~ hh ~ ~ hh ~ ~ hh*2 ~",
+      "velocity": 0.8,
+      "gain": -7,
+      "pan": 0,
+      "gate": 0.9,
+      "mono": false,
+      "glide": 0,
+      "swing": false,
+      "sends": {
+        "reverb": 0,
+        "delay": 0
+      },
+      "params": {}
+    },
+    {
+      "id": "bass",
+      "kind": "notes",
+      "instrument": "808",
+      "pattern": "<[c2 ~ ~ ~ ~ ~ g1 ~ c2 ~ ~ ~ eb2 ~ ~ ~] [ab1 ~ ~ ~ ~ ~ eb2 ~ ab1 ~ ~ ~ g1 ~ ~ ~] [bb1 ~ ~ ~ ~ ~ f2 ~ bb1 ~ ~ ~ g1 ~ ~ ~] [c2 ~ ~ ~ ~ ~ g1 ~ c2 ~ ~ ~ ~ ~ ~ ~]>",
+      "velocity": 0.75,
+      "gain": -10,
+      "pan": 0,
+      "gate": 0.9,
+      "mono": true,
+      "glide": 60,
+      "swing": false,
+      "sends": {
+        "reverb": 0,
+        "delay": 0
+      },
+      "params": {}
+    },
+    {
+      "id": "melody",
+      "kind": "notes",
+      "instrument": "bell",
+      "pattern": "<[c5 ~ ~ ~ eb5 ~ ~ ~ g5 ~ ~ ~ eb5 ~ ~ ~] [ab4 ~ ~ ~ c5 ~ ~ ~ eb5 ~ ~ ~ c5 ~ ~ ~] [bb4 ~ ~ ~ d5 ~ ~ ~ f5 ~ ~ ~ d5 ~ ~ ~] [g4 ~ ~ ~ bb4 ~ ~ ~ c5 ~ ~ ~ g4 ~ ~ ~]>",
+      "velocity": 0.65,
+      "gain": -13,
+      "pan": 0,
+      "gate": 0.8,
+      "mono": false,
+      "glide": 0,
+      "swing": false,
+      "sends": {
+        "reverb": 0.25,
+        "delay": 0
+      },
+      "params": {}
+    }
+  ],
+  "sections": [
+    {
+      "id": "intro",
+      "bars": 4,
+      "role": "intro",
+      "patterns": {
+        "bass": null,
+        "melody": null
+      }
+    },
+    {
+      "id": "hook",
+      "bars": 8,
+      "role": "hook",
+      "patterns": {}
+    },
+    {
+      "id": "verse",
+      "bars": 16,
+      "role": "verse",
+      "patterns": {
+        "melody": null,
+        "bass": null
+      }
+    },
+    {
+      "id": "outro",
+      "bars": 4,
+      "role": "outro",
+      "patterns": {
+        "bass": null,
+        "melody": null
+      }
+    }
+  ],
+  "arrangement": [
+    {
+      "section": "intro",
+      "repeats": 1
+    },
+    {
+      "section": "hook",
+      "repeats": 1
+    },
+    {
+      "section": "verse",
+      "repeats": 1
+    },
+    {
+      "section": "hook",
+      "repeats": 1
+    },
+    {
+      "section": "verse",
+      "repeats": 1
+    },
+    {
+      "section": "hook",
+      "repeats": 1
+    },
+    {
+      "section": "outro",
+      "repeats": 1
+    }
+  ]
+}

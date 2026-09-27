@@ -34,6 +34,17 @@ void test("resolved defaults fill every optional output field", () => {
   assert.equal(song.tracks[1]?.mono, true);
   assert.deepEqual(song.sections[0], { id: "a", bars: 1, role: null, patterns: {} });
   assert.deepEqual(song.arrangement, [{ section: "a", repeats: 1 }]);
+  assert.equal(song.loop, false);
+  assert.equal(song.useCase, null);
+});
+
+void test("loop and use-case identity round-trip and reject invalid source types", () => {
+  const source = { ...fixture(), loop: true, useCase: "game_loop" };
+  const resolved = validateSong(source);
+  assert.equal(resolved.loop, true);
+  assert.equal(resolved.useCase, "game_loop");
+  assert.ok(issues({ ...source, loop: "true" }).some((issue) => issue.path === "$.loop"));
+  assert.ok(issues({ ...source, useCase: "unknown" }).some((issue) => issue.path === "$.useCase"));
 });
 
 void test("all schema issues are collected, including unknown keys at nested levels", () => {
@@ -80,7 +91,7 @@ void test("drum patterns reject notes and note patterns reject drum names", () =
 void test("each published top-level property is accepted by validation", () => {
   const song = fixture();
   Object.assign(song, { genre: "test", meter: { numerator: 4, denominator: 4 }, seed: 0, swing: 0.5,
-    sampleRate: 48000, tailSeconds: 0, master: { gainDb: 0, ceilingDb: -1, targetLufs: -14 } });
+    sampleRate: 48000, tailSeconds: 0, loop: true, useCase: "game_loop", master: { gainDb: 0, ceilingDb: -1, targetLufs: -14 } });
   assert.deepEqual(Object.keys(SONG_JSON_SCHEMA.properties).sort(), Object.keys(song).sort());
   assert.equal(validateSong(song).sampleRate, 48000);
 });

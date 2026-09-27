@@ -39,6 +39,11 @@ export function has(g: LintGeometry, bar: number, predicate: (event: TimedEvent)
 }
 export function kick(g: LintGeometry, bar: number): boolean { return has(g, bar, (e) => isKick(g, e)); }
 export function snare9(g: LintGeometry, bar: number): boolean { return has(g, bar, (e) => isBackbeat(g, e) && at(8, e)); }
+/** UK drill moving snare: step 9, or step 13 without a step-5 backbeat (Attack/NI drill tutorials); a 5+13 backbeat still fails. */
+export function snare9or13(g: LintGeometry, bar: number): boolean {
+  if (snare9(g, bar)) return true;
+  return has(g, bar, (e) => isBackbeat(g, e) && at(12, e)) && !has(g, bar, (e) => isBackbeat(g, e) && at(4, e));
+}
 export function snare5and13(g: LintGeometry, bar: number): boolean {
   return [4, 12].every((step) => has(g, bar, (e) => isBackbeat(g, e) && at(step, e)));
 }

@@ -57,3 +57,25 @@ test("invalid BPM, key mode, seed and title reject as input errors", () => {
   for (const options of cases) assert.throws(() => newSong(options),
     (error: unknown) => error instanceof Music2Error && error.code === "E_INPUT" && error.exit === 2);
 });
+
+test("named variants rebuild referenced sections from one block list", () => {
+  const base = newSong({ genre: "trap", seed: 7 });
+  assert.deepEqual(base, newSong({ genre: "trap", arrangement: "hook_first", seed: 7 }));
+  for (const [genre, variant, id, bars] of [
+    ["trap", "long_hook", "hook_16", 104],
+    ["boom_bap", "verse_led", "verse_24", 88],
+    ["drill_ny", "pre_hook", "prehook", 96],
+    ["house", "extended", "hook_32", 224],
+  ] as const) {
+    const song = newSong({ genre, arrangement: variant, seed: 7 });
+    assert.deepEqual(song, newSong({ genre, arrangement: variant, seed: 7 }));
+    assert.ok(song.sections.some((section) => section.id === id));
+    assert.equal(buildTimeline(validateSong(song)).bars, bars);
+    assert.ok(song.arrangement.every((entry) => song.sections.some((section) => section.id === entry.section)));
+  }
+  const ny = newSong({ genre: "drill_ny" });
+  assert.equal(ny.sections.find((section) => section.id === "prehook")?.role, "build");
+  assert.equal(ny.sections.find((section) => section.id === "prehook")?.patterns?.bass, null);
+  assert.throws(() => newSong({ genre: "trap", arrangement: "bad" }),
+    (error: unknown) => error instanceof Music2Error && error.exit === 2 && error.message.includes("hook_first"));
+});

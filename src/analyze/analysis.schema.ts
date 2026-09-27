@@ -40,8 +40,13 @@ export interface SectionMetrics {
 }
 export interface TrackDensity { id: string; kind: Track["kind"]; eventCount: number; eventsPerBar: number; eventsPerSecond: number }
 export interface AnalysisWarning {
-  code: "CLIPPING" | "LUFS_OFF_TARGET" | "LOW_END_DOMINANCE" | "EMPTY_HIGH_BAND" | "NO_BEATS" | "METER_ASSUMED" | "KEY_UNCERTAIN";
+  code: "CLIPPING" | "LUFS_OFF_TARGET" | "LOW_END_DOMINANCE" | "EMPTY_HIGH_BAND" | "NO_BEATS" | "METER_ASSUMED" | "KEY_UNCERTAIN" | "SECTION_LOUDNESS_FLAT" | "LOOP_SEAM_DISCONTINUITY";
   observed: number | null; threshold: number | null; message: string;
+  fix?: string;
+  details?: { loudRole: string; quietRole: string } | {
+    jumpFs: number; rmsFirstDbfs: number | null; rmsLastDbfs: number | null;
+    rmsStepDb: number | null; bandStepDb: { low: number | null; mid: number | null; high: number | null };
+  };
 }
 export interface AnalysisJson {
   version: 1; source: "wav" | "song"; sampleRate: number; channels: number;

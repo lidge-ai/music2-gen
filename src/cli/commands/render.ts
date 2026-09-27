@@ -72,6 +72,7 @@ export const render: CommandSpec = {
     if (extname(wav).toLowerCase() !== ".wav") throw inputError("out must end in .wav");
     const stemDir = absolute(values["stems"], cwd, "stems");
     const song = await loadSong(songPath);
+    if (song.loop && range) throw inputError("--bars cannot render part of a loop song");
     const mp3 = values["mp3"] === true ? wav.slice(0, -4) + ".mp3" : undefined;
     const ogg = values["ogg"] === true ? wav.slice(0, -4) + ".ogg" : undefined;
     const stemPaths = stemDir ? song.tracks.map((track) => join(stemDir, `${track.id}.wav`)) : [];
@@ -129,6 +130,7 @@ export const render: CommandSpec = {
       peakDbfs: Number.isFinite(result.peakDbfs) ? result.peakDbfs : null,
       truePeakDbtp: Number.isFinite(result.truePeakDbtp) ? result.truePeakDbtp : null,
       ceilingDb: result.ceilingDb, events: result.events,
+      ...(result.loop ? { loopStartSample: result.loop.startSample, loopEndSample: result.loop.endSample } : {}),
     };
     return { command: "render", data: { ...data }, artifacts: outputPaths };
   },

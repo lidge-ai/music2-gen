@@ -7,7 +7,7 @@ export const lofiHiphop: RecipeCard = {
   "bpm": {
     "min": 60,
     "default": 75,
-    "max": 90
+    "max": 95
   },
   "meter": {
     "numerator": 4,
@@ -266,7 +266,9 @@ export const lofiHiphop: RecipeCard = {
         "bars": 8,
         "role": "breakdown",
         "patterns": {
-          "melody": null
+          "melody": null,
+          "kick": null,
+          "bass": null
         }
       },
       {
@@ -306,5 +308,14 @@ export const lofiHiphop: RecipeCard = {
     "https://blog.native-instruments.com/lo-fi-hip-hop-beats/",
     "https://splice.com/blog/lo-fi-beat-origin-sound/",
     "https://splice.com/blog/lo-fi-chord-progressions/"
-  ]
+  ],
+  "arrangements": [
+    { "id": "default", "title": "Default",
+      "blocks": [{ "role": "intro", "bars": 4 }, { "role": "groove", "bars": 16 }, { "role": "breakdown", "bars": 8 }, { "role": "groove", "bars": 16 }, { "role": "outro", "bars": 4 }],
+      "basis": ["A.5/Don't Cry", "A.5/Lunacy"] },
+    { "id": "vignette", "title": "Vignette",
+      "blocks": [{ "role": "intro", "bars": 2 }, { "role": "groove", "bars": 16 }, { "role": "breakdown", "bars": 2 }, { "role": "groove", "bars": 16 }, { "role": "outro", "bars": 2 }],
+      "basis": ["A.5/Time: The Donut of the Heart", "A.5/NI lo-fi guide"] },
+  ],
+  "defaultArrangement": "default"
 };

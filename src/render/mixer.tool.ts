@@ -227,12 +227,14 @@ function masterAudio(audio: StereoBuffer, song: ResolvedSong, mastering: RenderO
 
 export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath: string,
   options: RenderOptions = {}): Promise<RenderResult> {
+  if (song.loop && options.bars) throw new Music2Error("E_INPUT", "--bars cannot render part of a loop song");
   const start = options.bars?.start ?? 0;
   const end = options.bars?.end ?? timeline.bars;
   if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || start >= end || end > timeline.bars) {
     throw new Music2Error("E_INPUT", `bar range must be within 0:${timeline.bars}`);
   }
   const bars = end - start;
+  const bodyFrames = Math.ceil(bars * timeline.secondsPerBar * song.sampleRate);
   const frames = Math.ceil((bars * timeline.secondsPerBar + song.tailSeconds) * song.sampleRate);
   if (!Number.isSafeInteger(frames) || frames < 0 || frames * 6 + 36 > RIFF_LIMIT) {
     throw renderError("render exceeds 24-bit RIFF size limit");
@@ -269,8 +271,20 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
     const wet = applyDelay(delaySend, song.bpm);
     for (let i = 0; i < frames; i++) { audio.left[i]! += wet.left[i]!; audio.right[i]! += wet.right[i]!; }
   }
-  const levels = masterAudio(audio, song, options.mastering);
-  return { audio, stems, bars, durationSeconds: frames / song.sampleRate,
+  let output = audio;
+  if (song.loop) {
+    for (let i = bodyFrames; i < frames; i++) {
+      const at = (i - bodyFrames) % bodyFrames;
+      audio.left[at]! += audio.left[i]!;
+      audio.right[at]! += audio.right[i]!;
+    }
+    output = { ...audio, left: audio.left.subarray(0, bodyFrames), right: audio.right.subarray(0, bodyFrames) };
+    for (const stem of stems) stem.audio = { ...stem.audio,
+      left: stem.audio.left.subarray(0, bodyFrames), right: stem.audio.right.subarray(0, bodyFrames) };
+  }
+  const levels = masterAudio(output, song, options.mastering);
+  return { audio: output, stems, bars, durationSeconds: output.left.length / song.sampleRate,
     peakDbfs: levels.peakDbfs, truePeakDbtp: levels.truePeakDbtp,
-    ceilingDb: song.master.ceilingDb, events: selected.reduce((sum, group) => sum + group.length, 0) };
+    ceilingDb: song.master.ceilingDb, events: selected.reduce((sum, group) => sum + group.length, 0),
+    loop: song.loop ? { startSample: 0, endSample: bodyFrames } : null };
 }

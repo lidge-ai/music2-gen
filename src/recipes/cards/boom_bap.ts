@@ -77,11 +77,19 @@ export const boomBap: RecipeCard = {
     },
     {
       role: "verse",
-      bars: 16
+      bars: 24
     },
     {
       role: "hook",
-      bars: 8
+      bars: 4
+    },
+    {
+      role: "verse",
+      bars: 24
+    },
+    {
+      role: "hook",
+      bars: 4
     },
     {
       role: "verse",
@@ -133,7 +141,7 @@ export const boomBap: RecipeCard = {
         id: "kick",
         kind: "drums",
         instrument: "drums",
-        pattern: "bd ~ ~ ~ ~ ~ bd ~ bd ~ ~ ~ ~ ~ ~ ~",
+        pattern: "bd ~ ~ ~ ~ ~ ~ ~ ~ ~ bd ~ ~ ~ ~ ~",
         velocity: 0.8,
         gain: 0,
         pan: 0,
@@ -231,10 +239,22 @@ export const boomBap: RecipeCard = {
         }
       },
       {
+        id: "verse_24",
+        bars: 24,
+        role: "verse",
+        patterns: { melody: null }
+      },
+      {
+        id: "hook_4",
+        bars: 4,
+        role: "hook",
+        patterns: {}
+      },
+      {
         id: "verse",
         bars: 16,
         role: "verse",
-        patterns: {}
+        patterns: { melody: null }
       },
       {
         id: "hook",
@@ -258,11 +278,19 @@ export const boomBap: RecipeCard = {
         repeats: 1
       },
       {
-        section: "verse",
+        section: "verse_24",
         repeats: 1
       },
       {
-        section: "hook",
+        section: "hook_4",
+        repeats: 1
+      },
+      {
+        section: "verse_24",
+        repeats: 1
+      },
+      {
+        section: "hook_4",
         repeats: 1
       },
       {
@@ -282,5 +310,14 @@ export const boomBap: RecipeCard = {
   sources: [
     "https://blog.native-instruments.com/what-is-boom-bap/",
     "https://www.attackmagazine.com/technique/beat-dissected/90s-boom-bap-hip-hop/"
-  ]
+  ],
+  arrangements: [
+    { id: "verse_led", title: "Verse Led",
+      blocks: [{ role: "intro", bars: 4 }, { role: "verse", bars: 24 }, { role: "hook", bars: 4 }, { role: "verse", bars: 24 }, { role: "hook", bars: 4 }, { role: "verse", bars: 16 }, { role: "hook", bars: 8 }, { role: "outro", bars: 4 }],
+      basis: ["A.0/N.Y. State of Mind", "A.4/C.R.E.A.M.", "A.4/Shook Ones Pt. II"] },
+    { id: "hook_first", title: "Hook First",
+      blocks: [{ role: "intro", bars: 2 }, { role: "hook", bars: 4 }, { role: "verse", bars: 16 }, { role: "hook", bars: 4 }, { role: "verse", bars: 16 }, { role: "hook", bars: 4 }, { role: "verse", bars: 16 }, { role: "hook", bars: 4 }, { role: "outro", bars: 4 }],
+      basis: ["A.4/Mass Appeal"] },
+  ],
+  defaultArrangement: "verse_led"
 };

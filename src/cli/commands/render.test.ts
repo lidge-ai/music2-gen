@@ -102,3 +102,23 @@ test("targetLufs selects native LUFS mastering without ffmpeg", async () => {
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("whole-song loop reports exclusive sample points and rejects bar crops", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-loop-command-"));
+  try {
+    const path = join(dir, "loop.song.json");
+    const wav = join(dir, "loop.wav");
+    await writeFile(path, JSON.stringify({ version: 1, bpm: 120, sampleRate: 44100, tailSeconds: 2, loop: true,
+      tracks: [{ id: "bell", kind: "notes", instrument: "bell", pattern: "c4 ~ ~ ~",
+        sends: { reverb: .5 } }],
+      sections: [{ id: "body", role: "groove", bars: 16 }], arrangement: [{ section: "body" }] }));
+    const context = { args: [path], values: { out: wav }, json: true, cwd: dir, stderr: process.stderr };
+    const result = await render.run(context);
+    assert.equal(result.data["loopStartSample"], 0);
+    assert.equal(result.data["loopEndSample"], 1_411_200);
+    assert.equal(result.data["frames"], 1_411_200);
+    assert.equal((await readWav(wav)).left.length, 1_411_200);
+    await assert.rejects(render.run({ ...context, values: { out: join(dir, "crop.wav"), bars: "0:8" } }),
+      (error: unknown) => error instanceof Music2Error && error.code === "E_INPUT" && error.exit === 2);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});

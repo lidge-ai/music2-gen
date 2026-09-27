@@ -89,7 +89,10 @@
       "bars": 8,
       "role": "verse",
       "patterns": {
-        "pad": null
+        "pad": null,
+        "pluck": null,
+        "hats": "hh ~ ~ ~ hh ~ ~ ~ hh ~ ~ ~ hh ~ ~ ~",
+        "sub": "<[a1 ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~] [f1 ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~] [c2 ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~] [g1 ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~]>"
       }
     },
     {
@@ -114,10 +117,10 @@
       "section": "intro"
     },
     {
-      "section": "verse"
+      "section": "hook"
     },
     {
-      "section": "hook"
+      "section": "verse"
     },
     {
       "section": "outro"

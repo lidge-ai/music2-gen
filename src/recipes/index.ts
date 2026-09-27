@@ -1,4 +1,4 @@
-export type { RecipeRole, RecipePaletteEntry, RecipeProgression, RecipeArrangementBlock, RecipeMixTargets, RecipeCard, RecipeId } from "./recipe.schema.ts";
+export type { RecipeRole, RecipePaletteEntry, RecipeProgression, RecipeArrangementBlock, RecipeArrangement, RecipeMixTargets, RecipeCard, RecipeId } from "./recipe.schema.ts";
 export { RECIPE_IDS, isRecipeId } from "./recipe.schema.ts";
 export { listRecipes, getRecipe } from "./recipes.tool.ts";
 export { newSong } from "./new.tool.ts";

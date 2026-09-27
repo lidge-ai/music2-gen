@@ -4,8 +4,12 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 import { inflateSync } from "node:zlib";
+import { writeWav } from "../audio-io/index.ts";
 import type { StereoBuffer } from "../audio-io/index.ts";
+import { renderSong } from "../render/index.ts";
 import { loadSong } from "../song/index.ts";
+import { validateSong } from "../song/index.ts";
+import type { Song } from "../song/index.ts";
 import { analyzeAudio, analyzeFile } from "./analyze.tool.ts";
 
 const drill = resolve("examples/drill-140.song.json");
@@ -145,5 +149,72 @@ test("output file collision and inaccessible directory fail before replacing inp
     const blocker = join(dir, "blocker");
     await writeFile(blocker, "file");
     await assert.rejects(analyzeFile(minimal, { outDir: blocker }), { code: "E_ACCESS" });
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+function contrast(gap: number, genre: string, loop = false): ReturnType<typeof analyzeAudio> {
+  const dance = genre === "house" || genre === "techno";
+  const quietRole = dance ? "breakdown" : "verse";
+  const loudRole = dance ? "groove" : "hook";
+  const song: Song = { version: 1, bpm: 120, sampleRate: 44100, tailSeconds: 0, genre, loop,
+    tracks: [{ id: "tone", kind: "notes", instrument: "lead", pattern: "c4" }],
+    sections: [{ id: "quiet", role: quietRole, bars: 1 }, { id: "loud", role: loudRole, bars: 1 }],
+    arrangement: [{ section: "quiet" }, { section: "loud" }] };
+  const rate = 44100, barFrames = rate * 2;
+  const left = Float32Array.from({ length: barFrames * 2 }, (_, i) =>
+    .05 * (i >= barFrames ? 10 ** (gap / 20) : 1) * (loop && i >= barFrames * 2 - rate * .05 ? 2 : 1)
+    * Math.sin(2 * Math.PI * 1000 * i / rate));
+  return analyzeAudio({ sampleRate: rate, left, right: left, sourceChannels: 1 }, { song: validateSong(song) });
+}
+
+test("song-backed section warning uses ungated means at strict genre limits", () => {
+  for (const [genre, threshold] of [["trap", 1], ["house", 3]] as const) {
+    const fire = contrast(threshold - .01, genre);
+    const warning = fire.analysis.warnings.find((row) => row.code === "SECTION_LOUDNESS_FLAT");
+    assert.ok(warning);
+    assert.ok(warning.observed! < threshold);
+    assert.equal(warning.threshold, threshold);
+    assert.ok(fire.reportMarkdown.includes(warning.fix!));
+    assert.equal(contrast(threshold, genre).analysis.warnings.some((row) => row.code === "SECTION_LOUDNESS_FLAT"), false);
+  }
+  assert.equal(analyzeAudio(sine(4)).analysis.warnings.some((row) => row.code === "SECTION_LOUDNESS_FLAT"), false);
+  const song = validateSong({ version: 1, bpm: 120, genre: "trap",
+    tracks: [{ id: "tone", kind: "notes", instrument: "lead", pattern: "~" }],
+    sections: [{ id: "verse", role: "verse", bars: 1 }, { id: "hook", role: "hook", bars: 1 }],
+    arrangement: [{ section: "verse" }, { section: "hook" }] });
+  const silent = new Float32Array(44100 * 4);
+  assert.equal(analyzeAudio({ sampleRate: 44100, left: silent, right: silent, sourceChannels: 1 }, { song })
+    .analysis.warnings.some((row) => row.code === "SECTION_LOUDNESS_FLAT"), false);
+});
+
+test("loop seam warning follows section warning and refreshes the overview verdict", () => {
+  const result = contrast(0, "trap", true);
+  const codes = result.analysis.warnings.map((row) => row.code);
+  assert.ok(codes.includes("SECTION_LOUDNESS_FLAT"));
+  assert.ok(codes.includes("LOOP_SEAM_DISCONTINUITY"));
+  assert.ok(codes.indexOf("SECTION_LOUDNESS_FLAT") < codes.indexOf("LOOP_SEAM_DISCONTINUITY"));
+  assert.equal(result.analysis.flow.verdicts[0].split(" ")[0], codes[0]);
+  assert.ok(result.reportMarkdown.includes(result.analysis.flow.verdicts[0]));
+  const detail = result.analysis.warnings.find((row) => row.code === "LOOP_SEAM_DISCONTINUITY")!.details;
+  assert.ok(detail && "jumpFs" in detail);
+});
+
+test("song-backed loop WAV alignment uses the body frame count", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-loop-analysis-"));
+  try {
+    const path = join(dir, "loop.song.json");
+    const wav = join(dir, "loop.wav");
+    const source: Song = { version: 1, bpm: 120, sampleRate: 44100, tailSeconds: 1, loop: true,
+      tracks: [{ id: "hit", kind: "notes", instrument: "bell", pattern: "c4 ~ ~ ~" }],
+      sections: [{ id: "body", role: "groove", bars: 1 }], arrangement: [{ section: "body" }] };
+    await writeFile(path, JSON.stringify(source));
+    const rendered = await renderSong(validateSong(source), path);
+    await writeWav(wav, rendered.audio, { bits: 24, seed: 1 });
+    const artifacts = await analyzeFile(wav, { songPath: path, outDir: join(dir, "out") });
+    assert.equal(artifacts.analysisJson.endsWith("analysis.json"), true);
+    const extra = { ...rendered.audio, left: new Float32Array(rendered.audio.left.length + 88200),
+      right: new Float32Array(rendered.audio.right.length + 88200) };
+    await writeWav(wav, extra, { bits: 24, seed: 1 });
+    await assert.rejects(analyzeFile(wav, { songPath: path, outDir: join(dir, "too-long") }), { code: "E_INPUT" });
   } finally { await rm(dir, { recursive: true, force: true }); }
 });

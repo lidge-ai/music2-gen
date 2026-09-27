@@ -39,12 +39,15 @@ function railSong(canvas: RgbCanvas, input: OverviewInput): void {
     const row = input.analysis.sections[i];
     const id = `${placement.section.toUpperCase()}#${placement.occurrence}`;
     const role = placement.role && placement.role.toUpperCase() !== placement.section.toUpperCase() ? `${placement.role.toUpperCase()} ` : "";
-    const tag = `${String(i + 1).padStart(2, "0")} ${role}${id}`;
+    // The printed ID is exactly the occurrence ID; a role that differs from the section ID goes on line two.
+    const tag = `${String(i + 1).padStart(2, "0")} ${id}`;
     const position = `B${String(placement.startBar + 1).padStart(2, "0")} ${clock(placement.startBar * timeline.secondsPerBar)}`;
     const first = `${tag} ${position}`;
-    const second = row?.integratedLufs === null || row === undefined ? "SECTION LUFS N/A" :
-      row === loudest ? `LUFS ${number(row.integratedLufs)} LOUDEST` : `SECTION LUFS ${number(row.integratedLufs)}`;
     const railWidth = RAIL_RIGHT - RAIL_LEFT;
+    const fit = (...options: string[]): string => options.find((option) => measureText(option, 3) <= railWidth) ?? options[options.length - 1]!;
+    const value = number(row?.integratedLufs ?? null);
+    const second = row === undefined || row.integratedLufs === null ? fit(`${role}LUFS N/A`, "SECTION LUFS N/A") :
+      row === loudest ? fit(`${role}${value} LOUDEST`, `LUFS ${value} LOUDEST`) : fit(`${role}LUFS ${value}`, `SECTION LUFS ${value}`);
     const compact = measureText(first, 3) > railWidth;
     const lines = compact ? wrapText(tag, railWidth, 3) : [first];
     boundedText(canvas, RAIL_LEFT, top + 1, lines[0]!, railWidth, placement.role === "hook" ? C.orange : C.primary);
@@ -81,8 +84,7 @@ export function drawSections(canvas: RgbCanvas, input: OverviewInput): void {
       fillRect(canvas, x0 + 2, 220, Math.max(0, x1 - x0 - 3), 50, [25, 43, 57]);
       if (placement.role === "hook") outlinedRect(canvas, x0 + 1, 218, Math.max(1, x1 - x0 - 1), 54, C.orange, 2);
       const id = `${placement.section.toUpperCase()}#${placement.occurrence}`;
-      const role = placement.role && placement.role.toUpperCase() !== placement.section.toUpperCase() ? `${placement.role.toUpperCase()} ` : "";
-      const blockLabel = `${String(i + 1).padStart(2, "0")} ${role}${id}`;
+      const blockLabel = `${String(i + 1).padStart(2, "0")} ${id}`;
       const blockWidth = Math.max(0, x1 - x0 - 12);
       // Narrow blocks drop to 2x text before truncating, so the occurrence suffix stays readable.
       const blockScale = measureText(blockLabel, 3) <= blockWidth ? 3 : 2;

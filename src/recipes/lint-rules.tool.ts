@@ -1,5 +1,5 @@
 import type { RecipeId } from "./recipe.schema.ts";
-import { barsOf, comparableBlocks, densityChange, has, is808, isHat, kick, snare5and13, snare9, transitions } from "./lint-geometry.tool.ts";
+import { barsOf, comparableBlocks, densityChange, has, is808, isHat, kick, snare5and13, snare9, snare9or13, transitions } from "./lint-geometry.tool.ts";
 import type { LintGeometry } from "./lint-geometry.tool.ts";
 import { has808, outsideKey } from "./lint-generic.tool.ts";
 import { meanActive, melodyId, motifIn, muteChange, phraseChange, sectionMotifChange } from "./lint-rules-phrase.tool.ts";
@@ -21,10 +21,11 @@ function addRatio(out: LintResult[], id: string, g: LintGeometry, bars: number[]
 function bpm(out: LintResult[], genre: string, value: number, min: number, max: number): void {
   if (value < min || value > max) out.push(warning(`${genre}/1`, "bpm", value, `${min}..${max}`, `Set bpm between ${min} and ${max}.`));
 }
-function beat(out: LintResult[], genre: string, g: LintGeometry, threshold: number, which: "9" | "5and13"): void {
+function beat(out: LintResult[], genre: string, g: LintGeometry, threshold: number, which: "9" | "9or13" | "5and13"): void {
   addRatio(out, `${genre}/2`, g, g.full, threshold,
-    (bar) => which === "9" ? snare9(g, bar) : snare5and13(g, bar),
-    which === "9" ? "Place a snare/clap on step 9 in full-drum bars." : "Place snares on steps 5 and 13 in full-drum bars.");
+    (bar) => which === "9" ? snare9(g, bar) : which === "9or13" ? snare9or13(g, bar) : snare5and13(g, bar),
+    which === "9" ? "Place a snare/clap on step 9 in full-drum bars." : which === "9or13" ?
+      "Place a snare/clap on step 9 (or step 13 in alternate bars) in full-drum bars." : "Place snares on steps 5 and 13 in full-drum bars.");
 }
 function poly(out: LintResult[], genre: string, generic: LintResult[], g: LintGeometry, number: number): void {
   if (!has808(g) || generic.some((result) => result.id === "generic/808_polyphony"))
@@ -57,7 +58,7 @@ export function genreRules(g: LintGeometry, genre: RecipeId, generic: LintResult
   const out: LintResult[] = [];
   const melody = melodyId(g);
   if (genre === "drill_uk") {
-    bpm(out, genre, g.song.bpm, 138, 145); beat(out, genre, g, .75, "9");
+    bpm(out, genre, g.song.bpm, 138, 146); beat(out, genre, g, .75, "9or13");
     addRatio(out, "drill_uk/3", g, g.full, .75, (bar) => kick(g, bar), "Add a kick onset to full-drum bars.");
     if (g.full.length && shortHats(g) < Math.ceil(g.full.length / 2)) out.push(warning("drill_uk/4", trackPath(g, (id) => g.timeline.events.some((event) => event.track === id && isHat(g, event)), "hats"), shortHats(g), `>=${Math.ceil(g.full.length / 2)} short hat events`, "Add brief hat subdivisions in full-drum bars."));
     poly(out, genre, generic, g, 5);
@@ -92,7 +93,7 @@ export function genreRules(g: LintGeometry, genre: RecipeId, generic: LintResult
     if ([2, 4].some((size) => comparableBlocks(g.full, size)) && !motifIn(g, g.full, [2, 4], melody)) out.push(warning("boom_bap/6", `tracks.${melody ?? "melody"}`, "no repeated 2/4-bar melody", "repeated melodic phrase", "Repeat a two- or four-bar melody phrase."));
     if (!muteChange(g) && !sectionMotifChange(g, melody)) out.push(warning("boom_bap/7", "arrangement", "no mute or melody change", "section variation", "Mute a layer or change the melody between sections."));
   } else {
-    bpm(out, genre, g.song.bpm, 60, 90); beat(out, genre, g, .70, "5and13"); swingRule(out, genre, g);
+    bpm(out, genre, g.song.bpm, 60, 95); beat(out, genre, g, .70, "5and13"); swingRule(out, genre, g);
     if ([2, 4, 8].some((size) => comparableBlocks(g.full, size)) && !motifIn(g, g.full, [2, 4, 8], melody)) out.push(warning("lofi_hiphop/4", `tracks.${melody ?? "melody"}`, "no repeated 2/4/8-bar melody", "repeated harmonic loop proxy", "Repeat a short melodic loop."));
     if (g.full.length && rollBars(g) / g.full.length > .5) out.push(warning("lofi_hiphop/5", trackPath(g, (id) => g.timeline.events.some((event) => event.track === id && isHat(g, event)), "hats"), pct(rollBars(g), g.full.length), "<=50.0% full bars with 32nd hats", "Reduce recurring fast hat rolls."));
     if (generic.some((r) => r.id === "generic/clipping_risk")) out.push(warning("lofi_hiphop/6", "arrangement", "static clipping risk", "onset sum <=1.5", "Lower gains or velocities and inspect rendered audio."));

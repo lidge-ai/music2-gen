@@ -76,6 +76,10 @@ export const trap: RecipeCard = {
       bars: 4
     },
     {
+      role: "hook",
+      bars: 8
+    },
+    {
       role: "verse",
       bars: 16
     },
@@ -169,7 +173,7 @@ export const trap: RecipeCard = {
         id: "hats",
         kind: "drums",
         instrument: "drums",
-        pattern: "hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh ~",
+        pattern: "hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh*2 ~",
         velocity: 0.8,
         gain: 0,
         pan: 0,
@@ -231,16 +235,16 @@ export const trap: RecipeCard = {
         }
       },
       {
-        id: "verse",
-        bars: 16,
-        role: "verse",
-        patterns: {}
-      },
-      {
         id: "hook",
         bars: 8,
         role: "hook",
         patterns: {}
+      },
+      {
+        id: "verse",
+        bars: 16,
+        role: "verse",
+        patterns: { melody: null }
       },
       {
         id: "outro",
@@ -255,6 +259,10 @@ export const trap: RecipeCard = {
     arrangement: [
       {
         section: "intro",
+        repeats: 1
+      },
+      {
+        section: "hook",
         repeats: 1
       },
       {
@@ -282,5 +290,17 @@ export const trap: RecipeCard = {
   sources: [
     "https://splice.com/blog/how-to-make-trap-beat-fl-studio/",
     "https://splice.com/blog/the-sound-atl-trap/"
-  ]
+  ],
+  arrangements: [
+    { id: "hook_first", title: "Hook First",
+      blocks: [{ role: "intro", bars: 4 }, { role: "hook", bars: 8 }, { role: "verse", bars: 16 }, { role: "hook", bars: 8 }, { role: "verse", bars: 16 }, { role: "hook", bars: 8 }, { role: "outro", bars: 4 }],
+      basis: ["A.0/Mask Off", "A.3/Black Beatles", "A.3/Bad and Boujee"] },
+    { id: "long_hook", title: "Long Hook",
+      blocks: [{ role: "intro", bars: 4 }, { role: "hook", bars: 16 }, { role: "verse", bars: 24 }, { role: "hook", bars: 16 }, { role: "verse", bars: 24 }, { role: "hook", bars: 16 }, { role: "outro", bars: 4 }],
+      basis: ["A.3/Mask Off"] },
+    { id: "interlude", title: "Interlude",
+      blocks: [{ role: "intro", bars: 4 }, { role: "hook", bars: 8 }, { role: "verse", bars: 16 }, { role: "hook", bars: 8 }, { role: "breakdown", bars: 4 }, { role: "verse", bars: 16 }, { role: "hook", bars: 8 }, { role: "outro", bars: 4 }],
+      basis: ["A.3/Bad and Boujee"] },
+  ],
+  defaultArrangement: "hook_first"
 };

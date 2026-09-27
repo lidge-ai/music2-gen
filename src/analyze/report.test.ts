@@ -19,8 +19,19 @@ test("report names unavailable measurements and avoids claiming a WAV transcript
   const report = renderAnalysisReport(analysis);
   assert.match(report, /LRA: n\/a provisional/);
   assert.match(report, /No song timeline supplied/);
-  assert.match(report, /NO_BEATS: No beats/);
+  assert.match(report, /\| NO_BEATS \| n\/a \| n\/a \| No beats \|/);
   assert.match(report, /## Flow\nAxis: 0\.5 s/);
   assert.match(report, /- overview\.png/);
   assert.doesNotMatch(report, /pianoroll\.png/);
+  analysis.flow.sectionMeans = [{ id: "hook#0", role: "hook", startBar: 9, bars: 8,
+    startSeconds: 16, endSeconds: 32, meanLufs: -16 }];
+  analysis.flow.verdicts = ["SECTION_LOUDNESS_FLAT 0.9", "SECTION GAP N/A", "FIRST HOOK HOOK#0 AT B09"];
+  analysis.warnings.push({ code: "SECTION_LOUDNESS_FLAT", observed: .9, threshold: 1,
+    message: "Section loudness contrast is below the genre guide.",
+    fix: "Change section layers or gain, then rerender and compare ungated section means." });
+  const updated = renderAnalysisReport(analysis);
+  assert.ok(updated.indexOf("| NO_BEATS |") < updated.indexOf("| SECTION_LOUDNESS_FLAT |"));
+  assert.match(updated, /hook#0 \(hook\) B9–B16, 16\.00–32\.00s: -16\.00 LUFS/);
+  assert.ok(updated.includes(analysis.warnings[1]!.fix!));
+  assert.ok(updated.includes(analysis.flow.verdicts[0]));
 });

@@ -6,7 +6,7 @@ export const drillUk: RecipeCard = {
   version: 1,
   bpm: {
     min: 138,
-    max: 145,
+    max: 146,
     default: 140
   },
   meter: {
@@ -42,7 +42,7 @@ export const drillUk: RecipeCard = {
     "bass",
     "melody"
   ],
-  gridRules: "16 steps/bar; snare on 9, sparse syncopated kick, 3+3+2 hat accents and occasional subdivisions.",
+  gridRules: "16 steps/bar; snare alternates steps 9 and 13, hats follow a 3+3+2 cell, straight swing.",
   bassRules: "Mono tuned 808 around C1-C3; sustain roots, answer kick, and add occasional pitch transitions.",
   palette: [
     {
@@ -156,7 +156,7 @@ export const drillUk: RecipeCard = {
         id: "snare",
         kind: "drums",
         instrument: "drums",
-        pattern: "~ ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~",
+        pattern: "<[~ ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~] [~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~]>",
         velocity: 0.8,
         gain: 0,
         pan: 0,
@@ -174,7 +174,7 @@ export const drillUk: RecipeCard = {
         id: "hats",
         kind: "drums",
         instrument: "drums",
-        pattern: "hh ~ ~ hh ~ ~ hh ~ hh ~ ~ hh ~ ~ hh ~",
+        pattern: "hh ~ ~ hh ~ ~ hh ~ hh ~ ~ hh ~ ~ hh*2 ~",
         velocity: 0.8,
         gain: 0,
         pan: 0,
@@ -245,7 +245,7 @@ export const drillUk: RecipeCard = {
         id: "verse",
         bars: 16,
         role: "verse",
-        patterns: {}
+        patterns: { melody: null }
       },
       {
         id: "outro",
@@ -292,5 +292,17 @@ export const drillUk: RecipeCard = {
     "https://www.attackmagazine.com/technique/beat-dissected/uk-drill/",
     "https://www.attackmagazine.com/technique/beat-dissected/make-uk-drill-in-the-style-of-dutchavelli-or-m24/",
     "https://splice.com/blog/drum-patterns-different-genres/"
-  ]
+  ],
+  arrangements: [
+    { id: "default", title: "Default",
+      blocks: [{ role: "intro", bars: 4 }, { role: "hook", bars: 8 }, { role: "verse", bars: 16 }, { role: "hook", bars: 8 }, { role: "verse", bars: 16 }, { role: "hook", bars: 8 }, { role: "outro", bars: 4 }],
+      basis: ["A.1/Doja", "A.1/Kennington", "A.1/NI drill guide"] },
+    { id: "short_single", title: "Short Single",
+      blocks: [{ role: "intro", bars: 4 }, { role: "hook", bars: 8 }, { role: "verse", bars: 16 }, { role: "hook", bars: 8 }, { role: "outro", bars: 4 }],
+      basis: ["A.1/Doja"] },
+    { id: "posse", title: "Posse",
+      blocks: [{ role: "intro", bars: 8 }, { role: "verse", bars: 24 }, { role: "hook", bars: 8 }, { role: "verse", bars: 24 }, { role: "hook", bars: 8 }, { role: "verse", bars: 24 }, { role: "hook", bars: 8 }, { role: "outro", bars: 8 }],
+      basis: ["A.1/Kennington"] },
+  ],
+  defaultArrangement: "default"
 };

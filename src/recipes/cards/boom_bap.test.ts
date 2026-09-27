@@ -44,3 +44,21 @@ test("boom_bap starter renders finite, non-silent audio for two bars", async () 
     assert.ok(channel.some((sample) => sample !== 0));
   }
 });
+
+test("boom_bap named arrangements retain default parity and evidence", () => {
+  assert.equal(card.defaultArrangement, "verse_led");
+  assert.deepEqual(card.arrangement, card.arrangements.find((variant) => variant.id === card.defaultArrangement)?.blocks);
+  assert.deepEqual(Object.fromEntries(card.arrangements.map((variant) => [variant.id, variant.blocks.reduce((sum, block) => sum + block.bars, 0)])), {"verse_led": 88, "hook_first": 70});
+  for (const variant of card.arrangements) assert.ok(variant.basis.length > 0 && variant.basis.every((id) => /^A\.[0-7]\//.test(id)));
+  const sections = new Map(card.starterSong.sections.map((section) => [section.id, section]));
+  let bar = 1;
+  let firstHook = 0;
+  for (const entry of card.starterSong.arrangement) {
+    const section = sections.get(entry.section);
+    assert.ok(section, entry.section);
+    if (section?.role === "hook" && firstHook === 0) firstHook = bar;
+    bar += (section?.bars ?? 0) * (entry.repeats ?? 1);
+  }
+  assert.equal(bar - 1, 88);
+  assert.equal(firstHook, 29);
+});

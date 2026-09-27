@@ -2,11 +2,11 @@ import { midiToName, noteToMidi, parseMini } from "../pattern/index.ts";
 import type { Atom, Node } from "../pattern/index.ts";
 import { Music2Error } from "../shared/index.ts";
 import { validateSong } from "../song/index.ts";
-import type { Song } from "../song/index.ts";
-import type { RecipeCard } from "./recipe.schema.ts";
+import type { Section, Song } from "../song/index.ts";
+import type { RecipeArrangementBlock, RecipeCard } from "./recipe.schema.ts";
 import { getRecipe } from "./recipes.tool.ts";
 
-export interface NewSongOptions { genre: RecipeCard["id"]; bpm?: number; key?: string; seed?: number; title?: string }
+export interface NewSongOptions { genre: RecipeCard["id"]; arrangement?: string; bpm?: number; key?: string; seed?: number; title?: string }
 
 const ROOTS: Readonly<Record<string, number>> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 const KEY = /^([A-G])(#|b)? (major|minor)$/;
@@ -57,6 +57,64 @@ export function transposePattern(pattern: string, delta: number): string {
   return result;
 }
 
+/** Rebuild both song structures from one block list, retaining starter patterns. */
+export function buildSongArrangement(song: Song, blocks: RecipeArrangementBlock[]): Song {
+  const source = structuredClone(song.sections);
+  const sections = new Map<string, Section>();
+  const arrangement: Song["arrangement"] = [];
+  const bassIds = song.tracks.filter((track) => track.id === "bass" || track.instrument === "808" || track.instrument === "bass").map((track) => track.id);
+  const kickIds = song.tracks.filter((track) => track.id === "kick").map((track) => track.id);
+  const snareIds = song.tracks.filter((track) => track.id === "snare").map((track) => track.id);
+  const hatsIds = song.tracks.filter((track) => track.id === "hats").map((track) => track.id);
+  const leadIds = song.tracks.filter((track) => track.id === "melody" || track.instrument === "lead").map((track) => track.id);
+  for (const block of blocks) {
+    if (!Number.isSafeInteger(block.bars) || block.bars < 1) input(`invalid ${block.role} bar count`);
+    const exact = source.find((section) => section.role === block.role && section.bars === block.bars);
+    const sameRole = exact ?? source.find((section) => section.role === block.role);
+    const fallbackRole = block.role === "hook" ? ["groove", "verse"]
+      : block.role === "bridge" ? ["groove", "verse"]
+      : block.role === "build" || block.role === "breakdown" ? ["verse", "groove"]
+      : ["groove", "verse", "hook", "intro", "outro"];
+    const basis = sameRole ?? fallbackRole.map((role) => source.find((section) => section.role === role)).find(Boolean)
+      ?? source.find((section) => song.tracks.some((track) => track.pattern || section.patterns?.[track.id]));
+    if (!basis) input(`cannot derive ${block.role} section`);
+    const id = song.genre === "drill_ny" && block.role === "build" && block.bars === 4 ? "prehook"
+      : exact ? exact.id : `${block.role}_${block.bars}`;
+    if (!sections.has(id)) {
+      const section: Section = { ...structuredClone(basis), id, role: block.role, bars: block.bars,
+        patterns: { ...basis.patterns } };
+      const mute = (ids: string[]) => { for (const trackId of ids) section.patterns![trackId] = null; };
+      if (block.role === "build") mute(bassIds);
+      if (block.role === "breakdown") mute([...kickIds, ...bassIds]);
+      if (block.role === "bridge") mute([...hatsIds, ...bassIds]);
+      if ((block.role === "intro" || block.role === "outro") && !sameRole) mute([...bassIds, ...leadIds]);
+      if (song.genre === "house" && block.role === "breakdown") mute(snareIds);
+      if (song.genre === "lofi_hiphop" && block.bars === 2 &&
+        (block.role === "intro" || block.role === "outro" || block.role === "breakdown")) {
+        for (const trackId of [...kickIds, ...bassIds]) delete section.patterns![trackId];
+        mute(leadIds);
+      }
+      if (song.genre === "techno") {
+        if (block.role === "groove" && block.bars === 32) mute(leadIds);
+        if (block.role === "intro" && block.bars === 8) {
+          mute([...snareIds, ...hatsIds, ...bassIds]);
+          for (const trackId of leadIds) delete section.patterns![trackId];
+        }
+        if (block.role === "build" && block.bars === 8) mute(snareIds);
+        if (block.role === "bridge" || block.role === "breakdown") {
+          mute([...snareIds, ...hatsIds, ...bassIds]);
+          for (const trackId of [...kickIds, ...leadIds]) delete section.patterns![trackId];
+        }
+      }
+      sections.set(id, section);
+    }
+    arrangement.push({ section: id, repeats: 1 });
+  }
+  song.sections = [...sections.values()];
+  song.arrangement = arrangement;
+  return song;
+}
+
 export function newSong(options: NewSongOptions): Song {
   const card = getRecipe(options.genre);
   const bpm = options.bpm ?? card.bpm.default;
@@ -75,6 +133,11 @@ export function newSong(options: NewSongOptions): Song {
   if (source.mode !== target.mode) input(`key mode must be ${source.mode}`, `choose a ${source.mode} key`);
   const delta = ((target.root - source.root + 18) % 12) - 6;
   const song = structuredClone(card.starterSong);
+  const ids = card.arrangements.map((variant) => variant.id).sort();
+  const selected = options.arrangement ?? card.defaultArrangement;
+  const variant = card.arrangements.find((candidate) => candidate.id === selected);
+  if (!variant) input(`unknown arrangement ${selected} for ${card.id}; valid choices: ${ids.join(", ")}`);
+  buildSongArrangement(song, variant.blocks);
   song.title = title;
   song.genre = card.id;
   song.bpm = bpm;

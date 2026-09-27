@@ -10,7 +10,7 @@ src/recipes/
 ├── recipe.schema.ts            # card types, IDs, and ID guard
 ├── recipes.tool.ts             # frozen registry and defensive copies
 ├── recipes.test.ts             # registry and card contract cases
-├── new.tool.ts                 # starter cloning and key transposition
+├── new.tool.ts                 # named-form builder and key transposition
 ├── new.test.ts                 # defaults, overrides, and invalid input
 ├── lint.tool.ts                # validation, orchestration, report sorting
 ├── lint.test.ts                # lint report and parse error cases
@@ -43,7 +43,8 @@ public reads return fresh clones so callers cannot change the registry.
 `scripts/gen-genre-docs.mjs` consumes those reads to generate
 `skills/music2/references/genres.md` from the recipe cards.
 
-`newSong` copies a card's starter, applies bounded overrides, transposes note
+`newSong` copies a card's starter, selects a named arrangement, rebuilds sections and
+arrangement from the same block list, applies bounded overrides, transposes note
 patterns when the key changes, and validates the result. Lint first validates
 the song and builds its timeline, then checks generic rules and recognized
 genre rules. It reports static evidence; it does not render or listen to audio.
@@ -57,9 +58,9 @@ The first key listed is the starter's default.
 |---|---|---|---|
 | `boom_bap` | 80..100 (90) | C minor | kick:drums, snare:drums, hats:drums, bass:bass, melody:keys |
 | `drill_ny` | 138..145 (142) | F minor | kick:drums, snare:drums, hats:drums, bass:808, melody:bell |
-| `drill_uk` | 138..145 (140) | C minor | kick:drums, snare:drums, hats:drums, bass:808, melody:bell |
+| `drill_uk` | 138..146 (140) | C minor | kick:drums, snare:drums, hats:drums, bass:808, melody:bell |
 | `house` | 120..130 (124) | A minor, C major | kick:drums, snare:drums, hats:drums, bass:bass, melody:keys |
-| `lofi_hiphop` | 60..90 (75) | C major, A minor | kick:drums, snare:drums, hats:drums, bass:bass, melody:keys |
+| `lofi_hiphop` | 60..95 (75) | C major, A minor | kick:drums, snare:drums, hats:drums, bass:bass, melody:keys |
 | `techno` | 126..140 (130) | E minor | kick:drums, snare:drums, hats:drums, bass:bass, melody:lead |
 | `trap` | 130..170 (140) | A minor | kick:drums, snare:drums, hats:drums, bass:808, melody:pluck |
 
@@ -79,6 +80,7 @@ re-exports public card, starter, and lint functions and types.
 | `export function listRecipes(): RecipeCard[]` | `recipes.tool.ts` | Return sorted defensive card copies. |
 | `export function getRecipe(id: string): RecipeCard` | `recipes.tool.ts` | Copy one card or raise `E_NOT_FOUND`. |
 | `export function newSong(options: NewSongOptions): Song` | `new.tool.ts` | Build and validate a starter. |
+| `export function buildSongArrangement(song: Song, blocks: RecipeArrangementBlock[]): Song` | `new.tool.ts` | Derive song sections and arrangement from one block list. |
 | `export function transposePattern(pattern: string, delta: number): string` | `new.tool.ts` | Shift note atoms; intentionally absent from barrel. |
 | `export function lintSong(input: unknown, options: LintOptions = {}): LintReport` | `lint.tool.ts` | Produce sorted findings. |
 | `export function createGeometry(song: ResolvedSong, timeline: Timeline, genre: string \| null = song.genre): LintGeometry` | `lint-geometry.tool.ts` | Address events by bar and role. |
@@ -88,13 +90,16 @@ re-exports public card, starter, and lint functions and types.
 | `export function renderGenreDocs(cards)` (JSDoc: `readonly RecipeCard[]` → `string`) | `scripts/gen-genre-docs.mjs` | Render the generated genre reference. |
 | `export async function main(argv)` (JSDoc: `string[]` → `Promise<number>`) | `scripts/gen-genre-docs.mjs` | Generate or check the reference file. |
 
-`NewSongOptions` requires `genre`; `bpm`, `key`, `seed`, and `title` are
+`NewSongOptions` requires `genre`; `arrangement`, `bpm`, `key`, `seed`, and `title` are
 optional. `LintOptions` contains optional `genre`. `LintResult` has `id`,
 `severity`, `path`, `observed`, `expected`, and `fix`. `LintReport` has
 `genre`, `barsChecked`, sorted `results`, and error/warning counts.
 
 ### Starter construction
 
+- `arrangement` defaults to `card.defaultArrangement`; unknown IDs report sorted valid choices.
+- Each variant has unique ID, title, positive-bar blocks, and evidence `basis` IDs. Legacy `card.arrangement` equals the default blocks.
+- The common builder reuses matching role/length sections and derives `<role>_<bars>` otherwise; NY drill `prehook` is a four-bar `build` with bass muted.
 - `bpm` defaults to the card value and must be an integer in its range.
 - `seed` defaults to 1 and must fit an unsigned 32-bit integer.
 - `title` defaults to the starter title and is at most 120 characters.
@@ -130,8 +135,8 @@ and generic findings are warnings unless noted otherwise.
 | `generic/out_of_key` | Every pitched onset must fit the declared major/minor scale. |
 | `generic/808_polyphony` | 808 tracks need `mono=true`; overlapping or simultaneous conflicting 808 pitches warn. |
 | `generic/clipping_risk` | Maximum coincident onset sum, `Σ velocity × 10^(gain/20)`, must be ≤1.5. |
-| `drill_uk/1` | BPM must be 138..145. |
-| `drill_uk/2` | At least 75% of full bars need a step-9 snare/clap. |
+| `drill_uk/1` | BPM must be 138..146. |
+| `drill_uk/2` | At least 75% of full bars need a snare/clap on step 9, or step 13 without a step-5 backbeat (the alternate-bar moving snare). |
 | `drill_uk/3` | At least 75% of full bars need a kick. |
 | `drill_uk/4` | Short hat events in full bars must number at least `ceil(full bars / 2)`. |
 | `drill_uk/5` | A monophonic 808 track must exist. |
@@ -158,7 +163,7 @@ and generic findings are warnings unless noted otherwise.
 | `boom_bap/5` | Bass/808 notes must fit the declared key. |
 | `boom_bap/6` | If comparable blocks exist, repeat a 2- or 4-bar melody motif. |
 | `boom_bap/7` | Show an adjacent-section mute or melody-signature change. |
-| `lofi_hiphop/1` | BPM must be 60..90. |
+| `lofi_hiphop/1` | BPM must be 60..95. |
 | `lofi_hiphop/2` | At least 70% of full bars need snares/claps on steps 5 and 13. |
 | `lofi_hiphop/3` | Song swing must exceed 0.5 and a hat/percussion track must enable swing. |
 | `lofi_hiphop/4` | If comparable blocks exist, repeat a 2-, 4-, or 8-bar melody motif. |

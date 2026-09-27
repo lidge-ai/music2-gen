@@ -14,6 +14,12 @@ test("seven sorted cards have valid, renderable starter songs and declared rules
     assert.ok(card.bpm.min <= card.bpm.default && card.bpm.default <= card.bpm.max);
     assert.ok(card.swing.min <= card.swing.default && card.swing.default <= card.swing.max);
     assert.ok(card.sources.length > 0 && card.sources.every((source) => source.startsWith("https://")));
+    assert.equal(new Set(card.arrangements.map((variant) => variant.id)).size, card.arrangements.length);
+    assert.deepEqual(card.arrangement, card.arrangements.find((variant) => variant.id === card.defaultArrangement)?.blocks);
+    for (const variant of card.arrangements) {
+      assert.ok(variant.basis.length > 0 && variant.basis.every((basis) => basis.trim().length > 0));
+      assert.ok(variant.blocks.length > 0 && variant.blocks.every((block) => Number.isSafeInteger(block.bars) && block.bars > 0));
+    }
     assert.deepEqual(card.lintRules, Array.from({ length: card.lintRules.length }, (_, i) => `${card.id}/${i + 1}`));
     const timeline = buildTimeline(validateSong(card.starterSong));
     assert.ok(timeline.events.length > 0, card.id);
@@ -29,11 +35,15 @@ test("list and get return isolated deep clones", () => {
   listed[0]!.sources.push("changed");
   const direct = getRecipe("boom_bap");
   direct.palette[0]!.instrument = "changed";
+  direct.arrangements[0]!.blocks[0]!.bars = 999;
+  direct.arrangements[0]!.basis.push("changed");
   const fresh = getRecipe("boom_bap");
   assert.equal(fresh.title, "Boom Bap");
   assert.notEqual(fresh.starterSong.tracks[0]!.pattern, "~");
   assert.equal(fresh.sources.includes("changed"), false);
   assert.equal(fresh.palette[0]!.instrument, "drums");
+  assert.notEqual(fresh.arrangements[0]!.blocks[0]!.bars, 999);
+  assert.equal(fresh.arrangements[0]!.basis.includes("changed"), false);
 });
 
 test("unknown recipe has input-class not-found error", () => {

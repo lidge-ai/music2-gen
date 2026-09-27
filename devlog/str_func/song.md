@@ -1,5 +1,9 @@
 # Song — Structure & Functions
 
+Song v1 accepts optional `loop:boolean` and `useCase:UseCaseId`. Resolution
+defaults these to `false` and `null`; the version stays 1. `loop` signals a
+whole-song render body with its post-FX tail wrapped to sample zero.
+
 Validate a song v1 JSON document, expand its arrangement, and derive a deterministic timeline.
 
 ## File Tree
@@ -105,6 +109,7 @@ the source arrangement entry; `repeat` indexes its repetition;
 - Missing title becomes `"untitled"`; genre and key become `null`.
 - Meter becomes 4/4; seed becomes `1`; swing becomes `0.5`.
 - Sample rate becomes `44100`; tail seconds becomes `2`.
+- `loop` becomes `false`; `useCase` becomes `null` when omitted.
 - Master gain becomes `0`, ceiling becomes `-1`, and target LUFS
   becomes `null`.
 - A missing track pattern becomes `null`; velocity becomes `0.8`.

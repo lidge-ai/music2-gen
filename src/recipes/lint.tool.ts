@@ -102,7 +102,11 @@ export function lintSong(input: unknown, options: LintOptions = {}): LintReport 
   const g = createGeometry(song, timeline, genre);
   const unknown = options.genre === undefined && genre !== null && !isRecipeId(genre);
   const generic = genericRules(g, unknown);
-  const results = [...generic, ...(genre !== null && isRecipeId(genre) ? genreRules(g, genre, generic) : [])];
+  const genreResults = genre !== null && isRecipeId(genre) ? genreRules(g, genre, generic) : [];
+  // Suppress the generic density warning only when a genre rule reports the same cause (hook vs verse, groove vs breakdown).
+  // house/6 checks 8-bar phrase changes inside grooves, a different cause, so both can appear.
+  const duplicateDensity = genreResults.some((result) => ["trap/7", "techno/5"].includes(result.id));
+  const results = [...generic.filter((result) => result.id !== "generic/no_density_contrast" || !duplicateDensity), ...genreResults];
   results.sort((a, b) => (a.severity === "error" ? 0 : 1) - (b.severity === "error" ? 0 : 1) || a.id.localeCompare(b.id) || a.path.localeCompare(b.path));
   return { genre, barsChecked: timeline.bars, results, errors: results.filter((r) => r.severity === "error").length,
     warnings: results.filter((r) => r.severity === "warning").length };

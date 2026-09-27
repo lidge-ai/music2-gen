@@ -5,10 +5,14 @@ import { tmpdir } from "node:os";
 import { basename, isAbsolute, join, relative } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { readWav } from "../../src/audio-io/index.ts";
+import { loopSeam } from "../../src/analyze/loop-seam.tool.ts";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const CLI = "src/cli/index.ts";
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const NEW_EXAMPLES = new Set(["trap-hook-first-142", "drill-uk-moving-snare-144", "boom-bap-verse-led-90",
+  "game-loop-16bar", "short-30-bed", "type-beat-trap-140"]);
 
 interface ExampleCase {
   file: string;
@@ -24,6 +28,12 @@ const examples: ExampleCase[] = [
   { file: "lofi-75", genre: "lofi_hiphop", bpm: 75, key: "A minor" },
   { file: "house-124", genre: "house", bpm: 124, key: "A minor" },
   { file: "dogfood/boom-bap-dogfood", genre: "boom_bap", bpm: 90, key: "D minor" },
+  { file: "trap-hook-first-142", genre: "trap", bpm: 142, key: "A minor" },
+  { file: "drill-uk-moving-snare-144", genre: "drill_uk", bpm: 144, key: "C minor" },
+  { file: "boom-bap-verse-led-90", genre: "boom_bap", bpm: 90, key: "C minor" },
+  { file: "game-loop-16bar", genre: "house", bpm: 120, key: "A minor" },
+  { file: "short-30-bed", genre: "drill_uk", bpm: 144, key: "C minor" },
+  { file: "type-beat-trap-140", genre: "trap", bpm: 140, key: "A minor" },
 ];
 
 interface CliResult {
@@ -75,11 +85,11 @@ function assertPng(path: unknown, directory: string, expectedWidth?: number, exp
 }
 
 for (const example of examples) {
-  test(`${example.file} validates, lints, renders, and analyzes`, () => {
+  test(`${example.file} validates, lints, renders, and analyzes`, async () => {
     const directory = mkdtempSync(join(tmpdir(), "music2-example-"));
     const song = join(ROOT, "examples", `${example.file}.song.json`);
     try {
-      const source = JSON.parse(readFileSync(song, "utf8")) as { genre: string; bpm: number; key: string };
+      const source = JSON.parse(readFileSync(song, "utf8")) as { genre: string; bpm: number; key: string; useCase?: string; loop?: boolean };
       assert.equal(source.genre, example.genre);
       assert.equal(source.bpm, example.bpm);
       assert.equal(source.key, example.key);
@@ -104,9 +114,42 @@ for (const example of examples) {
       const summary = analyzed["summary"] as { declaredBpm: number; estimatedBpm: number; integratedLufs: number };
       assert.equal(summary.declaredBpm, example.bpm);
       assert.ok(Number.isFinite(summary.estimatedBpm));
-      assert.ok(Math.abs(summary.estimatedBpm - example.bpm) <= 2,
+      if (!NEW_EXAMPLES.has(example.file)) assert.ok(Math.abs(summary.estimatedBpm - example.bpm) <= 2,
         `${example.file}: estimated ${summary.estimatedBpm} BPM, declared ${example.bpm}`);
       assert.ok(Number.isFinite(summary.integratedLufs));
+      const report = JSON.parse(readFileSync(analyzed["analysisJson"] as string, "utf8")) as {
+        warnings: { code: string }[];
+        flow: { sectionMeans: { role: string | null; startBar: number; meanLufs: number | null }[] };
+      };
+      if (NEW_EXAMPLES.has(example.file)) {
+        const targeted = ["SECTION_LOUDNESS_FLAT", "LOOP_SEAM_DISCONTINUITY", "CLIPPING", "LUFS_OFF_TARGET"];
+        assert.deepEqual(report.warnings.filter((warning) => targeted.includes(warning.code)), [], example.file);
+      }
+      if (example.file === "short-30-bed") {
+        assert.equal(source.useCase, "short_30");
+        assert.equal(rendered["frames"], 30 * 44100);
+        assert.equal(report.flow.sectionMeans.find((row) => row.role === "hook")?.startBar, 1);
+      }
+      if (example.file === "game-loop-16bar") {
+        assert.equal(source.useCase, "game_loop");
+        assert.equal(source.loop, true);
+        assert.equal(rendered["loopStartSample"], 0);
+        assert.equal(rendered["loopEndSample"], 16 * 4 * 60 / 120 * 44100);
+        assert.equal(rendered["frames"], rendered["loopEndSample"]);
+        const seam = loopSeam(await readWav(wav));
+        assert.equal(seam.threshold, null, JSON.stringify(seam.metrics));
+        assert.ok(seam.metrics.jumpFs <= 0.1);
+        assert.ok(seam.metrics.rmsStepDb !== null && seam.metrics.rmsStepDb <= 3);
+        assert.ok(Object.values(seam.metrics.bandStepDb).every((value) => value !== null && value <= 6));
+      }
+      if (example.file === "type-beat-trap-140") {
+        assert.equal(source.useCase, "type_beat");
+        assert.equal(validated["bars"], 72);
+        const hooks = report.flow.sectionMeans.filter((row) => row.role === "hook" && row.meanLufs !== null);
+        const verses = report.flow.sectionMeans.filter((row) => row.role === "verse" && row.meanLufs !== null);
+        assert.equal(hooks[0]?.startBar, 9);
+        assert.ok(Math.max(...hooks.map((row) => row.meanLufs!)) - Math.min(...verses.map((row) => row.meanLufs!)) >= 1);
+      }
       artifact(analyzed["analysisJson"], directory);
       artifact(analyzed["analysisMd"], directory);
       artifact(analyzed["beatsJson"], directory);
@@ -117,7 +160,7 @@ for (const example of examples) {
       assertPng(analyzed["overviewPng"], directory, 1600, 1400);
       assertPng(analyzed["pianoRollPng"], directory);
 
-      if (example.genre === "drill_uk") {
+      if (example.file === "drill-140") {
         const songAgain = data(cli("analyze", [wav, "--song", song, "--out", join(directory, "analysis-again")]));
         assert.deepEqual(readFileSync(songAgain["overviewPng"] as string), readFileSync(analyzed["overviewPng"] as string));
         const wavOnlyFirst = data(cli("analyze", [wav, "--out", join(directory, "wav-only-first")]));

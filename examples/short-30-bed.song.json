@@ -1,0 +1,146 @@
+{
+  "version": 1,
+  "title": "Thirty Second Bed",
+  "genre": "drill_uk",
+  "bpm": 144,
+  "meter": {
+    "numerator": 4,
+    "denominator": 4
+  },
+  "key": "C minor",
+  "seed": 3001,
+  "swing": 0.5,
+  "sampleRate": 44100,
+  "tailSeconds": 0,
+  "master": {
+    "ceilingDb": -1,
+    "targetLufs": -22
+  },
+  "tracks": [
+    {
+      "id": "kick",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "bd ~ ~ ~ ~ ~ bd ~ ~ ~ ~ ~ ~ ~ ~ ~",
+      "velocity": 0.8,
+      "gain": -7,
+      "pan": 0,
+      "gate": 0.9,
+      "mono": false,
+      "glide": 0,
+      "swing": false,
+      "sends": {
+        "reverb": 0,
+        "delay": 0
+      },
+      "params": {}
+    },
+    {
+      "id": "snare",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "<[~ ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~] [~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~]>",
+      "velocity": 0.8,
+      "gain": -7,
+      "pan": 0,
+      "gate": 0.9,
+      "mono": false,
+      "glide": 0,
+      "swing": false,
+      "sends": {
+        "reverb": 0,
+        "delay": 0
+      },
+      "params": {}
+    },
+    {
+      "id": "hats",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "hh ~ ~ hh ~ ~ hh ~ hh ~ ~ hh ~ ~ hh*2 ~",
+      "velocity": 0.8,
+      "gain": -7,
+      "pan": 0,
+      "gate": 0.9,
+      "mono": false,
+      "glide": 0,
+      "swing": false,
+      "sends": {
+        "reverb": 0,
+        "delay": 0
+      },
+      "params": {}
+    },
+    {
+      "id": "bass",
+      "kind": "notes",
+      "instrument": "808",
+      "pattern": "c2 ~ ~ ~ ~ ~ g1 ~ c2 ~ ~ ~ ~ ~ ~ ~",
+      "velocity": 0.75,
+      "gain": -10,
+      "pan": 0,
+      "gate": 0.9,
+      "mono": true,
+      "glide": 60,
+      "swing": false,
+      "sends": {
+        "reverb": 0,
+        "delay": 0
+      },
+      "params": {}
+    },
+    {
+      "id": "pad",
+      "kind": "notes",
+      "instrument": "pad",
+      "pattern": "[c4,eb4,g4]",
+      "gain": -29,
+      "sends": {
+        "reverb": 0.15
+      }
+    }
+  ],
+  "sections": [
+    {
+      "id": "hook",
+      "bars": 8,
+      "role": "hook",
+      "patterns": {}
+    },
+    {
+      "id": "verse_9",
+      "bars": 9,
+      "role": "verse",
+      "patterns": {
+        "pad": null,
+        "bass": null
+      }
+    },
+    {
+      "id": "outro_1",
+      "bars": 1,
+      "role": "outro",
+      "patterns": {
+        "bass": null,
+        "kick": "bd ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~",
+        "hats": null,
+        "pad": null
+      }
+    }
+  ],
+  "arrangement": [
+    {
+      "section": "hook",
+      "repeats": 1
+    },
+    {
+      "section": "verse_9",
+      "repeats": 1
+    },
+    {
+      "section": "outro_1",
+      "repeats": 1
+    }
+  ],
+  "useCase": "short_30"
+}

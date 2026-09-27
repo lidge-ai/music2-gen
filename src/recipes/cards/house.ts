@@ -88,18 +88,6 @@ export const house: RecipeCard = {
   "arrangement": [
     {
       "role": "intro",
-      "bars": 16
-    },
-    {
-      "role": "groove",
-      "bars": 16
-    },
-    {
-      "role": "hook",
-      "bars": 16
-    },
-    {
-      "role": "breakdown",
       "bars": 8
     },
     {
@@ -107,8 +95,32 @@ export const house: RecipeCard = {
       "bars": 16
     },
     {
+      "role": "breakdown",
+      "bars": 8
+    },
+    {
+      "role": "build",
+      "bars": 8
+    },
+    {
+      "role": "hook",
+      "bars": 32
+    },
+    {
+      "role": "breakdown",
+      "bars": 8
+    },
+    {
+      "role": "build",
+      "bars": 8
+    },
+    {
+      "role": "hook",
+      "bars": 32
+    },
+    {
       "role": "outro",
-      "bars": 16
+      "bars": 8
     }
   ],
   "mixTargets": {
@@ -250,8 +262,8 @@ export const house: RecipeCard = {
     ],
     "sections": [
       {
-        "id": "intro",
-        "bars": 16,
+        "id": "intro_8",
+        "bars": 8,
         "role": "intro",
         "patterns": {
           "bass": null,
@@ -265,22 +277,33 @@ export const house: RecipeCard = {
         "patterns": {}
       },
       {
-        "id": "hook",
-        "bars": 16,
-        "role": "hook",
-        "patterns": {}
-      },
-      {
         "id": "breakdown",
         "bars": 8,
         "role": "breakdown",
         "patterns": {
-          "melody": null
+          "melody": null,
+          "kick": null,
+          "bass": null,
+          "snare": null
         }
       },
       {
-        "id": "outro",
-        "bars": 16,
+        "id": "build_8",
+        "bars": 8,
+        "role": "build",
+        "patterns": {
+          "bass": null
+        }
+      },
+      {
+        "id": "hook_32",
+        "bars": 32,
+        "role": "hook",
+        "patterns": {}
+      },
+      {
+        "id": "outro_8",
+        "bars": 8,
         "role": "outro",
         "patterns": {
           "bass": null,
@@ -290,15 +313,11 @@ export const house: RecipeCard = {
     ],
     "arrangement": [
       {
-        "section": "intro",
+        "section": "intro_8",
         "repeats": 1
       },
       {
         "section": "groove",
-        "repeats": 1
-      },
-      {
-        "section": "hook",
         "repeats": 1
       },
       {
@@ -306,11 +325,27 @@ export const house: RecipeCard = {
         "repeats": 1
       },
       {
-        "section": "groove",
+        "section": "build_8",
         "repeats": 1
       },
       {
-        "section": "outro",
+        "section": "hook_32",
+        "repeats": 1
+      },
+      {
+        "section": "breakdown",
+        "repeats": 1
+      },
+      {
+        "section": "build_8",
+        "repeats": 1
+      },
+      {
+        "section": "hook_32",
+        "repeats": 1
+      },
+      {
+        "section": "outro_8",
         "repeats": 1
       }
     ]
@@ -318,5 +353,14 @@ export const house: RecipeCard = {
   "sources": [
     "https://blog.native-instruments.com/house-music-101/",
     "https://www.attackmagazine.com/technique/beat-dissected/90s-jersey-garage-house/"
-  ]
+  ],
+  "arrangements": [
+    { "id": "radio", "title": "Radio",
+      "blocks": [{ "role": "intro", "bars": 8 }, { "role": "groove", "bars": 16 }, { "role": "breakdown", "bars": 8 }, { "role": "build", "bars": 8 }, { "role": "hook", "bars": 32 }, { "role": "breakdown", "bars": 8 }, { "role": "build", "bars": 8 }, { "role": "hook", "bars": 32 }, { "role": "outro", "bars": 8 }],
+      "basis": ["A.6/EDMProd", "A.6/FISHER"] },
+    { "id": "extended", "title": "Extended",
+      "blocks": [{ "role": "intro", "bars": 32 }, { "role": "breakdown", "bars": 16 }, { "role": "build", "bars": 8 }, { "role": "hook", "bars": 32 }, { "role": "breakdown", "bars": 16 }, { "role": "build", "bars": 8 }, { "role": "hook", "bars": 32 }, { "role": "breakdown", "bars": 8 }, { "role": "build", "bars": 8 }, { "role": "hook", "bars": 32 }, { "role": "outro", "bars": 32 }],
+      "basis": ["A.6/Around the World", "A.6/Your Love", "A.6/EDMProd"] },
+  ],
+  "defaultArrangement": "radio"
 };

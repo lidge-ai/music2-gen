@@ -8,6 +8,7 @@ export type RecipeRole = "kick" | "snare" | "hats" | "bass" | "melody" | "chords
 export interface RecipePaletteEntry { role: RecipeRole; instrument: string; params: Record<string, number> }
 export interface RecipeProgression { roman: string; example: string }
 export interface RecipeArrangementBlock { role: NonNullable<Section["role"]>; bars: number }
+export interface RecipeArrangement { id: string; title: string; blocks: RecipeArrangementBlock[]; basis: string[] }
 export interface RecipeMixTargets { lufs: number; truePeak: number; notes: string }
 export interface RecipeCard {
   id: RecipeId;
@@ -16,6 +17,7 @@ export interface RecipeCard {
   keyDefaults: string[]; scales: string[]; progressions: RecipeProgression[];
   roles: RecipeRole[]; gridRules: string; bassRules: string;
   palette: RecipePaletteEntry[]; arrangement: RecipeArrangementBlock[];
+  arrangements: RecipeArrangement[]; defaultArrangement: string;
   mixTargets: RecipeMixTargets; lintRules: string[]; starterSong: Song; sources: string[];
 }
 

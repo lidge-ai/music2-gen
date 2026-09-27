@@ -3,10 +3,11 @@ import { test } from "node:test";
 import { validateSong, buildTimeline } from "../../song/index.ts";
 import { renderSong, VOICES } from "../../render/index.ts";
 import { techno } from "./techno.ts";
+import { newSong } from "../new.tool.ts";
 
 const expectedRoles = ["kick", "snare", "hats", "bass", "melody"];
 const expectedPatterns = ["bd ~ ~ ~ bd ~ ~ ~ bd ~ ~ ~ bd ~ ~ ~", "~ ~ ~ ~ cp ~ ~ ~ ~ ~ ~ ~ cp ~ ~ ~", "~ ~ oh ~ ~ ~ oh ~ ~ ~ oh ~ ~ ~ oh ~", "e2 ~ ~ ~ ~ ~ ~ ~ e2 ~ ~ ~ ~ ~ ~ ~", "e4 ~ ~ ~ g4 ~ ~ ~ e4 ~ ~ ~ b4 ~ ~ ~"];
-const expectedArrangement = [{ role: "intro", bars: 16 }, { role: "build", bars: 16 }, { role: "groove", bars: 32 }, { role: "breakdown", bars: 16 }, { role: "groove", bars: 32 }, { role: "outro", bars: 16 }];
+const expectedArrangement = [{ role: "intro", bars: 8 }, { role: "build", bars: 8 }, { role: "groove", bars: 16 }, { role: "breakdown", bars: 2 }, { role: "groove", bars: 32 }, { role: "bridge", bars: 4 }, { role: "groove", bars: 32 }, { role: "breakdown", bars: 4 }, { role: "groove", bars: 32 }, { role: "outro", bars: 16 }];
 
 test("techno card matches the starter contract", () => {
   const card = techno;
@@ -25,13 +26,14 @@ test("techno card matches the starter contract", () => {
   assert.deepEqual(card.starterSong.tracks.map((track) => track.pattern), expectedPatterns);
   assert.deepEqual(card.arrangement, expectedArrangement);
   assert.deepEqual(card.starterSong.arrangement,
-    expectedArrangement.map((block) => ({ section: block.role, repeats: 1 })));
+    expectedArrangement.map((block) => ({ section: card.starterSong.sections.find((section) => section.role === block.role && section.bars === block.bars)?.id, repeats: 1 })));
   assert.deepEqual(card.starterSong.master, { ceilingDb: -1, targetLufs: -14 });
-  for (const section of card.starterSong.sections) {
-    const expectedMute = section.role === "intro" || section.role === "outro" ?
-      { bass: null, melody: null } :
-      section.role === "breakdown" || section.role === "build" ? { melody: null } : {};
-    assert.deepEqual(section.patterns, expectedMute);
+  const intro = card.starterSong.sections.find((section) => section.role === "intro");
+  assert.deepEqual(intro?.patterns, { bass: null, snare: null, hats: null });
+  for (const section of card.starterSong.sections.filter((section) => section.role === "breakdown" || section.role === "bridge")) {
+    assert.equal(section.patterns?.bass, null);
+    assert.equal(section.patterns?.hats, null);
+    assert.notEqual(section.patterns?.kick, null);
   }
   assert.deepEqual(card.lintRules,
     Array.from({ length: 6 }, (_, index) => `techno/${index + 1}`));
@@ -53,7 +55,7 @@ test("techno card matches the starter contract", () => {
 test("techno starter validates and all tracks produce events", () => {
   const song = validateSong(techno.starterSong);
   const timeline = buildTimeline(song);
-  assert.equal(timeline.bars, 128);
+  assert.equal(timeline.bars, 154);
   for (const role of expectedRoles) {
     assert.ok(timeline.events.some((event) => event.track === role), `${role} has no onsets`);
   }
@@ -61,7 +63,7 @@ test("techno starter validates and all tracks produce events", () => {
 
 test("techno starter renders finite audible stereo over two bars", async () => {
   const song = validateSong(techno.starterSong);
-  const result = await renderSong(song, "starter.song.json", { bars: { start: 32, end: 34 }, stems: true });
+  const result = await renderSong(song, "starter.song.json", { bars: { start: 16, end: 18 }, stems: true });
   assert.equal(result.bars, 2);
   assert.ok(result.events > 0);
   assert.deepEqual(result.stems.map((stem) => stem.trackId), expectedRoles);
@@ -74,4 +76,37 @@ test("techno starter renders finite audible stereo over two bars", async () => {
   assert.ok(result.audio.left.some((sample) => sample !== 0));
   assert.ok(result.audio.right.some((sample) => sample !== 0));
   assert.ok(Number.isFinite(result.peakDbfs));
+});
+
+test("techno named arrangements retain default parity and evidence", () => {
+  const card = techno;
+  assert.equal(card.defaultArrangement, "detroit_linear");
+  assert.deepEqual(card.arrangement, card.arrangements.find((variant) => variant.id === card.defaultArrangement)?.blocks);
+  assert.deepEqual(Object.fromEntries(card.arrangements.map((variant) => [variant.id, variant.blocks.reduce((sum, block) => sum + block.bars, 0)])), {"detroit_linear": 154, "plateau": 192});
+  for (const variant of card.arrangements) assert.ok(variant.basis.length > 0 && variant.basis.every((id) => /^A\.[0-7]\//.test(id)));
+  const sections = new Map(card.starterSong.sections.map((section) => [section.id, section]));
+  let bar = 1;
+  let firstHook = 0;
+  for (const entry of card.starterSong.arrangement) {
+    const section = sections.get(entry.section);
+    assert.ok(section, entry.section);
+    if (section?.role === "hook" && firstHook === 0) firstHook = bar;
+    bar += (section?.bars ?? 0) * (entry.repeats ?? 1);
+  }
+  assert.equal(bar - 1, 154);
+  assert.equal(firstHook, 0);
+});
+
+test("Detroit form enters with kick and motif, then adds hats and clap", () => {
+  const timeline = buildTimeline(validateSong(newSong({ genre: "techno" })));
+  const tracksAt = (bar: number) => new Set(timeline.events.filter((event) => event.bar === bar - 1).map((event) => event.track));
+  assert.ok(tracksAt(1).has("kick") && tracksAt(1).has("melody"));
+  assert.equal(tracksAt(1).has("hats"), false);
+  assert.ok(tracksAt(9).has("hats"));
+  assert.equal(tracksAt(9).has("snare"), false);
+  assert.ok(tracksAt(17).has("snare"));
+  assert.equal(tracksAt(35).has("melody"), false);
+  assert.ok(tracksAt(35).has("bass"));
+  assert.equal(timeline.placements.find((placement) => placement.role === "breakdown")?.bars, 2);
+  assert.ok(timeline.placements.some((placement) => placement.role === "bridge" && placement.bars === 4));
 });

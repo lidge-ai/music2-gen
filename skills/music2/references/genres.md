@@ -15,7 +15,7 @@ Cards provide starting points; a user's tempo, key and artistic constraints take
 - Drum grid: 16 steps/bar; snares on 5 and 13, syncopated kick, swung eighth hats.
 - Bass: Rounded bass around E1-E3; short root notes and pickups converse with kick.
 - Palette: kick `drums`; snare `drums`; hats `drums`; bass `bass`; melody `keys`.
-- Arrangement: intro 4 bars → verse 16 bars → hook 8 bars → verse 16 bars → hook 8 bars → outro 4 bars.
+- Arrangement: intro 4 bars → verse 24 bars → hook 4 bars → verse 24 bars → hook 4 bars → verse 16 bars → hook 8 bars → outro 4 bars.
 - Mix target: -14 LUFS, -1 dBTP; Foreground kick/snare; leave bass space.
 
 Lint rules:
@@ -30,7 +30,7 @@ Lint rules:
 
 Starter song, one-bar track patterns:
 
-- `kick` (`drums`): `bd ~ ~ ~ ~ ~ bd ~ bd ~ ~ ~ ~ ~ ~ ~`
+- `kick` (`drums`): `bd ~ ~ ~ ~ ~ ~ ~ ~ ~ bd ~ ~ ~ ~ ~`
 - `snare` (`drums`): `~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~`
 - `hats` (`drums`): `hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh ~`
 - `bass` (`bass`): `c2 ~ ~ ~ ~ ~ g2 ~ c2 ~ ~ ~ ~ ~ ~ ~`
@@ -52,7 +52,7 @@ Sources:
 - Drum grid: 16 steps/bar; clap on 9, syncopated kick, bouncing hats and optional rim reply.
 - Bass: Mono tuned 808 around F1-F3; hook carries pitch movement and kick-aligned attacks.
 - Palette: kick `drums`; snare `drums`; hats `drums`; bass `808`; melody `bell`.
-- Arrangement: intro 4 bars → hook 8 bars → verse 16 bars → hook 8 bars → verse 16 bars → hook 8 bars → outro 4 bars.
+- Arrangement: intro 4 bars → build 4 bars → hook 16 bars → verse 16 bars → build 4 bars → hook 16 bars → verse 16 bars → hook 16 bars → outro 4 bars.
 - Mix target: -14 LUFS, -1 dBTP; Keep 808 audible with controlled harmonics.
 
 Lint rules:
@@ -82,12 +82,12 @@ Sources:
 ## drill_uk — UK Drill
 
 - Version: 1
-- BPM: 138–145; default 140.
+- BPM: 138–146; default 140.
 - Meter: 4/4; swing 0.5–0.53; default 0.5.
 - Starter keys: C minor. Scales: natural minor, phrygian.
 - Progressions: i-bVI-bVII (Cm-Ab-Bb); i-bII (Cm-Db).
 - Roles: kick, snare, hats, bass, melody.
-- Drum grid: 16 steps/bar; snare on 9, sparse syncopated kick, 3+3+2 hat accents and occasional subdivisions.
+- Drum grid: 16 steps/bar; snare alternates steps 9 and 13, hats follow a 3+3+2 cell, straight swing.
 - Bass: Mono tuned 808 around C1-C3; sustain roots, answer kick, and add occasional pitch transitions.
 - Palette: kick `drums`; snare `drums`; hats `drums`; bass `808`; melody `bell`.
 - Arrangement: intro 4 bars → hook 8 bars → verse 16 bars → hook 8 bars → verse 16 bars → hook 8 bars → outro 4 bars.
@@ -106,8 +106,8 @@ Lint rules:
 Starter song, one-bar track patterns:
 
 - `kick` (`drums`): `bd ~ ~ ~ ~ ~ bd ~ ~ ~ ~ ~ ~ ~ ~ ~`
-- `snare` (`drums`): `~ ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~`
-- `hats` (`drums`): `hh ~ ~ hh ~ ~ hh ~ hh ~ ~ hh ~ ~ hh ~`
+- `snare` (`drums`): `<[~ ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~] [~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~]>`
+- `hats` (`drums`): `hh ~ ~ hh ~ ~ hh ~ hh ~ ~ hh ~ ~ hh*2 ~`
 - `bass` (`808`): `c2 ~ ~ ~ ~ ~ c2 ~ ~ ~ eb2 ~ ~ ~ ~ ~`
 - `melody` (`bell`): `c5 ~ eb5 ~ g5 ~ ~ ~ ab5 ~ g5 ~ eb5 ~ ~ ~`
 
@@ -128,7 +128,7 @@ Sources:
 - Drum grid: 16 steps/bar; kicks on 1,5,9,13, claps on 5,13, offbeat hats on 3,7,11,15.
 - Bass: Rounded bass around E1-E3; syncopate or duck under each kick.
 - Palette: kick `drums` `decayMs`=150 `noise`=0.3 `tone`=0.55; snare `drums` `noise`=0.6; hats `drums` `noise`=0.55; bass `bass` `cutoffHz`=520 `releaseMs`=90; melody `keys` `index`=1.2.
-- Arrangement: intro 16 bars → groove 16 bars → hook 16 bars → breakdown 8 bars → groove 16 bars → outro 16 bars.
+- Arrangement: intro 8 bars → groove 16 bars → breakdown 8 bars → build 8 bars → hook 32 bars → breakdown 8 bars → build 8 bars → hook 32 bars → outro 8 bars.
 - Mix target: -14 LUFS, -1 dBTP; Duck or separate bass from four-on-floor kick.
 
 Lint rules:
@@ -157,7 +157,7 @@ Sources:
 ## lofi_hiphop — Lo-fi Hip-Hop
 
 - Version: 1
-- BPM: 60–90; default 75.
+- BPM: 60–95; default 75.
 - Meter: 4/4; swing 0.56–0.64; default 0.6.
 - Starter keys: C major, A minor. Scales: major, natural minor.
 - Progressions: ii7-V7-Imaj7 (Dm7-G7-Cmaj7); vi7-ii7 (Am7-Dm7).
@@ -202,7 +202,7 @@ Sources:
 - Drum grid: 16 steps/bar; kicks on 1,5,9,13 and offbeat hats; layers change by section.
 - Bass: Short repeating bass around E1-E3; separate the pulse from kick.
 - Palette: kick `drums` `decayMs`=185 `tone`=0.65; snare `drums` `noise`=0.6; hats `drums` `noise`=0.7; bass `bass` `cutoffHz`=430 `releaseMs`=65; melody `lead` `releaseMs`=100 `vibratoCents`=4.
-- Arrangement: intro 16 bars → build 16 bars → groove 32 bars → breakdown 16 bars → groove 32 bars → outro 16 bars.
+- Arrangement: intro 8 bars → build 8 bars → groove 16 bars → breakdown 2 bars → groove 32 bars → bridge 4 bars → groove 32 bars → breakdown 4 bars → groove 32 bars → outro 16 bars.
 - Mix target: -14 LUFS, -1 dBTP; Protect kick low end from cumulative bass.
 
 Lint rules:
@@ -239,7 +239,7 @@ Sources:
 - Drum grid: 16 steps/bar; snare on 9, sparse kick, eighth hats with brief subdivisions.
 - Bass: Mono tuned 808 around A1-A3; follow roots and separate long bass from kick.
 - Palette: kick `drums`; snare `drums`; hats `drums`; bass `808`; melody `pluck`.
-- Arrangement: intro 4 bars → verse 16 bars → hook 8 bars → verse 16 bars → hook 8 bars → outro 4 bars.
+- Arrangement: intro 4 bars → hook 8 bars → verse 16 bars → hook 8 bars → verse 16 bars → hook 8 bars → outro 4 bars.
 - Mix target: -14 LUFS, -1 dBTP; Short kick and controlled sub.
 
 Lint rules:
@@ -256,7 +256,7 @@ Starter song, one-bar track patterns:
 
 - `kick` (`drums`): `bd ~ ~ ~ ~ ~ bd ~ ~ ~ bd ~ ~ ~ ~ ~`
 - `snare` (`drums`): `~ ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~`
-- `hats` (`drums`): `hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh ~`
+- `hats` (`drums`): `hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh*2 ~`
 - `bass` (`808`): `a1 ~ ~ ~ ~ ~ a1 ~ ~ ~ c2 ~ ~ ~ ~ ~`
 - `melody` (`pluck`): `a4 ~ c5 ~ e5 ~ ~ ~ g5 ~ e5 ~ c5 ~ ~ ~`
 
