@@ -1,15 +1,18 @@
 # Audio I/O — Structure & Functions
 
-Create and validate stereo PCM buffers, estimate peaks, resample channels, and read or write RIFF/WAVE files.
+Create and validate stereo PCM buffers, measure peaks and loudness, resample channels, and read or write RIFF/WAVE files.
 
 ## File Tree
 
 ```text
 src/audio-io/
-├── index.ts           # public buffer, WAV, and type exports
+├── index.ts           # public buffer, loudness, WAV, and type exports
 ├── buffer.schema.ts   # stereo PCM and WAV metadata types
 ├── buffer.tool.ts     # validation, peaks, buffer allocation, resampling
 ├── buffer.test.ts     # sample-rate, shape, peak, and resampling cases
+├── loudness.schema.ts # LUFS, LRA, and true-peak result type
+├── loudness.tool.ts   # K-weighting, gated loudness, 4x true-peak estimate
+├── loudness.test.ts   # loudness, peaks, silence, and invalid input
 ├── wav.tool.ts        # RIFF/WAVE reader and PCM writer
 └── wav.test.ts        # format, dither, malformed-file, and empty-data cases
 ```
@@ -25,14 +28,16 @@ sample rate, shape, and finite sample values before measuring or writing audio.
 The WAV reader accepts supported RIFF/WAVE PCM and floating-point data and
 returns the common buffer shape. The writer emits stereo integer PCM and
 returns metadata describing the output. Its seeded 16-bit dither and the peak
-estimators are deterministic. This folder does not interpret song notation,
+estimators are deterministic. `measureLoudness` computes gated integrated LUFS,
+LRA, sample peak, and a 4x true-peak estimate. This folder does not interpret song notation,
 mix tracks, or invoke ffmpeg.
 
 ## Key Function Signatures
 
 These are the exact exported signatures in `src/audio-io/*.tool.ts`.
-`src/audio-io/index.ts` re-exports the seven public functions listed first and
-the three types from `buffer.schema.ts`. The two validators are exported from
+`src/audio-io/index.ts` re-exports eight public functions, the three types
+from `buffer.schema.ts`, and `LoudnessMetrics` from `loudness.schema.ts`.
+The two validators are exported from
 `buffer.tool.ts` for local use but are not re-exported by the barrel.
 
 | Exported signature | Source | Purpose |
@@ -42,6 +47,7 @@ the three types from `buffer.schema.ts`. The two validators are exported from
 | `export function truePeakLinear(audio: StereoBuffer): number` | `buffer.tool.ts` | Estimate both channels' intersample peak. |
 | `export function truePeakLinearOf(channel: Float32Array, rate: number): number` | `buffer.tool.ts` | Estimate one channel's intersample peak. |
 | `export function resampleLinear(input: Float32Array, fromRate: number, toRate: number): Float32Array` | `buffer.tool.ts` | Linearly resample one channel. |
+| `export function measureLoudness(pcm: StereoBuffer): LoudnessMetrics` | `loudness.tool.ts` | Measure gated loudness and peaks. |
 | `export async function readWav(path: string): Promise<StereoBuffer>` | `wav.tool.ts` | Decode a supported WAV file. |
 | `export async function writeWav(path: string, audio: StereoBuffer, options: WavWriteOptions): Promise<WavInfo>` | `wav.tool.ts` | Write stereo PCM WAV. |
 | `export function validateStereo(audio: StereoBuffer): void` | `buffer.tool.ts` | Validate channel shape and finite samples. |
@@ -59,6 +65,7 @@ export function validateSampleRate(sampleRate: number, code: "E_INPUT" | "E_REND
 | `StereoBuffer` | `export interface StereoBuffer` | `sampleRate: number`, `left/right: Float32Array`, `sourceChannels: 1 \| 2`. |
 | `WavInfo` | `export interface WavInfo` | Rate, channel count, frames, bit depth, and format. |
 | `WavWriteOptions` | `export interface WavWriteOptions { bits: 16 \| 24; seed: number }` | Output depth and uint32 dither seed. |
+| `LoudnessMetrics` | `export interface LoudnessMetrics` | Nullable integrated LUFS, LRA, sample peak dBFS, true-peak estimate dBTP; `lraProvisional` and `truePeakOversample: 4`. |
 
 `WavInfo.channels` is `1 | 2`, `bitsPerSample` is `16 | 24 | 32`, and
 `format` is `"pcm" | "float"`. The current writer returns stereo `"pcm"`
@@ -83,6 +90,19 @@ metadata with `bitsPerSample` equal to the requested 16 or 24 bits.
   position uses source coordinates and clamps the final source index.
 - Empty input produces an empty channel; invalid or oversized output fails
   with `E_RENDER`.
+
+### Loudness behavior
+
+- `measureLoudness` accepts integer 8000..192000 Hz PCM with matching
+  `Float32Array` channels and finite samples; invalid input raises `E_INPUT`.
+- Mono energy and true peak use only the left channel; stereo sums K-weighted
+  channel powers.
+- Integrated LUFS uses 400 ms blocks at 100 ms hops, a -70 LUFS absolute
+  gate, and a -10 LU relative gate. Silence or short input can return `null`.
+- LRA uses 3 s blocks, a -20 LU relative gate, and the 95th minus 10th
+  percentile. It is marked provisional below 60 seconds.
+- True peak uses a 4x, 48-tap windowed-sinc estimate and includes sample
+  peak. Both dB peak fields are `null` for silence.
 
 ### WAV read behavior
 
@@ -124,6 +144,7 @@ metadata with `bitsPerSample` equal to the requested 16 or 24 bits.
 | Node file APIs | `node:fs/promises` | Read, open, and stream file writes. |
 | Buffer schema | `./buffer.schema.ts` | Types shared by buffer and WAV helpers. |
 | Buffer validators | `./buffer.tool.ts` | WAV writer's input checks. |
+| Loudness schema | `./loudness.schema.ts` | Measurement result type. |
 
 There are no runtime package dependencies. Tests use the Node test runner
 and temporary files from Node's standard library.
@@ -134,15 +155,18 @@ and temporary files from Node's standard library.
 |---|---|---|
 | `src/render/kit.tool.ts` | `../audio-io/index.ts` | Load WAV samples and resample channels. |
 | `src/render/fx.tool.ts` | `../audio-io/index.ts` | Create and type stereo buffers. |
+| `src/render/mixer.tool.ts` | `../audio-io/index.ts` | Measure pre-master LUFS for `lufs` mode. |
+| `src/analyze/analyze.tool.ts` | `../audio-io/index.ts` | Read WAV and measure whole-song and section loudness. |
+| `src/analyze/index.ts` | `../audio-io/index.ts` | Re-export loudness measurement. |
 | `src/render/render.schema.ts` | `../audio-io/index.ts` | Refer to `StereoBuffer` in render types. |
 | `src/render/kit.test.ts` | `../audio-io/index.ts` | Build WAV fixtures for kit tests. |
 | `src/render/fx.test.ts` | `../audio-io/index.ts` | Build buffers for effect tests. |
 | `src/audio-io/buffer.test.ts` | `./buffer.tool.ts` | Verify buffer, resampling, and peak behavior. |
 | `src/audio-io/wav.test.ts` | `./wav.tool.ts`, `./buffer.tool.ts` | Verify WAV decoding and encoding. |
+| `src/audio-io/loudness.test.ts` | `./loudness.tool.ts` | Verify loudness, peaks, and validation. |
 
-At this source snapshot, render is the only other feature folder importing
-`src/audio-io/index.ts`. Planned analyze and critic consumers are not yet
-implemented; check the real imports when adding them.
+Render and analyze both consume `src/audio-io/index.ts`; check their real
+imports before changing the shared PCM or loudness contract.
 
 ## Sync Checklist
 
@@ -151,6 +175,7 @@ implemented; check the real imports when adding them.
 - [ ] Update `devlog/str_func/AGENTS.md` index when adding this document.
 - [ ] Update `buffer.test.ts` for rates, shape, peaks, and resampling changes.
 - [ ] Update `wav.test.ts` for chunk parsing, dither, and error changes.
+- [ ] Update `loudness.test.ts` when gates, channel handling, or peaks change.
 - [ ] Check render imports before changing `StereoBuffer` or WAV behavior.
 - [ ] Compare `devlog/_plan/260928_music2_roadmap/020_render_engine.md` when
   the implementation or documented contract changes.

@@ -84,7 +84,7 @@ export const render: CommandSpec = {
     if (ogg && !ffmpeg!.encoders.libvorbis) throw new Music2Error("E_CAPABILITY", "libvorbis encoder unavailable");
     const result = await renderSong(song, songPath, {
       ...(range ? { bars: range } : {}), stems: stemDir !== undefined,
-      mastering: values["loudnorm"] === true ? "loudnorm" : "peak",
+      mastering: values["loudnorm"] === true ? "loudnorm" : song.master.targetLufs === null ? "peak" : "lufs",
     });
     const pending: { temporary: string; final: string }[] = [];
     const temporaryFiles: string[] = [];

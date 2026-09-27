@@ -10,9 +10,6 @@ import { validateVoiceParams } from "./voices/registry.tool.ts";
 export async function renderSong(song: ResolvedSong, songPath: string,
   options: RenderOptions = {}): Promise<RenderResult> {
   validateVoiceParams(song);
-  if ((options.mastering ?? "peak") === "peak" && song.master.targetLufs !== null) {
-    throw new Music2Error("E_CAPABILITY", "targetLufs requires loudnorm mastering in wp3");
-  }
   const timeline = buildTimeline(song);
   for (const event of timeline.events) {
     const track = song.tracks[event.trackIndex]!;

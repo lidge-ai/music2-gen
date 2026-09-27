@@ -1,0 +1,26 @@
+import assert from "node:assert/strict";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import test from "node:test";
+import { analyze } from "./analyze.ts";
+
+test("analyze command validates positional and path flags", async () => {
+  const context = { args: [] as string[], values: {} as Record<string, unknown>, cwd: process.cwd(),
+    json: true, stderr: process.stderr };
+  await assert.rejects(analyze.run(context), { code: "E_INPUT" });
+  await assert.rejects(analyze.run({ ...context, args: ["x.wav"], values: { song: "" } }), { code: "E_INPUT" });
+  await assert.rejects(analyze.run({ ...context, args: ["x.wav"], values: { out: true } }), { code: "E_INPUT" });
+});
+
+test("analyze command returns artifact paths in the CLI envelope", async () => {
+  const out = await mkdtemp(join(tmpdir(), "music2-analyze-command-"));
+  try {
+    const result = await analyze.run({ args: ["examples/minimal.song.json"], values: { out },
+      cwd: process.cwd(), json: true, stderr: process.stderr });
+    assert.equal(result.command, "analyze");
+    assert.ok(result.artifacts?.includes(join(out, "analysis.json")));
+    assert.ok(result.artifacts?.includes(join(out, "pianoroll.png")));
+    assert.equal((result.data["summary"] as { declaredBpm: number }).declaredBpm, 120);
+  } finally { await rm(out, { recursive: true, force: true }); }
+});

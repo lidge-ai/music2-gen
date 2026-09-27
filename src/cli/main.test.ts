@@ -154,3 +154,45 @@ void test("schema --out writes bytes identical to the published schema", async (
     assert.equal(readFileSync(join(dir, "written.json"), "utf8"), readFileSync(join(packageRoot(), "schema/song.v1.json"), "utf8"));
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+void test("analyze missing input and unknown option keep one JSON error object", async () => {
+  const missing = capture();
+  assert.equal(await main(["analyze", "/definitely-absent-music2.wav", "--json"], missing.io), 2);
+  assert.equal(missing.output().stdout.trim().split("\n").length, 1);
+  assert.equal((JSON.parse(missing.output().stdout) as { error: { code: string } }).error.code, "E_NOT_FOUND");
+  const flag = capture();
+  assert.equal(await main(["analyze", "examples/drill-140.song.json", "--unknown", "--json"], flag.io), 2);
+  assert.equal((JSON.parse(flag.output().stdout) as { error: { code: string } }).error.code, "E_INPUT");
+});
+
+void test("analyze WAV uses an audio beat grid and rejects a misaligned companion song", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { renderSong } = await import("../render/index.ts");
+  const { writeWav } = await import("../audio-io/index.ts");
+  const { loadSong } = await import("../song/index.ts");
+  const fixture = mkdtempSync(join(tmpdir(), "music2-cli-analyze-"));
+  try {
+    const songPath = join(packageRoot(), "examples/drill-140.song.json");
+    const song = await loadSong(songPath);
+    const rendered = await renderSong(song, songPath);
+    const wav = join(fixture, "drill.wav");
+    await writeWav(wav, rendered.audio, { bits: 16, seed: 1 });
+    const c = capture();
+    assert.equal(await main(["analyze", wav, "--out", join(fixture, "report"), "--json"], c.io), 0);
+    const body = JSON.parse(c.output().stdout) as { ok: boolean; data: { beatsJson: string; pianoRollPng: null; summary: { estimatedBpm: number; warnings: { code: string }[] } } };
+    assert.equal(body.ok, true);
+    assert.equal(body.data.pianoRollPng, null);
+    assert.ok(body.data.summary.estimatedBpm >= 138 && body.data.summary.estimatedBpm <= 142);
+    assert.ok(body.data.summary.warnings.some(({ code }) => code === "METER_ASSUMED"));
+    const beats = JSON.parse(readFileSync(body.data.beatsJson, "utf8")) as { source: string; meter: number };
+    assert.equal(beats.source, "audio"); assert.equal(beats.meter, 4);
+    const companion = capture();
+    assert.equal(await main(["analyze", wav, "--song", songPath, "--out", join(fixture, "with-song"), "--json"], companion.io), 0);
+    const paired = JSON.parse(companion.output().stdout) as { data: { pianoRollPng: string; beatsJson: string } };
+    assert.ok(paired.data.pianoRollPng.endsWith("pianoroll.png"));
+    assert.equal((JSON.parse(readFileSync(paired.data.beatsJson, "utf8")) as { source: string }).source, "song");
+    const mismatch = capture();
+    assert.equal(await main(["analyze", wav, "--song", join(packageRoot(), "examples/minimal.song.json"), "--json"], mismatch.io), 2);
+    assert.equal((JSON.parse(mismatch.output().stdout) as { error: { code: string } }).error.code, "E_INPUT");
+  } finally { rmSync(fixture, { recursive: true, force: true }); }
+});

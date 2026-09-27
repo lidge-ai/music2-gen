@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildTimeline, validateSong } from "../song/index.ts";
-import { createStereo, peakLinear, truePeakLinear, writeWav } from "../audio-io/index.ts";
+import { createStereo, measureLoudness, peakLinear, truePeakLinear, writeWav } from "../audio-io/index.ts";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -68,6 +68,17 @@ test("peak and true peak remain below ceiling", async () => {
   assert.ok(result.peakDbfs <= -3 + 1e-5);
   assert.ok(result.truePeakDbtp <= -2.9);
   assert.ok(Math.abs(result.truePeakDbtp - 20 * Math.log10(truePeakLinear(result.audio))) < 1e-8);
+});
+
+test("drill target -14 LUFS uses static loudness gain before limiting", async () => {
+  const song = validateSong(fixture({ master: { targetLufs: -14 },
+    tracks: [{ id: "kick", kind: "drums", instrument: "drums", pattern: "bd ~ sd ~" },
+      { id: "hats", kind: "drums", instrument: "drums", pattern: "hh hh hh hh" },
+      { id: "bass", kind: "notes", instrument: "808", pattern: "c2 ~ c2 ~" }],
+    sections: [{ id: "one", bars: 4 }], arrangement: [{ section: "one" }] }));
+  const result = await mixTracks(song, buildTimeline(song), "fixture.song.json");
+  const measured = measureLoudness(result.audio).integratedLufs;
+  assert.ok(measured !== null && measured > -16 && measured < -13, String(measured));
 });
 
 

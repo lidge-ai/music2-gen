@@ -20,6 +20,8 @@ src/cli/
     ├── events.ts        # list filtered timed song events
     ├── render.ts        # WAV, optional stems, encoding, and loudnorm
     ├── render.test.ts   # render command output and failure cases
+    ├── analyze.ts       # WAV/song analysis and artifacts
+    ├── analyze.test.ts  # analysis command and output cases
     ├── doctor.ts        # ffmpeg and encoder capability report
     └── doctor.test.ts   # doctor capability and required-mode cases
 ```
@@ -34,7 +36,7 @@ owns error codes and their exit mapping. The registry supplies command metadata
 used by both parsing and help text.
 
 At this source snapshot the registry contains `help`, `version`, `schema`,
-`validate`, `events`, `render`, and `doctor`.
+`validate`, `events`, `render`, `doctor`, and `analyze`.
 
 ## Key Function Signatures
 
@@ -59,7 +61,7 @@ The signatures below come from exported declarations in the current source.
 | `CliIO` | `export interface CliIO` | Optional `stdout`, `stderr`, `cwd`. |
 | `CommandOption` | `export interface CommandOption` | Option type, short flag, multiplicity, description. |
 | `CommandContext` | `export interface CommandContext` | Handler arguments, values, JSON mode, cwd, stderr. |
-| `CommandResult` | `export interface CommandResult` | Command name, data, optional artifacts and warnings. |
+| `CommandResult` | `export interface CommandResult` | Command name, data, optional artifacts, warnings, and human-mode `text`. |
 | `CommandSpec` | `export interface CommandSpec` | Name, summary, usage, options, async `run`. |
 | `commands` | `export const commands = new Map<string, CommandSpec>()` | In-process registry. |
 | `help` | `export const help: CommandSpec` | Help command specification. |
@@ -69,6 +71,7 @@ The signatures below come from exported declarations in the current source.
 | `events` | `export const events: CommandSpec` | Timed event listing command. |
 | `render` | `export const render: CommandSpec` | WAV render with optional stems and encoded copies. |
 | `doctor` | `export const doctor: CommandSpec` | ffmpeg capability inspection. |
+| `analyze` | `export const analyze: CommandSpec` | WAV/song analysis and artifact generation. |
 
 `CommandSpec` requires `run(ctx: CommandContext): Promise<CommandResult>`.
 The handlers implement `run({ args })` inline on their exported spec objects;
@@ -107,6 +110,8 @@ they have no separately exported `run` function.
   `meta.music2`; absent fix is `null` and absent details is `{}`.
 - Human version output is `music2 <version>`.
 - Human help output is the usage string.
+- A supplied `CommandResult.text` is returned verbatim in human mode before
+  the version/help fallbacks. JSON mode ignores it and emits one JSON object.
 - Other human success data is pretty-printed JSON.
 
 ### Registered commands
@@ -120,6 +125,7 @@ they have no separately exported `run` function.
 | `events` | `commands/events.ts` | One song path; optional `--bars start:end` and `--track id`; returns selected timed events. |
 | `render` | `commands/render.ts` | One song path; WAV plus optional MP3, Ogg, and stems; returns `RenderData` and artifact paths. |
 | `doctor` | `commands/doctor.ts` | No positional args; returns `DoctorData` for ffmpeg and required encoders. |
+| `analyze` | `commands/analyze.ts` | One WAV or song JSON path; optional `--song` and `--out`; returns artifacts and summary. |
 
 `help` rejects extra or unknown topics with `E_INPUT`. It generates its
 command list from the live registry, so newly registered specs appear there.
@@ -156,6 +162,10 @@ temporary files are removed in `finally`. The returned `artifacts` array
 lists the requested final paths. Loudnorm processes the WAV before optional
 MP3/Ogg encoding; stems retain dry, pre-master audio.
 
+Without `--loudnorm`, songs with `master.targetLufs` use the renderer's
+in-process `lufs` mode; songs without a target use `peak` mode. `--loudnorm`
+explicitly selects ffmpeg two-pass processing.
+
 `RenderData` is declared in `src/render/render.schema.ts` and imported
 directly by the command:
 
@@ -168,6 +178,22 @@ directly by the command:
 | `durationSeconds`, `ceilingDb` | `number` | PCM duration and configured ceiling. |
 | `peakDbfs`, `truePeakDbtp` | `number \| null` | PCM peak measurements; silence maps `-Infinity` to JSON `null`. |
 
+### Analyze command
+
+Usage: `music2 analyze <audio.wav|song.json> [--song song.json] [--out dir] [--json]`.
+The command requires one input path. `--song` is valid only with WAV input,
+and the supplied song must align with that WAV's sample rate and full rendered
+frame count. A song JSON input is rendered in-process before analysis.
+
+The default output directory is `<input-stem>.analysis` beside the input;
+`--out` replaces it. The command writes `analysis.json`, `analysis.md`, and
+`spectrogram.png`, plus `pianoroll.png` when song metadata is available and
+`beats.json` when a beat map can be built. It rejects output/input path
+collisions. `data` is the `AnalysisArtifacts` object, including artifact paths
+and a declared/estimated BPM, LUFS, and warning summary. In human mode, its
+`text` renders the Markdown report followed by an artifact list; JSON mode
+omits `text` from the single structured envelope.
+
 ### Doctor command
 
 Usage: `music2 doctor [--json]`. It probes ffmpeg and returns `DoctorData`
@@ -179,7 +205,7 @@ required: boolean; ready: boolean }`. `FfmpegInfo` contains executable
 and the command succeeds. With that environment setting, missing ffmpeg
 raises `E_FFMPEG_MISSING`; missing required encoders raises `E_CAPABILITY`.
 
-### Render and doctor errors
+### Render, analyze, and doctor errors
 
 | Code | Typical cause | Exit |
 |---|---|---|
@@ -203,7 +229,8 @@ typed code. JSON mode still emits exactly one object.
 | Registry | `./registry.ts` / `../registry.ts` | Command lookup, specs, and help list. |
 | Args parser | `./args.ts` | `main` parses and selects error mode. |
 | Output formatter | `./output.ts` | `main` writes success and failure envelopes. |
-| Command specs | `./commands/help.ts`, `./commands/version.ts`, `./commands/schema.ts`, `./commands/validate.ts`, `./commands/events.ts`, `./commands/render.ts`, `./commands/doctor.ts` | Registry startup. |
+| Command specs | `./commands/help.ts`, `./commands/version.ts`, `./commands/schema.ts`, `./commands/validate.ts`, `./commands/events.ts`, `./commands/render.ts`, `./commands/doctor.ts`, `./commands/analyze.ts` | Registry startup. |
+| Analysis boundary | `../../analyze/analyze.tool.ts` | Analyze WAV/song input and write artifacts. |
 | Song boundary | `../../song/index.ts` | Schema, loading, and timeline in command handlers. |
 | Render boundary | `../../render/index.ts`, `../../render/render.schema.ts` | Render song PCM and type render response. |
 | Audio I/O | `../../audio-io/index.ts` | Write master and stem WAV files. |
@@ -225,6 +252,7 @@ assert, filesystem, process-spawn, OS-temp, and path modules.
 | `src/cli/commands/help.ts` | `../registry.ts` | Renders registered specs. |
 | `src/cli/commands/render.test.ts` | `./render.ts` | Verifies render outputs and failures. |
 | `src/cli/commands/doctor.test.ts` | `./doctor.ts` | Verifies capability reporting and required mode. |
+| `src/cli/commands/analyze.test.ts` | `./analyze.ts` | Verifies analysis command and artifact results. |
 
 No other source feature currently imports `src/cli/index.ts`; it is the
 process entry point. The source-bin test exercises it through `bin/music2.js`.
@@ -239,4 +267,5 @@ process entry point. The source-bin test exercises it through `bin/music2.js`.
 - [ ] Keep `devlog/str_func/render.md` aligned with render options, data, and mastering.
 - [ ] Keep `devlog/str_func/probe.md` aligned with doctor data and ffmpeg behavior.
 - [ ] Update render and doctor command tests when flags or error mapping change.
+- [ ] Update analyze command tests when input, artifact, or human text behavior changes.
 - [ ] Update `devlog/str_func/AGENTS.md` index when adding or moving this document.

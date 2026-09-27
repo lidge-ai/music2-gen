@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { measureLoudness, readWav } from "../../audio-io/index.ts";
 import { Music2Error } from "../../shared/index.ts";
 import type { CommandContext } from "../registry.ts";
 import { render } from "./render.ts";
@@ -74,4 +75,30 @@ test("silent CLI result reports null peaks", async () => {
     assert.equal(result.data["peakDbfs"], null);
     assert.equal(result.data["truePeakDbtp"], null);
   } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test("targetLufs selects native LUFS mastering without ffmpeg", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-lufs-test-"));
+  const previous = process.env.MUSIC2_FFMPEG;
+  try {
+    const path = join(dir, "target.song.json");
+    const output = join(dir, "target.wav");
+    await writeFile(path, JSON.stringify({ version: 1, bpm: 120, tailSeconds: 0,
+      master: { targetLufs: -14 },
+      tracks: [
+        { id: "kick", kind: "drums", instrument: "drums", pattern: "bd ~ sd ~" },
+        { id: "hats", kind: "drums", instrument: "drums", pattern: "hh hh hh hh" },
+        { id: "bass", kind: "notes", instrument: "808", pattern: "c2 ~ c2 ~" },
+      ], sections: [{ id: "one", bars: 4 }], arrangement: [{ section: "one" }] }));
+    process.env.MUSIC2_FFMPEG = join(dir, "missing-ffmpeg");
+    await render.run({ args: [path], values: { out: output }, json: true, cwd: dir, stderr: process.stderr });
+    const loudness = measureLoudness(await readWav(output)).integratedLufs;
+    assert.ok(loudness !== null && loudness > -16 && loudness < -13, String(loudness));
+    await assert.rejects(render.run({ args: [path], values: { out: join(dir, "external.wav"), loudnorm: true },
+      json: true, cwd: dir, stderr: process.stderr }),
+    (error: unknown) => error instanceof Music2Error && error.code === "E_FFMPEG_MISSING");
+  } finally {
+    if (previous === undefined) delete process.env.MUSIC2_FFMPEG; else process.env.MUSIC2_FFMPEG = previous;
+    await rm(dir, { recursive: true, force: true });
+  }
 });

@@ -1,0 +1,132 @@
+import assert from "node:assert/strict";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import test from "node:test";
+import { inflateSync } from "node:zlib";
+import type { StereoBuffer } from "../audio-io/index.ts";
+import { loadSong } from "../song/index.ts";
+import { analyzeAudio, analyzeFile } from "./analyze.tool.ts";
+
+const drill = resolve("examples/drill-140.song.json");
+function sine(seconds: number, hz = 1000, amplitude = .1): StereoBuffer {
+  const sampleRate = 8000;
+  const left = Float32Array.from({ length: sampleRate * seconds }, (_, i) => amplitude * Math.sin(2 * Math.PI * hz * i / sampleRate));
+  return { sampleRate, left, right: left, sourceChannels: 1 };
+}
+function checkPng(bytes: Buffer): void {
+  assert.deepEqual([...bytes.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+  let pos = 8, width = 0, height = 0;
+  const chunks: Buffer[] = [];
+  const crc32 = (data: Uint8Array): number => {
+    let crc = 0xffffffff;
+    for (const byte of data) {
+      crc ^= byte;
+      for (let bit = 0; bit < 8; bit++) crc = crc & 1 ? (crc >>> 1) ^ 0xedb88320 : crc >>> 1;
+    }
+    return (crc ^ 0xffffffff) >>> 0;
+  };
+  while (pos < bytes.length) {
+    const length = bytes.readUInt32BE(pos);
+    const type = bytes.toString("ascii", pos + 4, pos + 8);
+    assert.equal(bytes.readUInt32BE(pos + 8 + length), crc32(bytes.subarray(pos + 4, pos + 8 + length)));
+    if (type === "IHDR") { width = bytes.readUInt32BE(pos + 8); height = bytes.readUInt32BE(pos + 12); }
+    if (type === "IDAT") chunks.push(bytes.subarray(pos + 8, pos + 8 + length));
+    pos += 12 + length;
+    if (type === "IEND") break;
+  }
+  assert.ok(width > 0 && height > 0);
+  const raw = inflateSync(Buffer.concat(chunks));
+  assert.equal(raw.length, height * (1 + width * 3));
+  for (let y = 0; y < height; y++) assert.equal(raw[y * (1 + width * 3)], 0);
+}
+
+test("PCM validation and ordered threshold warnings", () => {
+  const audio = sine(1, 50, 1.2);
+  assert.throws(() => analyzeAudio({ ...audio, right: new Float32Array(0) }), { code: "E_INPUT" });
+  const report = analyzeAudio(audio, { targetLufs: -30 });
+  assert.ok(report.analysis.clippedSamples > 0);
+  const codes = report.analysis.warnings.map((item) => item.code);
+  assert.equal(codes[0], "CLIPPING");
+  assert.ok(codes.includes("LUFS_OFF_TARGET"));
+  assert.ok(codes.includes("LOW_END_DOMINANCE"));
+  assert.ok(codes.includes("EMPTY_HIGH_BAND"));
+  assert.ok(codes.includes("NO_BEATS"));
+});
+
+test("analysis accepts finite PCM rates outside the shared meter range", () => {
+  for (const sampleRate of [5000, 200000]) {
+    const left = Float32Array.from({ length: Math.round(sampleRate * .05) }, (_, i) => .1 * Math.sin(2 * Math.PI * 500 * i / sampleRate));
+    const result = analyzeAudio({ sampleRate, left, right: left, sourceChannels: 1 });
+    assert.equal(result.analysis.sampleRate, sampleRate);
+    assert.ok(result.analysis.samplePeakLinear > 0);
+  }
+});
+
+test("WAV-only steady tone has three artifacts and no beat map", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-analysis-wav-"));
+  try {
+    const wav = join(dir, "tone.wav");
+    // Float32 mono RIFF keeps the input free of dither-induced onset noise.
+    const audio = sine(1);
+    const bytes = Buffer.alloc(44 + audio.left.length * 4);
+    bytes.write("RIFF", 0); bytes.writeUInt32LE(bytes.length - 8, 4); bytes.write("WAVEfmt ", 8);
+    bytes.writeUInt32LE(16, 16); bytes.writeUInt16LE(3, 20); bytes.writeUInt16LE(1, 22);
+    bytes.writeUInt32LE(audio.sampleRate, 24); bytes.writeUInt32LE(audio.sampleRate * 4, 28);
+    bytes.writeUInt16LE(4, 32); bytes.writeUInt16LE(32, 34);
+    bytes.write("data", 36); bytes.writeUInt32LE(audio.left.length * 4, 40);
+    for (let i = 0; i < audio.left.length; i++) bytes.writeFloatLE(audio.left[i]!, 44 + i * 4);
+    await writeFile(wav, bytes);
+    const artifacts = await analyzeFile(wav);
+    assert.equal(artifacts.pianoRollPng, null);
+    assert.equal(artifacts.beatsJson, null);
+    checkPng(await readFile(artifacts.spectrogramPng));
+    assert.match(await readFile(artifacts.analysisMd, "utf8"), /No song timeline supplied/);
+    const analysis = JSON.parse(await readFile(artifacts.analysisJson, "utf8")) as { warnings: { code: string }[] };
+    assert.ok(analysis.warnings.some(({ code }) => code === "NO_BEATS"));
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test("drill song produces five reproducible artifacts with independent 140 BPM estimate", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-analysis-song-"));
+  try {
+    const artifacts = await analyzeFile(drill, { outDir: dir });
+    assert.ok(artifacts.pianoRollPng && artifacts.beatsJson);
+    const paths = [artifacts.analysisJson, artifacts.analysisMd, artifacts.spectrogramPng,
+      artifacts.pianoRollPng, artifacts.beatsJson] as string[];
+    const first = await Promise.all(paths.map((path) => readFile(path)));
+    checkPng(first[2]!); checkPng(first[3]!);
+    const analysis = JSON.parse(first[0]!.toString()) as { declaredBpm: number; estimatedBpm: number; sections: unknown[]; tracks: unknown[] };
+    assert.equal(analysis.declaredBpm, 140);
+    assert.ok(analysis.estimatedBpm >= 138 && analysis.estimatedBpm <= 142, `estimated BPM ${analysis.estimatedBpm}`);
+    assert.ok(analysis.sections.length > 0 && analysis.tracks.length > 0);
+    assert.match(first[1]!.toString(), /\| hook#0 \| hook \|/);
+    const map = JSON.parse(first[4]!.toString()) as { source: string; meter: number };
+    assert.equal(map.source, "song"); assert.equal(map.meter, 4);
+    await analyzeFile(drill, { outDir: dir });
+    const second = await Promise.all(paths.map((path) => readFile(path)));
+    first.forEach((bytes, i) => assert.deepEqual(second[i], bytes));
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test("missing file and song/WAV option ambiguity are input errors", async () => {
+  await assert.rejects(analyzeFile("/definitely-absent-music2.wav"), { code: "E_NOT_FOUND" });
+  await assert.rejects(analyzeFile(drill, { songPath: drill }), { code: "E_INPUT" });
+  const song = await loadSong(drill);
+  assert.equal(song.bpm, 140);
+});
+
+test("output file collision and inaccessible directory fail before replacing inputs", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-analysis-collision-"));
+  try {
+    const input = join(dir, "analysis.json");
+    const minimal = resolve("examples/minimal.song.json");
+    const bytes = await readFile(minimal);
+    await writeFile(input, bytes);
+    await assert.rejects(analyzeFile(input, { outDir: dir }), { code: "E_INPUT" });
+    assert.deepEqual(await readFile(input), bytes);
+    const blocker = join(dir, "blocker");
+    await writeFile(blocker, "file");
+    await assert.rejects(analyzeFile(minimal, { outDir: blocker }), { code: "E_ACCESS" });
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});

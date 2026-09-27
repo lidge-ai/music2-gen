@@ -37,7 +37,7 @@ src/render/
 MIDI ranges, and the mastering capability before building the timeline.
 `mixTracks` selects events for a zero-based half-open bar range, allocates
 stereo buffers including the song tail, renders each voice or kit, applies
-track gain and pan, sends, ducking, wet effects, and peak mastering.
+track gain and pan, sends, ducking, wet effects, and selected mastering.
 
 Each built-in voice renders a track-length mono `Float32Array`. The mixer
 converts it to stereo and optionally retains a dry, post-gain/pan/duck stem.
@@ -45,7 +45,7 @@ Stems exclude wet sends and master processing. Kits load relative to the song
 path; their decoded samples and cache live for one render invocation.
 
 This feature returns PCM and measurements. File output, WAV bit depth,
-ffmpeg encoding, two-pass loudness processing, and CLI envelopes belong to
+ffmpeg encoding, optional two-pass loudnorm processing, and CLI envelopes belong to
 `src/cli` with `src/audio-io` and `src/probe`.
 
 ## Key Function Signatures
@@ -79,7 +79,7 @@ is the voice contract; individual render methods are object members.
 
 | Type | Source | Shape and use |
 |---|---|---|
-| `RenderOptions` | `render.schema.ts` | Optional `bars`, `stems`, `mastering: "peak" \| "loudnorm"`. |
+| `RenderOptions` | `render.schema.ts` | Optional `bars`, `stems`, `mastering: "peak" \| "loudnorm" \| "lufs"`. |
 | `RenderResult` | `render.schema.ts` | `audio`, `stems`, `bars`, `durationSeconds`, `peakDbfs`, `truePeakDbtp`, `ceilingDb`, `events`. |
 | `RenderStem` | `render.schema.ts` | `trackId` and stereo `audio`. |
 | `VoiceEvent` | `render.schema.ts` | MIDI/sample, velocity, frame timing, event index, seed. |
@@ -118,8 +118,9 @@ overrides the voice's mono default.
 
 ### Render and mixing behavior
 
-- `renderSong` rejects `master.targetLufs` with peak mastering as
-  `E_CAPABILITY`; the CLI opts into loudnorm separately.
+- When mastering is omitted, `master.targetLufs` selects in-process `lufs`;
+  otherwise the default is `peak`. The CLI explicitly selects `loudnorm`
+  only for `--loudnorm`.
 - It validates every timeline event's drum name and MIDI value before
   audio allocation and mixing.
 - `mixTracks` requires `0 <= start < end <= timeline.bars`; an invalid
@@ -138,8 +139,11 @@ overrides the voice's mono default.
   Ducking applies at the dry track before sends and stem capture.
 - Reverb and delay are wet-only sends. Reverb uses comb and all-pass stages;
   delay alternates channels at a dotted-eighth interval with feedback.
-- Mastering applies gain, soft saturation, peak scaling, lookahead
-  limiting, clipping, and an eight-times interpolated true-peak check.
+- `lufs` measures pre-master PCM with `measureLoudness`, adds the difference
+  from `master.targetLufs` to master gain, and uses a milder soft-saturation
+  normalization without peak scaling. Silence or a null target adds no LUFS gain.
+- Other modes apply gain, soft saturation, and peak scaling. All modes then
+  use lookahead limiting, clipping, and an eight-times interpolated true-peak check.
 - Silence reports `-Infinity` for PCM peak fields. The CLI turns these
   values into JSON `null` when constructing `RenderData`.
 
@@ -149,7 +153,6 @@ overrides the voice's mono default.
 |---|---|---|
 | `E_SCHEMA` | Invalid voice, kind, mono setting, parameter, MIDI/drum name, or kit manifest/sample decode. | 2 |
 | `E_INPUT` | Invalid requested bar range. | 2 |
-| `E_CAPABILITY` | `targetLufs` requested without loudnorm mastering. | 3 |
 | `E_ACCESS` | Kit path, manifest, or sample cannot be accessed or escapes the kit root. | 4 |
 | `E_RENDER` | Invalid signal, effect input, frame count, or master peak ceiling. | 5 |
 
@@ -158,7 +161,7 @@ overrides the voice's mono default.
 | Dependency | Import path | Current use |
 |---|---|---|
 | Song boundary | `../song/index.ts` / `../../song/index.ts` | Resolved types and timeline builder. |
-| Audio I/O | `../audio-io/index.ts` | Stereo allocation/peak and kit WAV read/resampling. |
+| Audio I/O | `../audio-io/index.ts` | Stereo allocation/peaks, LUFS measurement, and kit WAV read/resampling. |
 | Shared | `../shared/index.ts` / `../../shared/index.ts` | Typed errors and addressed PRNG/hash. |
 | Node filesystem/path | `node:fs/promises`, `node:path` | Kit manifest/sample access and confinement. |
 | Render schema | `./render.schema.ts` / `../render.schema.ts` | Options, results, voice and kit contracts. |
@@ -189,4 +192,5 @@ There are no runtime package dependencies. Tests use the Node test runner.
 - [ ] Update `devlog/str_func/cli.md` when `RenderData` or render options change.
 - [ ] Update kit tests when manifest or path-confinement behavior changes.
 - [ ] Recheck mixer vectors, dry stems, and true-peak ceiling after DSP changes.
+- [ ] Recheck `lufs` target behavior and `devlog/str_func/audio-io.md` when loudness measurement changes.
 - [ ] Update `devlog/str_func/AGENTS.md` index when adding or moving this document.

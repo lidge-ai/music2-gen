@@ -62,13 +62,10 @@ test("simultaneous mono notes retain the final Timeline event", async () => {
   assert.deepEqual(both.stems[0]!.audio.left, last.stems[0]!.audio.left);
 });
 
-test("peak mastering rejects targetLufs and bad drum names point to track index", async () => {
+test("targetLufs no longer blocks render validation; bad drum names point to track index", async () => {
   const song = validateSong({ version: 1, bpm: 120, master: { targetLufs: -14 },
     tracks: [{ id: "drum", kind: "drums", instrument: "drums", pattern: "cowbell" }],
     sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] });
-  await assert.rejects(renderSong(song, "fixture.song.json"),
-    (error: unknown) => error instanceof Music2Error && error.code === "E_CAPABILITY");
-  song.master.targetLufs = null;
   await assert.rejects(renderSong(song, "fixture.song.json"),
     (error: unknown) => error instanceof Music2Error && error.code === "E_SCHEMA" &&
       (error.details?.["issues"] as { path: string }[])[0]?.path === "tracks[0].pattern");

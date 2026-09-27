@@ -13,3 +13,9 @@ Input: evidence/poc-render.mjs output (8 bars, 140 BPM, 16-bit stereo, no master
 
 Top weighted: 70 (0.497), 139.5 (0.470), 140 (0.461). Plain weighted autocorrelation picks the half-time
 tempo, so 030 adds the hat-subdivision grid score and the 0.85 octave rule (ratio here 0.93 → 140).
+
+## Re-run on the music2 drill render (wp4 P, commit 9477c2f)
+
+Input: examples/drill-140.song.json rendered by music2 (16 bars, 808 level 0.45, snare -3 dB, hats -9 dB).
+Top weighted: 140 (0.745), 139.5 (0.742), 140.5 (0.732), 139 (0.721), 70 (0.705). Raw r: 70 0.822, 140 0.754.
+Plain weighted autocorrelation already picks 140 here; the guarded octave rule remains as a safety net for sparser mixes.

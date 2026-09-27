@@ -14,3 +14,4 @@ The index table below is kept in sync with `src/`.
 | audio-io | audio-io.md | active |
 | render | render.md | active |
 | probe | probe.md | active |
+| analyze | analyze.md | active |

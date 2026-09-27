@@ -10,6 +10,7 @@ export function renderSuccess(result: CommandResult, json: boolean): string {
     warnings: result.warnings ?? [],
     meta: { music2: packageVersion() },
   });
+  if (typeof result.text === "string") return result.text;
   if (result.command === "version") return `music2 ${String(result.data["version"])}`;
   if (result.command === "help") return typeof result.data["usage"] === "string" ? result.data["usage"] : "";
   return JSON.stringify(result.data, null, 2);

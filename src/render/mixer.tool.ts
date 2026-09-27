@@ -1,4 +1,4 @@
-import { createStereo, peakLinear } from "../audio-io/index.ts";
+import { createStereo, measureLoudness, peakLinear } from "../audio-io/index.ts";
 import type { StereoBuffer } from "../audio-io/index.ts";
 import { fnv1a32, Music2Error } from "../shared/index.ts";
 import type { ResolvedSong, Timeline } from "../song/index.ts";
@@ -178,24 +178,30 @@ function truePeakBounded(audio: StereoBuffer): number {
   return best;
 }
 
-function masterAudio(audio: StereoBuffer, song: ResolvedSong): { peakDbfs: number; truePeakDbtp: number } {
-  const gain = 10 ** (song.master.gainDb / 20);
+function masterAudio(audio: StereoBuffer, song: ResolvedSong, mastering: RenderOptions["mastering"]): { peakDbfs: number; truePeakDbtp: number } {
+  const mode = mastering ?? (song.master.targetLufs === null ? "peak" : "lufs");
+  const measured = mode === "lufs" && song.master.targetLufs !== null ? measureLoudness(audio).integratedLufs : null;
+  const loudnessGainDb = measured === null ? 0 : song.master.targetLufs! - measured;
+  const gain = 10 ** ((song.master.gainDb + loudnessGainDb) / 20);
   const ceiling = 10 ** (song.master.ceilingDb / 20);
+  const softNorm = mode === "lufs" ? SOFT_DRIVE : SOFT_NORM;
   let peak = 0;
   for (let i = 0; i < audio.left.length; i++) {
     const left = audio.left[i]! * gain;
     const right = audio.right[i]! * gain;
     if (!Number.isFinite(left) || !Number.isFinite(right)) throw renderError("nonfinite master sample", i);
-    audio.left[i] = Math.tanh(SOFT_DRIVE * left) / SOFT_NORM;
-    audio.right[i] = Math.tanh(SOFT_DRIVE * right) / SOFT_NORM;
+    audio.left[i] = Math.tanh(SOFT_DRIVE * left) / softNorm;
+    audio.right[i] = Math.tanh(SOFT_DRIVE * right) / softNorm;
     peak = Math.max(peak, Math.abs(audio.left[i]!), Math.abs(audio.right[i]!));
   }
   if (peak === 0) return { peakDbfs: -Infinity, truePeakDbtp: -Infinity };
-  const target = 10 ** ((song.master.ceilingDb - 0.5) / 20);
-  const scale = target / peak;
-  for (let i = 0; i < audio.left.length; i++) {
-    audio.left[i] = audio.left[i]! * scale;
-    audio.right[i] = audio.right[i]! * scale;
+  if (mode !== "lufs") {
+    const target = 10 ** ((song.master.ceilingDb - 0.5) / 20);
+    const scale = target / peak;
+    for (let i = 0; i < audio.left.length; i++) {
+      audio.left[i] = audio.left[i]! * scale;
+      audio.right[i] = audio.right[i]! * scale;
+    }
   }
   limitLookahead(audio, ceiling);
   for (let i = 0; i < audio.left.length; i++) {
@@ -263,7 +269,7 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
     const wet = applyDelay(delaySend, song.bpm);
     for (let i = 0; i < frames; i++) { audio.left[i]! += wet.left[i]!; audio.right[i]! += wet.right[i]!; }
   }
-  const levels = masterAudio(audio, song);
+  const levels = masterAudio(audio, song, options.mastering);
   return { audio, stems, bars, durationSeconds: frames / song.sampleRate,
     peakDbfs: levels.peakDbfs, truePeakDbtp: levels.truePeakDbtp,
     ceilingDb: song.master.ceilingDb, events: selected.reduce((sum, group) => sum + group.length, 0) };

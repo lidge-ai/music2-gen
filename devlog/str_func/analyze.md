@@ -1,0 +1,199 @@
+# Analyze — Structure & Functions
+
+Measure audio, estimate musical features, and write deterministic analysis reports and images.
+
+## File Tree
+
+```text
+src/analyze/
+├── index.ts              # public analysis, estimator, renderer, and type exports
+├── analysis.schema.ts    # analysis JSON, beat map, metric, and artifact contracts
+├── analyze.tool.ts       # PCM analysis and WAV/song artifact workflow
+├── analyze.test.ts       # analysis values, warnings, files, and input validation
+├── fft.tool.ts           # cached Hann windows and radix-2 spectral transform
+├── fft.test.ts           # transform and spectrum vectors
+├── tempo.tool.ts         # onset envelopes, BPM candidates, and beat phase
+├── tempo.test.ts         # synthetic tempo and half/double-time cases
+├── key.tool.ts           # chroma and major/minor profile scoring
+├── key.test.ts           # tonal, harmonic, and uncertain-key cases
+├── bands.tool.ts         # six spectral energy shares
+├── bands.test.ts         # band distribution and invalid input
+├── beats.tool.ts         # song-exact or audio-estimated beat map
+├── beats.test.ts         # grid, sections, and fallback cases
+├── spectrogram.tool.ts   # log-frequency heatmap and optional bar grid
+├── spectrogram.test.ts   # PNG dimensions, pixels, and labels
+├── pianoroll.tool.ts     # song note bars and drum-onset lanes
+├── pianoroll.test.ts     # note, track, and section display
+├── report.tool.ts        # human Markdown analysis report
+├── report.test.ts        # report sections and fallback text
+├── png.tool.ts           # dependency-free RGB8 PNG encoder
+├── png.test.ts           # PNG chunks, CRC, and dimensions
+├── colormap.ts           # fixed 256-entry inferno RGB lookup table
+├── colormap.test.ts      # palette endpoints and shape
+├── font.tool.ts          # five-by-seven bitmap label drawing
+└── font.test.ts          # glyph drawing and clipping
+```
+
+## Module Responsibility
+
+`src/analyze` accepts finite in-memory `StereoBuffer` PCM or reads a WAV or
+song file through `analyzeFile`. Audio-only estimates derive tempo, key,
+spectral balance, amplitude, and loudness from PCM. A supplied song contributes
+declared BPM/key, exact timeline sections and beats, track density, bar grid,
+and piano-roll data. Song labels do not feed the audio estimators.
+
+The feature owns versioned `analysis.json` and optional `beats.json` data,
+human `analysis.md`, `spectrogram.png`, and optional `pianoroll.png`. The
+analysis tool coordinates audio I/O, rendering, estimators, report generation,
+and output writes. It does not parse CLI flags or encode MP3/Ogg.
+
+## Key Function Signatures
+
+These signatures come from current implementation declarations. `index.ts`
+re-exports the public functions and schema types listed below. FFT helpers,
+report formatting, font drawing, and colormap are internal to this feature.
+
+| Exported signature | Source | Purpose |
+|---|---|---|
+| `export function analyzeAudio(pcm: StereoBuffer, opts: { song?: ResolvedSong; timeline?: Timeline; targetLufs?: number; source?: "wav" \| "song" } = {}): AnalysisResult` | `analyze.tool.ts` | Analyze finite PCM and build in-memory report and images. |
+| `export async function analyzeFile(inputPath: string, opts: { songPath?: string; outDir?: string } = {}): Promise<AnalysisArtifacts>` | `analyze.tool.ts` | Read or render input and write named artifacts. |
+| `export function estimateTempo(pcm: StereoBuffer, meterNumerator = 4): TempoEstimate` | `tempo.tool.ts` | Estimate BPM candidates, beat times, and confidence. |
+| `export function estimateKey(pcm: StereoBuffer): KeyEstimate` | `key.tool.ts` | Estimate chroma and major/minor key candidates. |
+| `export function measureBands(pcm: StereoBuffer): BandMetrics` | `bands.tool.ts` | Split spectral power into six named bands. |
+| `export function makeBeatMap(tempo: TempoEstimate, durationSeconds: number, song?: ResolvedSong, timeline?: Timeline): BeatMap \| null` | `beats.tool.ts` | Prefer song grid, else use audio beats. |
+| `export function renderSpectrogram(pcm: StereoBuffer, timeline?: Timeline): Buffer` | `spectrogram.tool.ts` | Encode a log-frequency PNG heatmap. |
+| `export function renderPianoRoll(song: ResolvedSong, timeline: Timeline): Buffer` | `pianoroll.tool.ts` | Encode exact note and drum lanes. |
+| `export function encodeRgbPng(width: number, height: number, rgb: Uint8Array): Buffer` | `png.tool.ts` | Encode RGB8 pixels as PNG. |
+| `export function hann(size: number): Float64Array` | `fft.tool.ts` | Return a cached periodic Hann window. |
+| `export function fftInPlace(re: Float64Array, im: Float64Array): void` | `fft.tool.ts` | Apply forward complex radix-2 FFT. |
+| `export function fft(real: Float64Array, imag?: Float64Array): ComplexSpectrum` | `fft.tool.ts` | Copy inputs before transforming. |
+| `export function realSpectrum(samples: Float32Array, offset: number, size: number, window?: Float64Array, scratch?: { re: Float64Array; im: Float64Array; out: Float64Array }): Float64Array` | `fft.tool.ts` | Window, zero-pad, and return half-spectrum magnitudes. |
+| `export function drawText(rgb: Uint8Array, width: number, height: number, x: number, y: number, label: string, color: readonly [number, number, number]): void` | `font.tool.ts` | Draw clipped bitmap labels. |
+| `export function renderAnalysisReport(a: AnalysisJson, beatMap?: BeatMap): string` | `report.tool.ts` | Format a human-readable Markdown report. |
+| `export const INFERNO_RGB: readonly number[]` | `colormap.ts` | Fixed heatmap palette. |
+
+`src/analyze/index.ts` also re-exports `measureLoudness` from
+`src/audio-io/index.ts`; its exact signature is
+`export function measureLoudness(pcm: StereoBuffer): LoudnessMetrics` in
+`loudness.tool.ts`.
+
+### Public data types
+
+| Type | Source | Shape and use |
+|---|---|---|
+| `ComplexSpectrum` | `analysis.schema.ts` | Real and imaginary `Float64Array` outputs. |
+| `TempoCandidate`, `TempoEstimate` | `analysis.schema.ts` | BPM, score, relation, confidence, beats, downbeats. |
+| `KeyCandidate`, `KeyEstimate` | `analysis.schema.ts` | Key scores, nullable winner, confidence, twelve-bin chroma. |
+| `BandValue`, `BandMetrics` | `analysis.schema.ts` | Named frequency interval, energy share, relative dB. |
+| `BeatSection`, `BeatMap` | `analysis.schema.ts` | Versioned beat/downbeat times, meter, source, sections. |
+| `SectionMetrics`, `TrackDensity` | `analysis.schema.ts` | Timeline section levels and per-track event counts. |
+| `AnalysisWarning`, `AnalysisJson` | `analysis.schema.ts` | Versioned measurements and typed warning records. |
+| `AnalysisResult` | `analysis.schema.ts` | In-memory JSON, Markdown, PNGs, optional beat map. |
+| `AnalysisArtifacts` | `analysis.schema.ts` | Written paths and a compact analysis summary. |
+| `LoudnessMetrics` | `audio-io/loudness.schema.ts` | Re-exported integrated LUFS, LRA, and peaks. |
+
+`ANALYSIS_VERSION` and `BEATS_VERSION` are both 1. `BAND_EDGES_HZ` is
+`[20, 60, 250, 500, 2000, 8000, 20000]`. The six band names are `sub`,
+`low`, `lowMid`, `mid`, `presence`, and `air`.
+
+### Analysis and artifact behavior
+
+- `analyzeAudio` rejects empty, mismatched, or nonfinite PCM, a timeline
+  without a song, and nonfinite explicit target LUFS as `E_INPUT`.
+- Whole-file peak, clipped-sample count, and RMS use the actual source channel
+  count. Loudness and tempo meters resample unsupported rates into 8..192 kHz;
+  the JSON retains the original sample rate and source channel count.
+- `analysis.json` includes duration and optional tail, sample and true peaks,
+  integrated LUFS and LRA, declared and estimated BPM/key, tempo candidates,
+  chroma, bands, sections, tracks, target LUFS, and warnings.
+- Section metrics use timeline placements and report RMS and integrated LUFS
+  over each placement. Track density counts timeline events by track.
+- Warnings cover clipping, LUFS more than 3 LU from target, low-end dominance,
+  almost-empty air band, absent beat map, assumed audio-only meter, and
+  uncertain key.
+- `analyzeFile` accepts `.wav` or `.json`. A song JSON input is loaded and
+  rendered with `peak` or in-process `lufs` mastering as appropriate.
+- `--song` metadata is valid only for WAV input. Its sample rate and full-song
+  frame count must match the WAV within one frame; a bar-range render fails.
+- The default output directory is `<input-stem>.analysis` beside the input.
+  The tool protects the input and optional song from output-path collisions.
+- It writes `analysis.json`, `analysis.md`, and `spectrogram.png`; song metadata
+  adds `pianoroll.png`, and a non-null beat map adds `beats.json`.
+- Each artifact is first written to a temporary file in the output directory
+  and renamed to its final name. Finite JSON numbers are rounded to six
+  decimal places. Write failures use `E_ACCESS`.
+
+### Audio estimation
+
+- `fftInPlace` accepts power-of-two sizes from 2 through 32768 and uses an
+  unscaled forward transform. `hann` caches periodic windows; callers must
+  leave the returned window unmodified. `realSpectrum` zero-pads short frames.
+- `estimateTempo` uses 2048-point spectra on 44.1 kHz audio with 441-frame
+  hops. It builds onset, hat, and low-frequency envelopes, scores BPM lags in
+  50..220, and evaluates phase and half/double-time relationships.
+- Tempo results include candidate relations (`primary`, `half`, `double`),
+  beat/downbeat times, and confidence. No reliable rhythm yields null BPM,
+  zero confidence, and empty timing arrays.
+- `estimateKey` uses 8192-point frames with 2048-frame hops over tonal
+  100..5000 Hz content. Chroma is compared against Krumhansl-Kessler and
+  Temperley major/minor profiles. Sparse or uncertain content can yield a
+  null key; the top three candidates remain available.
+- `measureBands` uses squared, unnormalized Hann-window FFT magnitudes in
+  six bands between 20 Hz and the lesser of 20 kHz and Nyquist. Shares sum
+  to one when there is in-range energy; silent bands have null relative dB.
+- `makeBeatMap` uses exact song BPM, meter, and placement sections when a
+  song is supplied. Audio-only maps assume 4/4, reduce tempo confidence,
+  filter out-of-range times, and have no sections. Null tempo gives null map.
+
+### Reports and images
+
+- `renderAnalysisReport` lists tempo/key alternatives, LUFS, LRA, peaks,
+  band balance, warnings, optional sections/tracks, and image names.
+- `renderSpectrogram` uses 4096-point FFTs at 1024-frame hops, 512
+  log-frequency rows from 30 Hz to Nyquist/20 kHz, and an -80..0 dBFS
+  inferno palette. Width is capped at 2400 data columns; an optional
+  timeline adds bar lines and labels.
+- `renderPianoRoll` uses timed song events, pitch rows, and separate drum
+  onset lanes. Monophonic notes extend to the next onset on their track;
+  sections, track names, and bar markers use the song timeline.
+- `encodeRgbPng` accepts dimensions from 1 to 4096 and exactly three bytes
+  per pixel. It writes RGB8 PNG with filter byte zero, zlib compression,
+  and checked chunk CRCs. `drawText` clips five-by-seven glyphs at edges.
+
+## Dependencies
+
+| Dependency | Import path | Current use |
+|---|---|---|
+| Audio I/O | `../audio-io/index.ts`, `../audio-io/buffer.schema.ts` | WAV input, PCM type, and loudness measurement. |
+| Song | `../song/index.ts`, `../song/timeline.tool.ts` | Load songs, build timeline, derive exact beats and event density. |
+| Render | `../render/index.ts` | Render song JSON input to PCM. |
+| Shared | `../shared/index.ts` | Typed errors and deterministic track colors. |
+| Node filesystem/path/zlib | `node:fs/promises`, `node:path`, `node:zlib` | Artifact writes, path checks, PNG compression. |
+| FFT and schema | `./fft.tool.ts`, `./analysis.schema.ts` | Spectral primitives and versioned result types. |
+| Image helpers | `./colormap.ts`, `./font.tool.ts`, `./png.tool.ts` | Heatmap colors, labels, and PNG encoding. |
+
+There are no runtime package dependencies. Tests use the Node test runner.
+
+## Dependents
+
+| Module | Import path | Current use |
+|---|---|---|
+| `src/cli/commands/analyze.ts` | `../../analyze/analyze.tool.ts` | Execute WAV/song analysis and return artifacts. |
+| `src/analyze/analyze.test.ts` | `./analyze.tool.ts` | Verify JSON, visuals, warnings, and file workflow. |
+| `src/analyze/*.test.ts` | Adjacent `.tool.ts` files | Verify estimators, image helpers, and reports. |
+| `src/analyze/index.ts` | Local tools and schema | Public feature barrel. |
+
+The CLI currently imports `analyzeFile` directly; check actual consumers
+before changing the public barrel or artifact shape.
+
+## Sync Checklist
+
+- [ ] Keep `src/analyze/index.ts`, `analysis.schema.ts`, and this signature
+  table aligned when public exports or versioned JSON fields change.
+- [ ] Update `devlog/str_func/cli.md` when command flags or artifact paths change.
+- [ ] Update `devlog/str_func/audio-io.md` when loudness semantics change.
+- [ ] Update `devlog/str_func/render.md` when song-input mastering changes.
+- [ ] Recheck estimator tests when FFT windows, BPM, key, or band rules change.
+- [ ] Recheck PNG, palette, font, and visual tests when image layout changes.
+- [ ] Recheck artifact collision, alignment, and error cases in `analyze.test.ts`.
+- [ ] Keep `devlog/str_func/AGENTS.md` index aligned with this feature folder.
