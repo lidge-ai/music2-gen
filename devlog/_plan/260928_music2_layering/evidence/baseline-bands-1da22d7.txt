@@ -1,0 +1,13 @@
+boom-bap-90                  sub+low 0.433 sub 0.061 lowMid 0.534 mid 0.028 pres 0.002 air 0.0028
+boom-bap-verse-led-90        sub+low 0.860 sub 0.315 lowMid 0.064 mid 0.044 pres 0.008 air 0.0245
+drill-140                    sub+low 0.902 sub 0.362 lowMid 0.019 mid 0.049 pres 0.024 air 0.0056
+drill-uk-moving-snare-144    sub+low 0.934 sub 0.313 lowMid 0.007 mid 0.015 pres 0.017 air 0.0270
+game-loop-16bar              sub+low 0.793 sub 0.205 lowMid 0.072 mid 0.041 pres 0.023 air 0.0702
+house-124                    sub+low 0.741 sub 0.124 lowMid 0.142 mid 0.095 pres 0.011 air 0.0106
+lofi-75                      sub+low 0.382 sub 0.000 lowMid 0.603 mid 0.015 pres 0.000 air 0.0002
+minimal                      sub+low 0.990 sub 0.099 lowMid 0.003 mid 0.000 pres 0.002 air 0.0048
+short-30-bed                 sub+low 0.944 sub 0.210 lowMid 0.009 mid 0.003 pres 0.011 air 0.0338
+trap-150                     sub+low 0.955 sub 0.476 lowMid 0.023 mid 0.013 pres 0.004 air 0.0052
+trap-hook-first-142          sub+low 0.968 sub 0.558 lowMid 0.003 mid 0.001 pres 0.007 air 0.0200
+type-beat-trap-140           sub+low 0.964 sub 0.638 lowMid 0.004 mid 0.002 pres 0.008 air 0.0209
+wrong-genre                  sub+low 0.727 sub 0.200 lowMid 0.069 mid 0.187 pres 0.007 air 0.0103
