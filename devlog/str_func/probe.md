@@ -150,5 +150,5 @@ integration but have no external source imports yet.
 - [ ] Update `master.test.ts` for process args, measurements, and error cases.
 - [ ] Check `src/cli/commands/doctor.ts` when changing `FfmpegInfo` or
   `DoctorData`.
-- [ ] Compare `devlog/_plan/260928_music2_roadmap/020_render_engine.md` when
+- [ ] Compare `devlog/_fin/260928_music2_roadmap/020_render_engine.md` when
   the implementation or documented contract changes.

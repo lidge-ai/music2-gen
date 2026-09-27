@@ -177,5 +177,5 @@ imports before changing the shared PCM or loudness contract.
 - [ ] Update `wav.test.ts` for chunk parsing, dither, and error changes.
 - [ ] Update `loudness.test.ts` when gates, channel handling, or peaks change.
 - [ ] Check render imports before changing `StereoBuffer` or WAV behavior.
-- [ ] Compare `devlog/_plan/260928_music2_roadmap/020_render_engine.md` when
+- [ ] Compare `devlog/_fin/260928_music2_roadmap/020_render_engine.md` when
   the implementation or documented contract changes.

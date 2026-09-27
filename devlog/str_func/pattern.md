@@ -143,7 +143,7 @@ The barrel is the intended feature boundary for future consumers.
 - [ ] Update this document for AST variants, syntax, exports, or query semantics.
 - [ ] Keep `src/pattern/index.ts` aligned with implementation exports.
 - [ ] Update `devlog/str_func/AGENTS.md` index when adding or moving this document.
-- [ ] Check `devlog/_plan/260928_music2_roadmap/004_mini_notation_spec.md` when notation semantics change.
+- [ ] Check `devlog/_fin/260928_music2_roadmap/004_mini_notation_spec.md` when notation semantics change.
 - [ ] Update parser offset and syntax cases in `src/pattern/parse.test.ts`.
 - [ ] Update event vectors and partition cases in `src/pattern/query.test.ts`.
 - [ ] Update value and Euclidean tests when their accepted forms change.

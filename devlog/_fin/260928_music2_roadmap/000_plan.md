@@ -18,7 +18,7 @@ Research is in 001–006; each implementation phase has a decade doc (010–050)
 | Non-goals | npm publish, tags or GitHub releases (not requested); vocals / neural text-to-music; bundled third-party audio; browser or Web Audio runtime; DAW plugins; tempo or meter changes inside a song; polymeter |
 | Verifier | Per phase: `npm run typecheck`, `npm run lint`, `npm test` (node:test, colocated unit tests + tests/e2e), `npm run build`, plus the phase commands in each decade doc; wp6: GitHub Actions run on the pushed `main` SHA (jobs checks, test × 6, ci) |
 | Stop condition | Goalplan criteria c-1..c-8 met with fresh evidence, or an exact BLOCKED/NEEDS_HUMAN record (GitHub repo creation/push denied, org policy) |
-| Memory artifact | This unit (devlog/_plan/260928_music2_roadmap/, attestation log below) + goalplan `.codexclaw/goalplans/build-and-push-lidge-ai-music2-gen-an-mit-licens*/` (native cwd = repo root, gitignored) |
+| Memory artifact | This unit (devlog/_fin/260928_music2_roadmap/, attestation log below) + goalplan `.codexclaw/goalplans/build-and-push-lidge-ai-music2-gen-an-mit-licens*/` (native cwd = repo root, gitignored) |
 | Terminal outcomes | DONE (pushed + CI green + all criteria); BLOCKED (push/CI denied); NEEDS_HUMAN (auth/MFA); UNSAFE (secret or private data in push range) |
 | Escalation | Anything destructive outside this repo, a change to the public song schema after push, secrets in history, a new runtime dependency. Delegation: after two distinct agents fail the same packet, main reclaims it |
 
@@ -130,3 +130,13 @@ fixed before round 2.
   critic cannot hear sub-bass at all (low-end-only audio fails upstream; 002 addendum). Still weak: every starter song carries the static
   generic/clipping_risk warning because the proxy ignores master normalization — the skill must say so. Direction for wp6: re-verify 050,
   write the skill/docs/examples, run the blind text-only dogfood, privacy scan, then create lidge-ai/music2-gen and push with hosted CI.
+
+- **wp6 D (2026-09-28):** agent layer committed as 32d1a7c (lanes SK, D1, D2, G, X, PV; main M/DF/RL) and pushed to the new public
+  repository lidge-ai/music2-gen. The first hosted run (36341802669 on 32d1a7c) failed on macOS and Windows only: the critic MP3 test
+  assumed ffmpeg, the LICENSE check assumed LF, and npm was spawned without a shell on Windows. f3292dd fixed the tests (product behaviour
+  was already correct) and hosted CI run 36342149643 on f3292dd (push, attempt 1) passed all eight jobs: checks, test ubuntu/macos/windows x
+  Node 22/24, ci aggregate; Ubuntu ran the real ffmpeg 6.1.1 mp3+ogg round trip and 309/311 tests (2 opt-in skips). The blind text-only
+  dogfood (evidence/dogfood-summary.md) produced a strict-lint-clean 90 BPM D minor boom bap from the skill alone and exposed one doc gap,
+  fixed in references/mini-notation.md. History authorship was normalized before the first push (evidence/commit-hash-mapping.md).
+  Pessimist note: all quality judgements are by measurement and one blind agent; no human has rated the music, and the only audio critic
+  available cannot hear sub-bass. The unit is archived to devlog/_fin.
