@@ -66,7 +66,7 @@
       "sends": {
         "reverb": 0.35
       },
-      "pattern": "<[c3,eb3,g3] [ab2,c3,eb3] [g2,bb2,d3] [c3,eb3,g3]>"
+      "pattern": "<[c3,g3,eb4] [ab2,eb3,c4] [g2,d3,bb3] [c3,g3,eb4]>"
     }
   ],
   "sections": [
