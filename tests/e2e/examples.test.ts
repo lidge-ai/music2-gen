@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, isAbsolute, join, relative } from "node:path";
 import test from "node:test";
@@ -13,6 +13,7 @@ const CLI = "src/cli/index.ts";
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const NEW_EXAMPLES = new Set(["trap-hook-first-142", "drill-uk-moving-snare-144", "boom-bap-verse-led-90",
   "game-loop-16bar", "short-30-bed", "type-beat-trap-140"]);
+const BALANCE_WARNINGS = new Set(["LOW_END_DOMINANCE", "LOW_MID_BUILDUP", "SUB_WITHOUT_BODY", "HIGH_END_THIN"]);
 
 interface ExampleCase {
   file: string;
@@ -121,6 +122,7 @@ for (const example of examples) {
         warnings: { code: string }[];
         flow: { sectionMeans: { role: string | null; startBar: number; meanLufs: number | null }[] };
       };
+      assert.deepEqual(report.warnings.filter((warning) => BALANCE_WARNINGS.has(warning.code)), [], example.file);
       if (NEW_EXAMPLES.has(example.file)) {
         const targeted = ["SECTION_LOUDNESS_FLAT", "LOOP_SEAM_DISCONTINUITY", "CLIPPING", "LUFS_OFF_TARGET"];
         assert.deepEqual(report.warnings.filter((warning) => targeted.includes(warning.code)), [], example.file);
@@ -182,6 +184,40 @@ for (const example of examples) {
     }
   });
 }
+
+test("trap render-path fixture measures low dominance at the trap threshold", () => {
+  const directory = mkdtempSync(join(tmpdir(), "music2-layering-"));
+  const song = join(directory, "low-dominant-trap.song.json");
+  const wav = join(directory, "low-dominant-trap.wav");
+  try {
+    writeFileSync(song, JSON.stringify({
+      version: 1, title: "Low-dominant trap fixture", genre: "trap", bpm: 140,
+      key: "F minor", seed: 14001,
+      tracks: [
+        { id: "sub", kind: "notes", instrument: "808", pattern: "f1@16", gain: 0,
+          mono: true, params: { drive: 1.2 } },
+        { id: "kick", kind: "drums", instrument: "drums",
+          pattern: "bd ~ ~ ~ ~ ~ ~ ~ ~ ~ bd ~ ~ ~ ~ ~", gain: -12 },
+      ],
+      sections: [{ id: "main", bars: 4 }],
+      arrangement: [{ section: "main" }],
+    }));
+    cli("render", [song, "-o", wav]);
+    const analyzed = data(cli("analyze", [wav, "--song", song, "--out", join(directory, "analysis")]));
+    const report = JSON.parse(readFileSync(artifact(analyzed["analysisJson"], directory), "utf8")) as {
+      bands: { name: string; share: number }[];
+      warnings: { code: string; threshold: number | null }[];
+    };
+    const sub = report.bands.find((band) => band.name === "sub")?.share;
+    const low = report.bands.find((band) => band.name === "low")?.share;
+    assert.ok(sub !== undefined && low !== undefined);
+    assert.ok(sub + low > 0.92, `measured sub+low share: ${sub + low}`);
+    assert.ok(report.warnings.some((warning) => warning.code === "LOW_END_DOMINANCE" && warning.threshold === 0.92),
+      JSON.stringify(report.warnings));
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
 
 test("drill fails strict house lint with named house rules", () => {
   const song = join(ROOT, "examples/drill-140.song.json");

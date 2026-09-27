@@ -30,8 +30,11 @@
       "kind": "drums",
       "instrument": "drums",
       "pattern": "~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~",
-      "gain": -13,
+      "gain": -7,
       "velocity": 0.72,
+      "params": {
+        "noise": 0.8
+      },
       "sends": {
         "reverb": 0.14
       }
@@ -41,7 +44,7 @@
       "kind": "drums",
       "instrument": "drums",
       "pattern": "hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh ~",
-      "gain": -21,
+      "gain": -6,
       "swing": true,
       "velocity": 0.62
     },
@@ -63,6 +66,7 @@
       "instrument": "keys",
       "pattern": "<[c4,eb4,g4,bb4 ~ ~ ~ eb4,g4,bb4 ~ ~ ~ c4,eb4,g4 ~ ~ ~ bb3,d4,f4 ~ ~ ~] [f3,ab3,c4,eb4 ~ ~ ~ ab3,c4,eb4 ~ ~ ~ f3,ab3,c4 ~ ~ ~ c4,eb4,g4 ~ ~ ~] [ab3,c4,eb4,g4 ~ ~ ~ c4,eb4,g4 ~ ~ ~ ab3,c4,eb4 ~ ~ ~ g3,bb3,d4 ~ ~ ~] [g3,bb3,d4,f4 ~ ~ ~ bb3,d4,f4 ~ ~ ~ g3,bb3,d4 ~ ~ ~ c4,eb4,g4 ~ ~ ~]>",
       "gain": -20,
+      "transpose": 12,
       "gate": 0.7,
       "sends": {
         "reverb": 0.22

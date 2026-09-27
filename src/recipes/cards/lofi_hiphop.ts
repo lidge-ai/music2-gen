@@ -73,7 +73,7 @@ export const lofiHiphop: RecipeCard = {
       "role": "bass",
       "instrument": "bass",
       "params": {
-        "cutoffHz": 360,
+        "cutoffHz": 260,
         "releaseMs": 110
       }
     },
@@ -145,7 +145,7 @@ export const lofiHiphop: RecipeCard = {
         "kind": "drums",
         "instrument": "drums",
         "pattern": "bd ~ ~ ~ ~ ~ ~ ~ bd ~ ~ ~ ~ ~ ~ ~",
-        "velocity": 0.8,
+        "velocity": 0.7,
         "gain": 0,
         "pan": 0,
         "gate": 0.9,
@@ -208,7 +208,7 @@ export const lofiHiphop: RecipeCard = {
         "instrument": "bass",
         "pattern": "c2 ~ ~ ~ ~ ~ g2 ~ c2 ~ ~ ~ ~ ~ ~ ~",
         "velocity": 0.75,
-        "gain": -3,
+        "gain": -5,
         "pan": 0,
         "gate": 0.9,
         "mono": true,
@@ -219,7 +219,7 @@ export const lofiHiphop: RecipeCard = {
           "delay": 0
         },
         "params": {
-          "cutoffHz": 360,
+          "cutoffHz": 260,
           "releaseMs": 110
         }
       },
@@ -230,6 +230,7 @@ export const lofiHiphop: RecipeCard = {
         "pattern": "c4 ~ e4 ~ g4 ~ ~ ~ b4 ~ g4 ~ e4 ~ ~ ~",
         "velocity": 0.65,
         "gain": -6,
+        "transpose": 5,
         "pan": 0,
         "gate": 0.8,
         "mono": false,

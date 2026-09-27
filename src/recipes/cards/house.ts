@@ -234,6 +234,11 @@ export const house: RecipeCard = {
           "reverb": 0,
           "delay": 0
         },
+        "duck": {
+          "by": "kick",
+          "amount": 0.25,
+          "releaseMs": 110
+        },
         "params": {
           "cutoffHz": 520,
           "releaseMs": 90

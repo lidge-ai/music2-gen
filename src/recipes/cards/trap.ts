@@ -139,7 +139,7 @@ export const trap: RecipeCard = {
         instrument: "drums",
         pattern: "bd ~ ~ ~ ~ ~ bd ~ ~ ~ bd ~ ~ ~ ~ ~",
         velocity: 0.8,
-        gain: 0,
+        gain: -6,
         pan: 0,
         gate: 0.9,
         mono: false,
@@ -157,7 +157,7 @@ export const trap: RecipeCard = {
         instrument: "drums",
         pattern: "~ ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~",
         velocity: 0.8,
-        gain: 0,
+        gain: -4,
         pan: 0,
         gate: 0.9,
         mono: false,
@@ -175,7 +175,7 @@ export const trap: RecipeCard = {
         instrument: "drums",
         pattern: "hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh*2 ~",
         velocity: 0.8,
-        gain: 0,
+        gain: -3,
         pan: 0,
         gate: 0.9,
         mono: false,
@@ -193,7 +193,7 @@ export const trap: RecipeCard = {
         instrument: "808",
         pattern: "a1 ~ ~ ~ ~ ~ a1 ~ ~ ~ c2 ~ ~ ~ ~ ~",
         velocity: 0.75,
-        gain: -3,
+        gain: -15,
         pan: 0,
         gate: 0.9,
         mono: true,
@@ -203,7 +203,7 @@ export const trap: RecipeCard = {
           reverb: 0,
           delay: 0
         },
-        params: {}
+        params: { drive: 4 }
       },
       {
         id: "melody",
@@ -211,7 +211,7 @@ export const trap: RecipeCard = {
         instrument: "pluck",
         pattern: "a4 ~ c5 ~ e5 ~ ~ ~ g5 ~ e5 ~ c5 ~ ~ ~",
         velocity: 0.65,
-        gain: -6,
+        gain: -8,
         pan: 0,
         gate: 0.8,
         mono: false,

@@ -41,7 +41,7 @@
       "instrument": "drums",
       "pattern": "~ ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~",
       "velocity": 0.8,
-      "gain": -7,
+      "gain": -5,
       "pan": 0,
       "gate": 0.9,
       "mono": false,
@@ -59,7 +59,7 @@
       "instrument": "drums",
       "pattern": "<[hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh ~] [hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh*2 ~]>",
       "velocity": 0.8,
-      "gain": -7,
+      "gain": -3,
       "pan": 0,
       "gate": 0.9,
       "mono": false,
@@ -77,7 +77,7 @@
       "instrument": "808",
       "pattern": "<[a1 ~ ~ ~ ~ ~ e2 ~ a1 ~ ~ ~ ~ ~ ~ ~] [f1 ~ ~ ~ ~ ~ c2 ~ f1 ~ ~ ~ e2 ~ ~ ~] [g1 ~ ~ ~ ~ ~ d2 ~ g1 ~ ~ ~ ~ ~ ~ ~] [a1 ~ ~ ~ ~ ~ e2 ~ a1 ~ ~ ~ g1 ~ ~ ~]>",
       "velocity": 0.75,
-      "gain": -10,
+      "gain": -15,
       "pan": 0,
       "gate": 0.9,
       "mono": true,
@@ -87,7 +87,9 @@
         "reverb": 0,
         "delay": 0
       },
-      "params": {}
+      "params": {
+        "drive": 3.5
+      }
     },
     {
       "id": "melody",
@@ -95,7 +97,7 @@
       "instrument": "pluck",
       "pattern": "<[a4 ~ ~ ~ c5 ~ ~ ~ e5 ~ ~ ~ c5 ~ ~ ~] [f4 ~ ~ ~ a4 ~ ~ ~ c5 ~ ~ ~ a4 ~ ~ ~] [g4 ~ ~ ~ b4 ~ ~ ~ d5 ~ ~ ~ b4 ~ ~ ~] [a4 ~ ~ ~ c5 ~ ~ ~ e5 ~ ~ ~ a4 ~ ~ ~]>",
       "velocity": 0.65,
-      "gain": -13,
+      "gain": -9,
       "pan": 0,
       "gate": 0.8,
       "mono": false,

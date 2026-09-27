@@ -44,6 +44,8 @@ Start with [drill at 140 BPM](examples/drill-140.song.json), or generate a start
 
 Given the same song, seed, Node major version, and platform, music2 promises byte-identical WAV output. Keep those conditions fixed when comparing renders. Audio key estimation is advisory, especially when `KEY_UNCERTAIN` appears: the declared key and `generic/out_of_key` lint result are the reliable pitch checks. Tempo analysis reports half-time and double-time alternatives. `generic/clipping_risk` is a static onset proxy and does not account for master normalization; verify clipping on the rendered WAV.
 
+Layering checks flag source arrangement risks in strict lint and genre-aware band-balance warnings in song-backed analysis; use the [layering guide](skills/music2/references/layering.md) to inspect and revise the rendered mix.
+
 ## Development and license
 
 Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, and `npm run audit:structure` after source changes. Contributions should follow [repository agent rules](AGENTS.md) and the existing `devlog/` plans.

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Add layering lint rules L1–L6 for low ownership, chord spacing, low pan, kick/bass ducking, focal register collision, and sub-floor notes.
+- Add genre-aware rendered balance warnings A1–A4 for dominant low end, low-mid buildup, sub without body, and thin high end.
+- Add a layering reference and composition workflow pass, with rebalanced recipe starters and example songs checked by strict lint and song-backed analysis.
+
 ## 0.2.0
 
 - Add `overview.png` to `music2 analyze`: one labelled image with header metrics, a section band and rail, an ungated loudness curve, per-bar activity lanes, a 3-band waveform, novelty and brightness lines, global band share and a self-similarity inset. It is byte-identical on repeat for song-backed and WAV-only input.

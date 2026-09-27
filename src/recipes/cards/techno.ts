@@ -163,7 +163,7 @@ export const techno: RecipeCard = {
         "instrument": "drums",
         "pattern": "bd ~ ~ ~ bd ~ ~ ~ bd ~ ~ ~ bd ~ ~ ~",
         "velocity": 0.8,
-        "gain": 0,
+        "gain": -3,
         "pan": 0,
         "gate": 0.9,
         "mono": false,
@@ -184,7 +184,7 @@ export const techno: RecipeCard = {
         "instrument": "drums",
         "pattern": "~ ~ ~ ~ cp ~ ~ ~ ~ ~ ~ ~ cp ~ ~ ~",
         "velocity": 0.8,
-        "gain": 0,
+        "gain": -3,
         "pan": 0,
         "gate": 0.9,
         "mono": false,
@@ -204,7 +204,7 @@ export const techno: RecipeCard = {
         "instrument": "drums",
         "pattern": "~ ~ oh ~ ~ ~ oh ~ ~ ~ oh ~ ~ ~ oh ~",
         "velocity": 0.8,
-        "gain": 0,
+        "gain": -3,
         "pan": 0,
         "gate": 0.9,
         "mono": false,
@@ -224,7 +224,7 @@ export const techno: RecipeCard = {
         "instrument": "bass",
         "pattern": "e2 ~ ~ ~ ~ ~ ~ ~ e2 ~ ~ ~ ~ ~ ~ ~",
         "velocity": 0.75,
-        "gain": -3,
+        "gain": -6,
         "pan": 0,
         "gate": 0.9,
         "mono": true,
@@ -233,6 +233,11 @@ export const techno: RecipeCard = {
         "sends": {
           "reverb": 0,
           "delay": 0
+        },
+        "duck": {
+          "by": "kick",
+          "amount": 0.3,
+          "releaseMs": 90
         },
         "params": {
           "cutoffHz": 430,
@@ -245,7 +250,7 @@ export const techno: RecipeCard = {
         "instrument": "lead",
         "pattern": "e4 ~ ~ ~ g4 ~ ~ ~ e4 ~ ~ ~ b4 ~ ~ ~",
         "velocity": 0.65,
-        "gain": -6,
+        "gain": -9,
         "pan": 0,
         "gate": 0.8,
         "mono": false,

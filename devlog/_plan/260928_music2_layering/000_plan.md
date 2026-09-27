@@ -38,3 +38,6 @@ Independent sol reviewer (read-only), two rounds. Round 1 FAIL: L4 accepted a ze
 
 | Edge | Work-phase | Evidence |
 |---|---|---|
+| IDLE→P→A→B→C→D | wp1 | `69d5924`: research synthesis, architect F1–F8, binding decisions, 010/020; audit FAIL then NEAR-PASS, fixed; unit receipt |
+| IDLE→P→A→B→C→D | wp2 | `57aaafc`, `8900176`: L1–L6 lint, A1–A4 balance warnings, overview priority, layering.md; drill-140 pad reopened above the low interval limits; unit-test receipt 376 pass, 0 fail (e2e examples deferred to wp3 on purpose) |
+| IDLE→P→A→B | wp3 | Rebalanced 13 example/starter songs by mix and voicing only (evidence/wp3-example-scan.txt): trap examples sub+low 0.955–0.968 → 0.857–0.897 with presence+air 0.035–0.105; boom-bap-90 lowMid 0.534 → 0.130; lofi-75 lowMid 0.603 → 0.194; house/techno and game-loop basses now duck by the kick. c-4 render-path fixture in tests/e2e/examples.test.ts. The core eval examples drill-140, trap-150 and boom-bap-90 changed audio, so the archived overview evaluation in devlog/_fin/260928_music2_flow_practice/ describes the earlier renders |
