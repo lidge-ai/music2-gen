@@ -105,3 +105,12 @@ fixed before round 2.
   (buffer/wav) first by main or one lane, voices in two parallel lanes (drums+808+bass / bell+keys+pluck+pad+lead), fx+mixer+render+kit,
   probe+commands; drill-140 example written by main. Pessimist note: nothing is audible yet; the determinism promise is only as good as
   the float summation order the mixer fixes, and Windows float results are unmeasured.
+
+- **wp3 D (2026-09-28):** render engine committed as 9477c2f (lanes R0, RP, V1, V2, FK, MX; main integration). Fresh C: 135/135 tests
+  (+1 opt-in benchmark, 9.65 s for 180 s of audio), drill render 1.6 s, two renders byte-identical (c-2 met), ffmpeg mp3/ogg round trip,
+  missing-ffmpeg path exits 3 with no output. Listening check: stem RMS showed the 808 19 dB above the kick and the mix at -9.4 LUFS; the
+  808 voice now has an output-level constant (0.45) with a test, and the drill mix sits at -14.1 LUFS. The Gemini critic (4 runs so far)
+  never hears the sub below 60 Hz and alternates between "no drums" and "no melody" on the same beat: advisory only, as 002 predicted.
+  Direction for wp4: re-verify 030 against audio-io (StereoBuffer.sourceChannels, truePeakLinearOf) and render exports; loudness lives in
+  audio-io; the tempo estimator must hit 140 on the rebalanced drill render. Pessimist note: the octave rule is still only measured on the
+  PoC render, not on the music2 render with its different hat/kick balance.
