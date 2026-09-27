@@ -114,3 +114,11 @@ fixed before round 2.
   Direction for wp4: re-verify 030 against audio-io (StereoBuffer.sourceChannels, truePeakLinearOf) and render exports; loudness lives in
   audio-io; the tempo estimator must hit 140 on the rebalanced drill render. Pessimist note: the octave rule is still only measured on the
   PoC render, not on the music2 render with its different hat/kick balance.
+
+- **wp4 D (2026-09-28):** analysis committed as cb24b75 (lanes LU, AK, AT, AP, AZ; main A0, registry handoff, piano-roll fixes, key floor).
+  Fresh C: 200/200 tests, drill analyze estimatedBpm 139.83 with both PNGs (c-3 met), loudness vectors within 0.01 LU. The report reads
+  well for a text-only model (BPM/key/LUFS lines, six-band table, warnings, section and track tables). What did not work first time: the
+  audio key estimate called the C minor drill C major because the driven 808 dominated the chroma; a 100 Hz floor fixes it with low
+  confidence (KEY_UNCERTAIN), so symbolic key checks in lint (wp5) matter more than audio key for agents. The drill still triggers
+  LOW_END_DOMINANCE (sub+low 0.90) — typical for drill; wp5 recipes should carry genre-aware mix targets rather than one threshold.
+  Direction for wp5: re-verify 040 against real exports (analyzeAudio, AnalysisJson, renderSong mastering), build cards/new/lint/critic.
