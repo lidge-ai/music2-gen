@@ -53,4 +53,3 @@ src/
 
 Dependency direction: cli → (render, analyze, recipes, critic, probe) → (song, audio-io) → pattern → shared.
 critic and probe never import render internals; analyze imports song only for piano rolls.
-

@@ -292,4 +292,3 @@ recognise genres without importing card data.
 | CR | src/critic/** (critic.tool.ts + test, index.ts), src/cli/commands/critique.ts + critique.test.ts | W0 |
 | NW | src/recipes/recipes.tool.ts + test, src/recipes/new.tool.ts + test, src/recipes/index.ts, src/cli/commands/{recipes,new}.ts + tests | RA, RB, LT (index.ts exports lintSong) |
 | L9 | main: registry list (handoff as each command file lands), args.ts duplicate-flag check, src/index.ts, main.test.ts cases, str_func (delegated), acceptance | all |
-

@@ -122,3 +122,11 @@ fixed before round 2.
   confidence (KEY_UNCERTAIN), so symbolic key checks in lint (wp5) matter more than audio key for agents. The drill still triggers
   LOW_END_DOMINANCE (sub+low 0.90) — typical for drill; wp5 recipes should carry genre-aware mix targets rather than one threshold.
   Direction for wp5: re-verify 040 against real exports (analyzeAudio, AnalysisJson, renderSong mastering), build cards/new/lint/critic.
+
+- **wp5 D (2026-09-28):** recipes, lint and critic committed as 7f449d5 (lanes RA, RB, LT, CR, NW; main W0, registry, args, CLI tests).
+  Fresh C: 278/278 tests, strict lint clean on the drill and exit 6 on wrong-genre (c-4 met), live critique through opencodex with
+  heard_audio true and DSP merged (c-5 met). Two real defects surfaced and were fixed at the root: a uniform -4 dB mix change flipped the
+  drill tempo to 70 because the hat texture test saw only 89 of 188 hats (peak floor 0.3 -> 0.12, regression test at -4/+4 dB); and the
+  critic cannot hear sub-bass at all (low-end-only audio fails upstream; 002 addendum). Still weak: every starter song carries the static
+  generic/clipping_risk warning because the proxy ignores master normalization — the skill must say so. Direction for wp6: re-verify 050,
+  write the skill/docs/examples, run the blind text-only dogfood, privacy scan, then create lidge-ai/music2-gen and push with hosted CI.

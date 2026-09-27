@@ -32,4 +32,3 @@ sections 1–7 with license per project and a source list). This document record
 - Optional CC0 kit download with URL + SHA-256 + license manifest (`THIRD_PARTY_ASSETS.md`).
 - A small published eval: does a text+image model's revision loop improve lint/analysis scores? music2's JSON
   outputs make this measurable.
-

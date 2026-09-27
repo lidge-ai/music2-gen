@@ -301,4 +301,3 @@ reports changed paths. Main verifies each lane's diff, then runs the full wp2 ac
 
 Deviation record: main built L0 (package, tooling, src/shared + 13 passing tests) during P while the architect reviewed the lane split; it is
 listed in the B→C attestation as pre-B work and re-verified in C with the rest.
-

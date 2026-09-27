@@ -266,4 +266,3 @@ evidence/tempo-probe.md (140 wins even before the octave rule).
 | AZ | src/analyze/analyze.tool.ts + test, src/analyze/index.ts, src/cli/commands/analyze.ts + test, and the analyze cases appended to src/cli/main.test.ts (append-only) | LU, AK, AT, AP; its CLI cases run after handoff R below |
 | R | main: add the analyze import and list entry to src/cli/registry.ts as soon as AZ reports src/cli/commands/analyze.ts exists (one-line handoff, then AZ continues with CLI tests) | AZ command file |
 | L9 | main: src/index.ts, help text, str_func (delegated writer), acceptance | AZ done |
-

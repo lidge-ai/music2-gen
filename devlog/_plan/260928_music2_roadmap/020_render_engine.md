@@ -220,4 +220,3 @@ amendment. Lanes write only their scope; main owns registry.ts, help.ts, src/ind
 
 V1 writes its three voices first; `registry.tool.ts` + test (which import V2's `bellVoice`, `keysVoice`, `pluckVoice`, `padVoice`, `leadVoice`)
 are written only after main confirms V2 finished (architect amendment, wp3 P). Main dispatches the registry as a follow-up to the same V1 agent.
-
