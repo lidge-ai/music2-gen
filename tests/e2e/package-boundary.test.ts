@@ -26,7 +26,8 @@ test("manifest and lock contain no production dependencies", () => {
     if (name) assert.equal(metadata.dev, true, `${name} is a production lock package`);
   }
   assert.equal(manifest.license, "MIT");
-  assert.match(readFileSync(join(root, "LICENSE"), "utf8"), /^MIT License\n/);
+  // Windows checkouts may convert LICENSE to CRLF (.gitattributes text=auto).
+  assert.match(readFileSync(join(root, "LICENSE"), "utf8"), /^MIT License\r?\n/);
 });
 
 test("runtime dependency assertion rejects a contrived package", () => {
@@ -34,8 +35,9 @@ test("runtime dependency assertion rejects a contrived package", () => {
 });
 
 test("npm package includes the skill and shipped runtime has no forbidden imports", () => {
+  // npm is a .cmd shim on Windows, which Node only spawns through a shell.
   const pack = spawnSync("npm", ["pack", "--dry-run", "--json"], {
-    cwd: root, encoding: "utf8", maxBuffer: 8_000_000,
+    cwd: root, encoding: "utf8", maxBuffer: 8_000_000, shell: process.platform === "win32",
   });
   assert.equal(pack.status, 0, pack.stderr);
   const output = JSON.parse(pack.stdout) as { files: { path: string }[] }[];

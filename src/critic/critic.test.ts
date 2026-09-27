@@ -6,6 +6,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { writeWav } from "../audio-io/index.ts";
+import { discoverFfmpeg } from "../probe/index.ts";
 import { renderSong } from "../render/index.ts";
 import { Music2Error } from "../shared/index.ts";
 import { loadSong } from "../song/index.ts";
@@ -58,7 +59,14 @@ function errorCode(code: string, exit: number, retryable?: boolean): (error: unk
     && (retryable === undefined || error.retryable === retryable);
 }
 
-test("normal response sends MP3 input_file, auth, strict prompt and keeps local DSP separate", async () => {
+test("normal response sends MP3 input_file, auth, strict prompt and keeps local DSP separate", async (t) => {
+  // MP3 needs a local ffmpeg with libmp3lame (CI installs it on Linux only); the WAV fallback has its own test below.
+  const ffmpeg = await discoverFfmpeg();
+  if (!ffmpeg?.encoders.libmp3lame) {
+    if (process.env["MUSIC2_REQUIRE_FFMPEG"] === "1") assert.fail("MUSIC2_REQUIRE_FFMPEG=1 but ffmpeg with libmp3lame is missing");
+    t.skip("ffmpeg with libmp3lame not available; WAV fallback is covered separately");
+    return;
+  }
   await withServer(async (req, res) => {
     assert.equal(req.url, "/v1/responses");
     assert.equal(req.method, "POST");
