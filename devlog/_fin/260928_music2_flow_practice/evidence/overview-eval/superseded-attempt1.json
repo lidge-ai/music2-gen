@@ -1,0 +1,173 @@
+{
+  "note": "First capture pass, superseded: labels printed role before ID and scorer required lowercase IDs; several calls failed with HTTP 429. Image hashes differ from the rescored pass.",
+  "captures": [
+    {
+      "caseId": "drill-140",
+      "imageKind": "overview",
+      "longSide": 1600,
+      "imageSha256": "5ff3a37db48f8255a2c2664723b3fde02f3954fe25a65cd85ead2b139d80081a",
+      "rawResponse": "{\"section_order\":[\"01 INTRO#0\",\"02 HOOK#0\",\"03 VERSE#0\"],\"boundary_bars\":[1,5,13,17],\"loudest_section\":\"02 HOOK#0\",\"hook_start_bar\":5}"
+    },
+    {
+      "caseId": "drill-140",
+      "imageKind": "overview",
+      "longSide": 1280,
+      "imageSha256": "c8a3631e69931951476c5a47c6acc3e558b586bbfa9baee9916dacb8ba3e962d",
+      "rawResponse": "{\"section_order\":[\"INTRO#0\",\"HOOK#0\",\"VERSE#0\"],\"boundary_bars\":[1,5,13,17],\"loudest_section\":\"HOOK#0\",\"hook_start_bar\":5}"
+    },
+    {
+      "caseId": "drill-140",
+      "imageKind": "overview",
+      "longSide": 1024,
+      "imageSha256": "2df638504f3ebcbf518452a01fee66ad75d4b61da76ceca33306169823a3880d",
+      "rawResponse": "{\"section_order\":[\"INTRO#0\",\"HOOK#0\",\"VERSE#0\"],\"boundary_bars\":[1,5,13,17],\"loudest_section\":\"HOOK#0\",\"hook_start_bar\":5}"
+    },
+    {
+      "caseId": "drill-140",
+      "imageKind": "spectrogram",
+      "longSide": 1600,
+      "imageSha256": "24e506837d6c68fd1bb64b79bf9134ef4b2c41a0f479f840d3e44f6516d4bc5b",
+      "rawResponse": "{\"section_order\":[],\"boundary_bars\":[],\"loudest_section\":null,\"hook_start_bar\":null}"
+    },
+    {
+      "caseId": "drill-140",
+      "imageKind": "spectrogram",
+      "longSide": 1280,
+      "imageSha256": "0e742da3093e30a629cb48cca6b3e57fa8fc57fcf5eeac8991abfd3c3cc420e2",
+      "rawResponse": "{\"section_order\":[],\"boundary_bars\":[],\"loudest_section\":null,\"hook_start_bar\":null}"
+    },
+    {
+      "caseId": "drill-140",
+      "imageKind": "spectrogram",
+      "longSide": 1024,
+      "imageSha256": "547a4dd990a069e1c33a24f73a556384979094d886874575b1b0e46ed4be2ec9",
+      "rawResponse": "{\"section_order\":[],\"boundary_bars\":[],\"loudest_section\":null,\"hook_start_bar\":null}"
+    },
+    {
+      "caseId": "trap-150",
+      "imageKind": "overview",
+      "longSide": 1600,
+      "imageSha256": "6ce3f6e36244ac15f1c21ef036ce5ff1b3f86272c3a93033acd209d6c1f14c55",
+      "rawResponse": "{\"errored\":\"exceeded retry limit, last status: 429 Too Many Requests\"}"
+    },
+    {
+      "caseId": "trap-150",
+      "imageKind": "overview",
+      "longSide": 1280,
+      "imageSha256": "c6f45e3f9adaf47ac75e33e521c04d3ac8f4327b4499c9f30da3f47bcddecb14",
+      "rawResponse": "{\"errored\":\"exceeded retry limit, last status: 429 Too Many Requests\"}"
+    },
+    {
+      "caseId": "trap-150",
+      "imageKind": "overview",
+      "longSide": 1024,
+      "imageSha256": "06704ff067f03ab7b56e798a95e61230964710ff1e734c1f87b9fa085ff6d716",
+      "rawResponse": "{\"section_order\":[\"INTRO#0\",\"VERSE#0\",\"HOOK#0\",\"OUTRO#0\"],\"boundary_bars\":[1,5,13,21,25],\"loudest_section\":\"HOOK#0\",\"hook_start_bar\":13}"
+    },
+    {
+      "caseId": "trap-150",
+      "imageKind": "spectrogram",
+      "longSide": 1600,
+      "imageSha256": "f4f27af043bd64c155d40f7804c7b4d5b0ce689d8e90fb8b7c129668d241f029",
+      "rawResponse": "{\"section_order\":[],\"boundary_bars\":[],\"loudest_section\":null,\"hook_start_bar\":null}"
+    },
+    {
+      "caseId": "trap-150",
+      "imageKind": "spectrogram",
+      "longSide": 1280,
+      "imageSha256": "078cad02323828bd43cb7605e06db4b423bc4618845ae2e34b849ea09a381ba7",
+      "rawResponse": "{\"section_order\":[],\"boundary_bars\":[],\"loudest_section\":null,\"hook_start_bar\":null}"
+    },
+    {
+      "caseId": "trap-150",
+      "imageKind": "spectrogram",
+      "longSide": 1024,
+      "imageSha256": "a1910126f7427ac04527e8ad743e6108774d980d99981d44d6cd7df067ede245",
+      "rawResponse": "{\"section_order\":[],\"boundary_bars\":[1,5,13,21,25],\"loudest_section\":null,\"hook_start_bar\":null}"
+    },
+    {
+      "caseId": "boom-bap-90",
+      "imageKind": "overview",
+      "longSide": 1600,
+      "imageSha256": "3db592f6eff4a9a0d067d3ba2062f4fb04fb077e87ffde31e07bf309719a0754",
+      "rawResponse": "{\"section_order\":[\"INTRO#0\",\"VERSE#0\",\"HOOK#0\",\"OUTRO#0\"],\"boundary_bars\":[1,5,13,21,25],\"loudest_section\":\"VERSE#0\",\"hook_start_bar\":13}"
+    },
+    {
+      "caseId": "boom-bap-90",
+      "imageKind": "overview",
+      "longSide": 1280,
+      "imageSha256": "ea749f79a5100a69081c4046b9eb10baea996bea96e445751d8cce151134cacd",
+      "rawResponse": "{\"section_order\":[\"INTRO#0\",\"VERSE#0\",\"HOOK#0\",\"OUTRO#0\"],\"boundary_bars\":[1,5,13,21,25],\"loudest_section\":\"VERSE#0\",\"hook_start_bar\":13}"
+    },
+    {
+      "caseId": "boom-bap-90",
+      "imageKind": "overview",
+      "longSide": 1024,
+      "imageSha256": "fb4938469f1f2feb0cd8fa05d347b6381ad0a960ca68cbfc53b1337def797c49",
+      "rawResponse": "{\"section_order\":[\"INTRO#0\",\"VERSE#0\",\"HOOK#0\",\"OUTRO#0\"],\"boundary_bars\":[1,5,13,21,25],\"loudest_section\":\"VERSE#0\",\"hook_start_bar\":13}"
+    },
+    {
+      "caseId": "boom-bap-90",
+      "imageKind": "spectrogram",
+      "longSide": 1600,
+      "imageSha256": "0f43d14e281b589d4d2fdb5513af11e8af854694e2b1f188ecb7df183670f791",
+      "rawResponse": "{\"errored\":\"exceeded retry limit, last status: 429 Too Many Requests\"}"
+    },
+    {
+      "caseId": "boom-bap-90",
+      "imageKind": "spectrogram",
+      "longSide": 1280,
+      "imageSha256": "754bbc3f7dafbe43385285bb299bc07b463186015963ed3aad73ede9e3bfb7ed",
+      "rawResponse": "{\"section_order\":[],\"boundary_bars\":[],\"loudest_section\":null,\"hook_start_bar\":null}"
+    },
+    {
+      "caseId": "boom-bap-90",
+      "imageKind": "spectrogram",
+      "longSide": 1024,
+      "imageSha256": "e08b54b2c3b38757a80421a7ff6beeedfdee11acc16bc0c572e8c5fdad1d8009",
+      "rawResponse": "{\"section_order\":[],\"boundary_bars\":[],\"loudest_section\":null,\"hook_start_bar\":null}"
+    },
+    {
+      "caseId": "house-124",
+      "imageKind": "overview",
+      "longSide": 1600,
+      "imageSha256": "d38e84ec2aad01385f714192baced28e0f61d0bcad637ee1f7bb3a8bb54ca69f",
+      "rawResponse": "{\"section_order\":[\"GROOVE#0\",\"BREAKDOWN#0\",\"GROOVE_RETURN#0\",\"OUTRO#0\"],\"boundary_bars\":[1,9,13,21,25],\"loudest_section\":\"GROOVE_RETURN#0\",\"hook_start_bar\":null}"
+    },
+    {
+      "caseId": "house-124",
+      "imageKind": "overview",
+      "longSide": 1280,
+      "imageSha256": "cd471f538ad0afde3fc0cc8b6f9c8c4fe11843b6f42a826a73f23eb4db9e8e38",
+      "rawResponse": "{\"section_order\":[\"GROOVE#0\",\"BREAKDOWN#0\",\"GROOVE RETURN#0\",\"OUTRO#0\"],\"boundary_bars\":[1,9,13,21,25],\"loudest_section\":\"GROOVE RETURN#0\",\"hook_start_bar\":null}"
+    },
+    {
+      "caseId": "house-124",
+      "imageKind": "overview",
+      "longSide": 1024,
+      "imageSha256": "6c7f33a46c7f2a12a18c0f51d2771e0f323cdc650fea30a697747efc24647ff9",
+      "rawResponse": "{\"section_order\":[\"GROOVE#0\",\"BREAKDOWN#0\",\"GROOVE_RETURN#0\",\"OUTRO#0\"],\"boundary_bars\":[1,9,13,21,25],\"loudest_section\":\"GROOVE_RETURN#0\",\"hook_start_bar\":null}"
+    },
+    {
+      "caseId": "house-124",
+      "imageKind": "spectrogram",
+      "longSide": 1600,
+      "imageSha256": "8661ae927ac378c1e34b3476a56e3df989cf37fa8dd82075de5615dbb1e7f6ea",
+      "rawResponse": "{\"section_order\":[],\"boundary_bars\":[],\"loudest_section\":null,\"hook_start_bar\":null}"
+    },
+    {
+      "caseId": "house-124",
+      "imageKind": "spectrogram",
+      "longSide": 1280,
+      "imageSha256": "f4188caea561785cfa93a68748d8f8c492a830311764306609bff8eccffdab4d",
+      "rawResponse": "{\"errored\":\"exceeded retry limit, last status: 429 Too Many Requests\"}"
+    },
+    {
+      "caseId": "house-124",
+      "imageKind": "spectrogram",
+      "longSide": 1024,
+      "imageSha256": "09ab50b9777df2c1bf0c6f9438c1f58feaffdf4777203a2e1f06086ed5308cee",
+      "rawResponse": "{\"errored\":\"exceeded retry limit, last status: 429 Too Many Requests\"}"
+    }
+  ]
+}

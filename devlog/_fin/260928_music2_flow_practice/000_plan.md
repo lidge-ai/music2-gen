@@ -64,3 +64,11 @@ Independent sol reviewer (cxc-dev-code-reviewer skill, read-only), three rounds 
 
 | Edge | Work-phase | Evidence |
 |---|---|---|
+| IDLE→P→A→B→C→D | wp1 | Docs unit committed `3a80a03`; unit audit FAIL, FAIL, NEAR-PASS with all findings folded in; receipt: files present, no personal paths, privacy 0 findings |
+| IDLE→P→A→B→C→D | wp2 | `0edea01`: flow measurements and `overview.png`; independent code review FAIL (11.025 kHz 1 Hz point) then NEAR-PASS, fixed; receipt 354 tests, 351 pass, 0 fail, 3 skipped; c-2 met |
+| IDLE→P→A→B→C→D | wp3 | `c8de8c5`: arrangements, presets, loop render, four checks, six examples, references; review FAIL (house/6 over-suppression) then NEAR-PASS, fixed; old core trap/boom-bap examples rearranged to pass the new checks; receipt 401 tests, 398 pass, 0 fail; c-4, c-5, c-6 met |
+| IDLE→P→A→B | wp4 | Image-only evaluation, docs, version 0.2.0 entry, archive, push and hosted CI (below) |
+
+## Image-only evaluation result (c-3)
+
+Fresh gpt-6-sol subagents each received one prepared PNG and the fixed 003 prompt, nothing else. After the first pass exposed a label and scoring mismatch (see the 030 amendment; those captures are kept in `evidence/overview-eval/superseded-attempt1.json`), all cases were captured again against new image hashes. Result: native 1600 px overview **4/4** cases with exact order, every boundary within one bar and the correct loudest section; 1280 and 1024 px also 4/4 four-way correct. The spectrogram control scored 0/4 at every size: the models returned empty answers because a spectrogram carries no section labels. Trap and boom bap were recaptured once more after wp3 rearranged those two examples. The wp3 use-case examples were not dispatched as extra diagnostic cases in this run; they are covered by e2e assertions instead. Evidence: `evidence/overview-eval.md`, `evidence/overview-eval/summary.json`, raw answers under `evidence/overview-eval/answers/`.

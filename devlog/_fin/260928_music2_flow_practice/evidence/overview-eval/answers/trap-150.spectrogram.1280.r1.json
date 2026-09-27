@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "caseId": "trap-150",
+  "imageKind": "spectrogram",
+  "longSide": 1280,
+  "repetition": 1,
+  "model": "gpt-6-sol",
+  "modelId": "gpt-6-sol",
+  "promptSha256": "885890ebad22c40d072e27de1aed3ccca24f4be9a5af5e6f5ad2d8a16ad64446",
+  "imageSha256": "c68d2d16be19cfdc9afadf7d8205f24efd7a04e874c2721c43b4f2890cdd6958",
+  "rawResponse": "{\"section_order\":[],\"boundary_bars\":[],\"loudest_section\":null,\"hook_start_bar\":null}"
+}

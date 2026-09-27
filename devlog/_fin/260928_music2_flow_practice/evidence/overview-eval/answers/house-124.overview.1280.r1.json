@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "caseId": "house-124",
+  "imageKind": "overview",
+  "longSide": 1280,
+  "repetition": 1,
+  "model": "gpt-6-sol",
+  "modelId": "gpt-6-sol",
+  "promptSha256": "885890ebad22c40d072e27de1aed3ccca24f4be9a5af5e6f5ad2d8a16ad64446",
+  "imageSha256": "09785984ed690a4e17d6926715081ae66f844e7198dc5f8ed36dc595883d110c",
+  "rawResponse": "{\"section_order\":[\"GROOVE#0\",\"BREAKDOWN#0\",\"RETURN#0\",\"OUTRO#0\"],\"boundary_bars\":[1,9,13,21,25],\"loudest_section\":\"RETURN#0\",\"hook_start_bar\":null}"
+}

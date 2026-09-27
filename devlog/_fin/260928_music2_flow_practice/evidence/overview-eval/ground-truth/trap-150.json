@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "caseId": "trap-150",
+  "corpus": "core",
+  "sourceSha256": "b9f361a2e2d229d2f078183d65ac72d88175150eafc131a5aaae8002113b5355",
+  "analysisSha256": "eb4879f6839602798328382345b6be4a667b63a1935d3fbb1db5bc3521f511fb",
+  "imageSha256": {
+    "overview": "731689bc77e00ea5d8243621c8fbb520e1b4ed8ddca9cd38dc66a225f757d0eb",
+    "spectrogram": "12f4d6a9a8598ad2a9234dea0592553aef97a1cb1661ff5fd11eca8effb99d1c"
+  },
+  "preparedImageSha256": {
+    "overview": {
+      "1024": "0f4e914029541a76f8ee7b5eb87d45f2fb0acfc42464f40a3a4d464c66bc6181",
+      "1280": "8ffe400eadf34c36a1c7b8f8ea79c9e58d66a8ba7228af9012e545fd324e6954",
+      "1600": "731689bc77e00ea5d8243621c8fbb520e1b4ed8ddca9cd38dc66a225f757d0eb"
+    },
+    "spectrogram": {
+      "1024": "60c3a0cac7c8a1ccc23b60e214a60f35b00f23f2ef15c1310ff5e1842fb388c8",
+      "1280": "c68d2d16be19cfdc9afadf7d8205f24efd7a04e874c2721c43b4f2890cdd6958",
+      "1600": "e6c86b98687f51a94e26bae15ef3f896c656d0400a7afac33ebb6c0683894d62"
+    }
+  },
+  "sectionOrder": [
+    "intro#0",
+    "hook#0",
+    "verse#0",
+    "outro#0"
+  ],
+  "boundaryBars": [
+    1,
+    5,
+    13,
+    21,
+    25
+  ],
+  "sectionIntegratedLufs": {
+    "intro#0": -25.217968,
+    "hook#0": -12.474895,
+    "verse#0": -15.760101,
+    "outro#0": -20.136968
+  },
+  "loudestSection": "hook#0",
+  "loudestMarginLu": 3.2852060000000005,
+  "firstHookBar": 5,
+  "excluded": null
+}

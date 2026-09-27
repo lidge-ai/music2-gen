@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "caseId": "boom-bap-90",
+  "imageKind": "spectrogram",
+  "longSide": 1600,
+  "repetition": 1,
+  "model": "gpt-6-sol",
+  "modelId": "gpt-6-sol",
+  "promptSha256": "885890ebad22c40d072e27de1aed3ccca24f4be9a5af5e6f5ad2d8a16ad64446",
+  "imageSha256": "830000ce5da11cd7a1f76f65f7ad606a0af87d45ce3512ef94feb25adceaaa72",
+  "rawResponse": "{\"section_order\":[],\"boundary_bars\":[1,5,13,21,25],\"loudest_section\":null,\"hook_start_bar\":null}"
+}

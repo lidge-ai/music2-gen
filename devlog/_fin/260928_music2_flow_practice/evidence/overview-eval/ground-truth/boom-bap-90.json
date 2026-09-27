@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "caseId": "boom-bap-90",
+  "corpus": "core",
+  "sourceSha256": "9aba5ec92279d5e6ebecbe14e828362eaad506d341983b4e51d50e5ad0130f0a",
+  "analysisSha256": "baebc0aedbe6843f8dfa8cf955ceded3b03a54cdc3ca1232289ef1a96ebf19a4",
+  "imageSha256": {
+    "overview": "b07304f1f4232e1b76a5542cf823cdef34df6277c27c8a0d5b3aef6b90aa99e4",
+    "spectrogram": "d467b0c438125902ccd460956c9fa538af4ee75d4822ecc65345863cd73e993b"
+  },
+  "preparedImageSha256": {
+    "overview": {
+      "1024": "4959b7f39260d1a08071c0c556242aa2f7ac116f6735414f7da0961fce19828a",
+      "1280": "e83d7694c763280ccca77d2c0c54709ea6457f115ccd1071dccd3b27a8f44c73",
+      "1600": "b07304f1f4232e1b76a5542cf823cdef34df6277c27c8a0d5b3aef6b90aa99e4"
+    },
+    "spectrogram": {
+      "1024": "d8091ae5c68bf13baee565201a6530feb5d1fb5a150ba6b12276213e5443df72",
+      "1280": "21f06ad99bfe4a9d9c9afba48111a9b652701bcfbce2596ea13ac07f36d01590",
+      "1600": "830000ce5da11cd7a1f76f65f7ad606a0af87d45ce3512ef94feb25adceaaa72"
+    }
+  },
+  "sectionOrder": [
+    "intro#0",
+    "verse#0",
+    "hook#0",
+    "outro#0"
+  ],
+  "boundaryBars": [
+    1,
+    5,
+    13,
+    21,
+    25
+  ],
+  "sectionIntegratedLufs": {
+    "intro#0": -25.716237,
+    "verse#0": -15.820214,
+    "hook#0": -12.676451,
+    "outro#0": -25.711925
+  },
+  "loudestSection": "hook#0",
+  "loudestMarginLu": 3.143763,
+  "firstHookBar": 13,
+  "excluded": null
+}

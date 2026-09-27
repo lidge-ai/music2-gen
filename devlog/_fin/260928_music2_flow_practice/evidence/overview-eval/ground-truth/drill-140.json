@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "caseId": "drill-140",
+  "corpus": "core",
+  "sourceSha256": "5b75c3b4ab2414b033f5a965f9d45d7ebb92e92a1e7409c7f2df005cd0fb277b",
+  "analysisSha256": "e8ae38777a5d51f57f13aef951f1ec399d84bd0813dee65a2571e7f8a3eace5d",
+  "imageSha256": {
+    "overview": "ea88e1fc009a4f203915bc3bc4a4e7989bd38a55eac68a74a1ace565ef421083",
+    "spectrogram": "a5b6bdae74a659ef3fbee743f3e45038c6a5bf0dacaf40ddb8535368e92315fd"
+  },
+  "preparedImageSha256": {
+    "overview": {
+      "1024": "05eaf64957c5495dd715daa7cfe1d7d3e4f09daf6377e77f58a36348f9385018",
+      "1280": "b5e668fbd2d2c65e46b4c6cfe1a9186f695240fca7c31f3374841c43b27f84be",
+      "1600": "ea88e1fc009a4f203915bc3bc4a4e7989bd38a55eac68a74a1ace565ef421083"
+    },
+    "spectrogram": {
+      "1024": "547a4dd990a069e1c33a24f73a556384979094d886874575b1b0e46ed4be2ec9",
+      "1280": "0e742da3093e30a629cb48cca6b3e57fa8fc57fcf5eeac8991abfd3c3cc420e2",
+      "1600": "24e506837d6c68fd1bb64b79bf9134ef4b2c41a0f479f840d3e44f6516d4bc5b"
+    }
+  },
+  "sectionOrder": [
+    "intro#0",
+    "hook#0",
+    "verse#0"
+  ],
+  "boundaryBars": [
+    1,
+    5,
+    13,
+    17
+  ],
+  "sectionIntegratedLufs": {
+    "intro#0": -19.675416,
+    "hook#0": -14.752428,
+    "verse#0": -15.675152
+  },
+  "loudestSection": "hook#0",
+  "loudestMarginLu": 0.9227240000000005,
+  "firstHookBar": 5,
+  "excluded": null
+}

@@ -2,7 +2,7 @@ import { Music2Error } from "../shared/index.ts";
 import { noteToMidi, parseMini, parseNumber, parseSampleRef } from "../pattern/index.ts";
 import type { Node } from "../pattern/index.ts";
 
-/** Delivery presets (devlog/_plan/260928_music2_flow_practice/020_real_world_checks.md). Owned here so song validation needs no usecases import. */
+/** Delivery presets (devlog/_fin/260928_music2_flow_practice/020_real_world_checks.md). Owned here so song validation needs no usecases import. */
 export const USE_CASE_IDS = ["short_15", "short_30", "short_60", "vo_bed", "podcast_sting", "podcast_theme", "game_loop", "type_beat", "study_lofi"] as const;
 export type UseCaseId = (typeof USE_CASE_IDS)[number];
 

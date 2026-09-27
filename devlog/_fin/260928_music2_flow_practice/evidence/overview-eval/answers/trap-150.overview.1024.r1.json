@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "caseId": "trap-150",
+  "imageKind": "overview",
+  "longSide": 1024,
+  "repetition": 1,
+  "model": "gpt-6-sol",
+  "modelId": "gpt-6-sol",
+  "promptSha256": "885890ebad22c40d072e27de1aed3ccca24f4be9a5af5e6f5ad2d8a16ad64446",
+  "imageSha256": "0f4e914029541a76f8ee7b5eb87d45f2fb0acfc42464f40a3a4d464c66bc6181",
+  "rawResponse": "{\"section_order\":[\"INTRO#0\",\"HOOK#0\",\"VERSE#0\",\"OUTRO#0\"],\"boundary_bars\":[1,5,13,21,25],\"loudest_section\":\"HOOK#0\",\"hook_start_bar\":5}"
+}

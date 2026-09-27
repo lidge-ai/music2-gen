@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "caseId": "drill-140",
+  "imageKind": "spectrogram",
+  "longSide": 1600,
+  "repetition": 1,
+  "model": "gpt-6-sol",
+  "modelId": "gpt-6-sol",
+  "promptSha256": "885890ebad22c40d072e27de1aed3ccca24f4be9a5af5e6f5ad2d8a16ad64446",
+  "imageSha256": "24e506837d6c68fd1bb64b79bf9134ef4b2c41a0f479f840d3e44f6516d4bc5b",
+  "rawResponse": "{\"section_order\":[],\"boundary_bars\":[],\"loudest_section\":null,\"hook_start_bar\":null}"
+}

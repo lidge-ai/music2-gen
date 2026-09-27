@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "caseId": "house-124",
+  "corpus": "core",
+  "sourceSha256": "c4635ba1c4b0ea6e6835bd5296d867583565a37ce9b6fda799ccce5ad2beaefa",
+  "analysisSha256": "c4ca1c59f3ed1ecd696031c6a647f5d3bbfe8fcbf1380b814e21c3d1ebd40fba",
+  "imageSha256": {
+    "overview": "8f129df0a5cf638f06311175b9216128d04f3ca8301561ee02f9c07bebb15c98",
+    "spectrogram": "e0f24c52fb8050c78c4f466e4dcf671a4ca3d03770a249ce9d6528deadaea51a"
+  },
+  "preparedImageSha256": {
+    "overview": {
+      "1024": "a457d13c481cd60ea889dc5ad080c7f5d4c81e413894af71e827e19b902af4bd",
+      "1280": "09785984ed690a4e17d6926715081ae66f844e7198dc5f8ed36dc595883d110c",
+      "1600": "8f129df0a5cf638f06311175b9216128d04f3ca8301561ee02f9c07bebb15c98"
+    },
+    "spectrogram": {
+      "1024": "09ab50b9777df2c1bf0c6f9438c1f58feaffdf4777203a2e1f06086ed5308cee",
+      "1280": "f4188caea561785cfa93a68748d8f8c492a830311764306609bff8eccffdab4d",
+      "1600": "8661ae927ac378c1e34b3476a56e3df989cf37fa8dd82075de5615dbb1e7f6ea"
+    }
+  },
+  "sectionOrder": [
+    "groove#0",
+    "breakdown#0",
+    "return#0",
+    "outro#0"
+  ],
+  "boundaryBars": [
+    1,
+    9,
+    13,
+    21,
+    25
+  ],
+  "sectionIntegratedLufs": {
+    "groove#0": -13.67188,
+    "breakdown#0": -18.862958,
+    "return#0": -13.121501,
+    "outro#0": -21.660887
+  },
+  "loudestSection": "return#0",
+  "loudestMarginLu": 0.5503789999999995,
+  "firstHookBar": null,
+  "excluded": null
+}

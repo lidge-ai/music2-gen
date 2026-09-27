@@ -1,4 +1,4 @@
-/** Flow analysis contracts (devlog/_plan/260928_music2_flow_practice/010_overview_image.md). JSON-safe rows cross the public boundary; render data stays internal. */
+/** Flow analysis contracts (devlog/_fin/260928_music2_flow_practice/010_overview_image.md). JSON-safe rows cross the public boundary; render data stays internal. */
 export type FlowAxisKind = "bars" | "beats" | "0.5 s";
 export interface FlowInterval {
   index: number; // zero based
