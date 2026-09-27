@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "title": "Night Ferry",
+  "genre": "trap",
+  "bpm": 150,
+  "meter": {
+    "numerator": 4,
+    "denominator": 4
+  },
+  "key": "A minor",
+  "seed": 15001,
+  "swing": 0.5,
+  "sampleRate": 44100,
+  "tailSeconds": 2,
+  "master": {
+    "ceilingDb": -1,
+    "targetLufs": -14
+  },
+  "tracks": [
+    {
+      "id": "kick",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "bd ~ ~ ~ ~ ~ bd ~ ~ ~ bd ~ ~ ~ bd ~",
+      "gain": -8
+    },
+    {
+      "id": "snare",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "~ ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~",
+      "gain": -8,
+      "sends": {
+        "reverb": 0.1
+      }
+    },
+    {
+      "id": "hats",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "<[hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh ~] [hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh ~] [hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh ~] [hh ~ hh ~ hh ~ [hh hh] ~ hh ~ hh ~ hh ~]>",
+      "gain": -15
+    },
+    {
+      "id": "sub",
+      "kind": "notes",
+      "instrument": "808",
+      "pattern": "<[a1 ~ ~ ~ ~ ~ e2 ~ a1 ~ ~ ~ g1 ~ ~ ~] [f1 ~ ~ ~ ~ ~ c2 ~ f1 ~ ~ ~ e2 ~ ~ ~] [c2 ~ ~ ~ ~ ~ g1 ~ c2 ~ ~ ~ e2 ~ ~ ~] [g1 ~ ~ ~ ~ ~ d2 ~ g1 ~ ~ ~ e2 ~ ~ ~]>",
+      "gain": -8,
+      "mono": true,
+      "glide": 40,
+      "gate": 0.55
+    },
+    {
+      "id": "pluck",
+      "kind": "notes",
+      "instrument": "pluck",
+      "pattern": "<[a4 ~ ~ ~ c5 ~ ~ ~ e5 ~ ~ ~ g5 ~ ~ ~] [f4 ~ ~ ~ a4 ~ ~ ~ c5 ~ ~ ~ e5 ~ ~ ~] [e4 ~ ~ ~ g4 ~ ~ ~ c5 ~ ~ ~ e5 ~ ~ ~] [g4 ~ ~ ~ b4 ~ ~ ~ d5 ~ ~ ~ e5 ~ ~ ~]>",
+      "gain": -13,
+      "sends": {
+        "reverb": 0.22
+      }
+    },
+    {
+      "id": "pad",
+      "kind": "notes",
+      "instrument": "pad",
+      "pattern": "<[a3,c4,e4] [f3,a3,c4] [c4,e4,g4] [g3,b3,d4]>",
+      "gain": -17,
+      "sends": {
+        "reverb": 0.35
+      }
+    }
+  ],
+  "sections": [
+    {
+      "id": "intro",
+      "bars": 4,
+      "role": "intro",
+      "patterns": {
+        "kick": "bd ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~",
+        "snare": null,
+        "sub": null,
+        "pad": null
+      }
+    },
+    {
+      "id": "verse",
+      "bars": 8,
+      "role": "verse",
+      "patterns": {
+        "pad": null
+      }
+    },
+    {
+      "id": "hook",
+      "bars": 8,
+      "role": "hook"
+    },
+    {
+      "id": "outro",
+      "bars": 4,
+      "role": "outro",
+      "patterns": {
+        "snare": null,
+        "sub": null,
+        "pad": null,
+        "pluck": null
+      }
+    }
+  ],
+  "arrangement": [
+    {
+      "section": "intro"
+    },
+    {
+      "section": "verse"
+    },
+    {
+      "section": "hook"
+    },
+    {
+      "section": "outro"
+    }
+  ]
+}

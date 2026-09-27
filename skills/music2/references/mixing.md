@@ -1,0 +1,22 @@
+# Read measurements, then revise the mix
+
+Render a WAV, then run `node bin/music2.js analyze /tmp/music2-song.wav --song /tmp/music2-song.song.json --out /tmp/music2-analysis --json`. Read `analysis.md` for a text-only summary and `analysis.json` for exact values and warnings. `spectrogram.png` shows time and frequency; `pianoroll.png` shows the supplied song's note and drum timeline. Neither image is a listening test. Without `--song`, WAV analysis has no piano roll or declared timeline; its beat map uses estimated tempo and assumes 4/4 when available.
+
+An integrated loudness near -14 LUFS and true peak at or below -1 dBTP are streaming-oriented starting points, not required exact scores. If you aim louder, consider a ceiling at or below -2 dBTP. The song's `master.targetLufs` only creates an advisory `LUFS_OFF_TARGET` warning when measured loudness differs by more than 3 LU. `truePeakEstimateDbtp` is a 4x oversampled estimate, not an exact intersample guarantee; verify the final encode if the delivery format matters. LRA on material under 60 seconds is provisional.
+
+The six `bands` in `analysis.json` are shares of measured 20 Hz–20 kHz spectral energy. Fixed ratios are not universal pass/fail rules; compare a revision against the same song and target sound.
+
+| Band | Range | What an excess or absence may suggest | First edit to try |
+| --- | --- | --- | --- |
+| `sub` | 20–60 Hz | Sub masks the kick or disappears on small speakers. | Shorten or lower 808 notes, keep `pan: 0`, and separate kick/808 onsets. |
+| `low` | 60–250 Hz | Kick/bass body overwhelms the rest. | Reduce overlapping bass, try a modest `duck` from kick. |
+| `lowMid` | 250–500 Hz | Keys and bass feel muddy. | Raise keys register or lower keys gain; shorten bass tails. |
+| `mid` | 500 Hz–2 kHz | Melody lacks body or competes with snare. | Balance keys/bell gain and section density. |
+| `presence` | 2–8 kHz | Hats, clap, or metallic bell are harsh. | Lower hat velocity, bell `index`, or send level. |
+| `air` | 8–20 kHz | A nearly empty band can sound dull; too much can hiss. | Restore quiet hats or reduce bright noise by velocity. |
+
+Use track `gain`, `sends`, `duck`, note length, and voice parameters before raising `master.gainDb`. Keep sub and kick centered. `LOW_END_DOMINANCE` means sub+low share exceeds 0.55, and `EMPTY_HIGH_BAND` means air share is below 0.001 on non-silent audio; these are investigation prompts. `CLIPPING` counts PCM samples at full scale. Inspect `clippedSamples`, sample peak, and true peak after each edit.
+
+Lint's `generic/clipping_risk` is a static sum of coincident onset velocity and track gain. It ignores master normalization and does not prove rendered clipping. Check the rendered peak and `CLIPPING` before changing the master because of this warning. Audio key estimation is also advisory: `KEY_UNCERTAIN` signals weak evidence, and an apparent mismatch can come from percussion or sparse harmony. Use the declared key, `events` note pitches, and lint `generic/out_of_key` for source pitch checks. Tempo estimation may prefer half-time or double-time; compare `tempoCandidates` with the declared BPM and event grid.
+
+Optional audio critique can help with timbre, groove, and arrangement only after `data.review.heard_audio` is true. The tested route failed to assess solo sub-bass/808 reliably, so never use its bass-weight claim to override band analysis. On `E_CAPABILITY` or `E_PROVIDER`, report the missing audio opinion and continue with local measurements. Rerender and remeasure after each meaningful edit; compare the new values to the preceding render, not to a fixed genre-wide ratio.

@@ -40,6 +40,8 @@ src/recipes/
 guidance, palettes, arrangements, mix targets, source references, and a complete
 starter song. The registry deep-clones, freezes, and sorts those cards internally;
 public reads return fresh clones so callers cannot change the registry.
+`scripts/gen-genre-docs.mjs` consumes those reads to generate
+`skills/music2/references/genres.md` from the recipe cards.
 
 `newSong` copies a card's starter, applies bounded overrides, transposes note
 patterns when the key changes, and validates the result. Lint first validates
@@ -83,6 +85,8 @@ re-exports public card, starter, and lint functions and types.
 | `export function genericRules(g: LintGeometry, unknownGenre: boolean): LintResult[]` | `lint-generic.tool.ts` | Apply shared warnings. |
 | `export function genreRules(g: LintGeometry, genre: RecipeId, generic: LintResult[]): LintResult[]` | `lint-rules.tool.ts` | Dispatch genre formulas. |
 | `export function danceRules(g: LintGeometry, genre: "house" \| "techno", generic: LintResult[]): LintResult[]` | `lint-rules-dance.tool.ts` | Apply dance formulas. |
+| `export function renderGenreDocs(cards)` (JSDoc: `readonly RecipeCard[]` → `string`) | `scripts/gen-genre-docs.mjs` | Render the generated genre reference. |
+| `export async function main(argv)` (JSDoc: `string[]` → `Promise<number>`) | `scripts/gen-genre-docs.mjs` | Generate or check the reference file. |
 
 `NewSongOptions` requires `genre`; `bpm`, `key`, `seed`, and `title` are
 optional. `LintOptions` contains optional `genre`. `LintResult` has `id`,
@@ -198,8 +202,15 @@ There are no runtime package dependencies. Tests use Node's test runner.
 | `src/cli/commands/new.ts` | `../../recipes/index.ts` | Generate a starter. |
 | `src/cli/commands/lint.ts` | `../../recipes/lint.tool.ts` | Produce a lint report. |
 | `src/recipes/*.test.ts` | Local tool paths | Verify defaults, formulas, and invariants. |
+| `scripts/gen-genre-docs.mjs` | `../src/recipes/index.ts` | Call `listRecipes(): RecipeCard[]` and render `skills/music2/references/genres.md`. |
 
 The CLI owns file reads, writes, output formatting, and QA exit policy.
+The generator validates its expected recipe IDs and lint-rule meanings, then
+compares UTF-8 bytes with the generated file. `npm run docs:genres` writes
+changes; `npm run docs:genres:check` runs `--check` and exits 1 on drift.
+`.github/workflows/ci.yml` runs that check as a CI gate. The generated genre
+reference is consumed by `skills/music2/SKILL.md` and should not be edited by
+hand.
 
 ## Sync Checklist
 
@@ -208,5 +219,6 @@ The CLI owns file reads, writes, output formatting, and QA exit policy.
 - [ ] Recheck the lint catalogue when rule IDs or thresholds change.
 - [ ] Verify the geometry definitions before describing eligible bars.
 - [ ] Keep the feature barrel aligned with public exports.
+- [ ] Regenerate `skills/music2/references/genres.md` after card changes and run `npm run docs:genres:check`.
 - [ ] Update `devlog/str_func/cli.md` when command flags or exit policy change.
 - [ ] Update `devlog/str_func/AGENTS.md` index when adding or moving this document.

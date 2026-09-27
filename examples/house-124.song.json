@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "title": "Glasshouse Transit",
+  "genre": "house",
+  "bpm": 124,
+  "meter": {
+    "numerator": 4,
+    "denominator": 4
+  },
+  "key": "A minor",
+  "seed": 12401,
+  "swing": 0.5,
+  "sampleRate": 44100,
+  "tailSeconds": 2,
+  "master": {
+    "ceilingDb": -1,
+    "targetLufs": -14
+  },
+  "tracks": [
+    {
+      "id": "kick",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "bd ~ ~ ~ bd ~ ~ ~ bd ~ ~ ~ bd ~ ~ ~",
+      "gain": -9,
+      "params": {
+        "tone": 0.55,
+        "decayMs": 150,
+        "noise": 0.3
+      }
+    },
+    {
+      "id": "clap",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "~ ~ ~ ~ cp ~ ~ ~ ~ ~ ~ ~ cp ~ ~ ~",
+      "gain": -10,
+      "sends": {
+        "reverb": 0.13
+      },
+      "params": {
+        "noise": 0.6
+      }
+    },
+    {
+      "id": "hats",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "~ ~ oh ~ ~ ~ oh ~ ~ ~ oh ~ ~ ~ oh ~",
+      "gain": -16,
+      "params": {
+        "noise": 0.55
+      }
+    },
+    {
+      "id": "bass",
+      "kind": "notes",
+      "instrument": "bass",
+      "pattern": "<[a1 ~ ~ e2 ~ ~ g2 ~ a1 ~ ~ e2 ~ ~ g2 ~] [f1 ~ ~ c2 ~ ~ e2 ~ f1 ~ ~ c2 ~ ~ e2 ~] [c2 ~ ~ g1 ~ ~ e2 ~ c2 ~ ~ g1 ~ ~ e2 ~] [g1 ~ ~ d2 ~ ~ f2 ~ g1 ~ ~ d2 ~ ~ f2 ~]>",
+      "gain": -10,
+      "mono": true,
+      "duck": {
+        "by": "kick",
+        "amount": 0.45,
+        "releaseMs": 110
+      },
+      "gate": 0.55,
+      "params": {
+        "cutoffHz": 520,
+        "releaseMs": 90
+      }
+    },
+    {
+      "id": "pad",
+      "kind": "notes",
+      "instrument": "pad",
+      "pattern": "<[a3,c4,e4] [f3,a3,c4] [c4,e4,g4] [g3,b3,d4]>",
+      "gain": -16,
+      "sends": {
+        "reverb": 0.3
+      },
+      "params": {
+        "attackMs": 320
+      }
+    },
+    {
+      "id": "lead",
+      "kind": "notes",
+      "instrument": "lead",
+      "pattern": "<[e5 ~ ~ ~ g5 ~ ~ ~ a5 ~ ~ ~ c6 ~ ~ ~] [c5 ~ ~ ~ e5 ~ ~ ~ f5 ~ ~ ~ a5 ~ ~ ~] [g5 ~ ~ ~ e5 ~ ~ ~ c5 ~ ~ ~ b4 ~ ~ ~] [d5 ~ ~ ~ g5 ~ ~ ~ b5 ~ ~ ~ a5 ~ ~ ~]>",
+      "gain": -17,
+      "sends": {
+        "delay": 0.18
+      }
+    }
+  ],
+  "sections": [
+    {
+      "id": "groove",
+      "bars": 8,
+      "role": "groove",
+      "patterns": {
+        "lead": null
+      }
+    },
+    {
+      "id": "breakdown",
+      "bars": 4,
+      "role": "breakdown",
+      "patterns": {
+        "kick": null,
+        "clap": null,
+        "bass": null,
+        "lead": null,
+        "hats": "~ ~ oh ~ ~ ~ ~ ~ ~ ~ oh ~ ~ ~ ~ ~"
+      }
+    },
+    {
+      "id": "return",
+      "bars": 8,
+      "role": "groove"
+    },
+    {
+      "id": "outro",
+      "bars": 4,
+      "role": "outro",
+      "patterns": {
+        "bass": null,
+        "pad": null,
+        "lead": null,
+        "clap": null
+      }
+    }
+  ],
+  "arrangement": [
+    {
+      "section": "groove"
+    },
+    {
+      "section": "breakdown"
+    },
+    {
+      "section": "return"
+    },
+    {
+      "section": "outro"
+    }
+  ]
+}

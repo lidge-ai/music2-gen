@@ -31,7 +31,9 @@ src/cli/
     ├── lint.ts          # static findings and QA exit policy
     ├── lint.test.ts     # lint command cases
     ├── critique.ts      # audible review and local DSP command
-    └── critique.test.ts # critic command cases
+    ├── critique.test.ts # critic command cases
+    ├── skill-path.ts    # resolve and print packaged skill directory
+    └── skill-path.test.ts # skill path validation cases
 ```
 
 ## Module Responsibility
@@ -45,7 +47,7 @@ used by both parsing and help text.
 
 At this source snapshot the registry contains `help`, `version`, `schema`,
 `validate`, `events`, `render`, `doctor`, `analyze`, `recipes`, `new`, `lint`,
-and `critique`.
+`critique`, and `skill`.
 
 ## Key Function Signatures
 
@@ -61,6 +63,7 @@ The signatures below come from exported declarations in the current source.
 | `export function renderSuccess(result: CommandResult, json: boolean): string` | `output.ts` | Format successful result. |
 | `export function renderFailure(error: unknown, json: boolean, command = "unknown"): { text: string; exit: number }` | `output.ts` | Format failure and status. |
 | `export function register(spec: CommandSpec): void` | `registry.ts` | Add a uniquely named command. |
+| `export function resolveSkillDir(root: string): string` | `commands/skill-path.ts` | Return the packaged skill directory after verifying its `SKILL.md` is a regular file. |
 
 ### Exported types and values
 
@@ -85,6 +88,7 @@ The signatures below come from exported declarations in the current source.
 | `newCommand` | `export const newCommand: CommandSpec` | Create a starter song. |
 | `lint` | `export const lint: CommandSpec` | Static song and genre checks. |
 | `critiqueCommand` | `export const critiqueCommand: CommandSpec` | Audible review paired with local DSP. |
+| `skillPath` | `export const skillPath: CommandSpec` | Print the packaged music2 skill directory. |
 
 `CommandSpec` requires `run(ctx: CommandContext): Promise<CommandResult>`.
 The handlers implement `run({ args })` inline on their exported spec objects;
@@ -147,6 +151,18 @@ they have no separately exported `run` function.
 | `new` | `commands/new.ts` | Required `--genre`; optional BPM, key, seed, title, and output path. |
 | `lint` | `commands/lint.ts` | One song JSON path; optional genre override and strict QA policy. |
 | `critique` | `commands/critique.ts` | One WAV/song path; optional model, base URL, and excerpt seconds. |
+| `skill` | `commands/skill-path.ts` | Sole positional argument `path`; returns `{ path }` and prints the directory in human mode. |
+
+### Skill path command
+
+`music2 skill path [--json]` has no command-specific options and accepts only
+the positional argument `path`. `resolveSkillDir(packageRoot())` joins
+`skills/music2` and requires a regular `SKILL.md` file there. Missing skill
+content raises `E_NOT_FOUND` (exit 2); other arguments raise `E_INPUT` (exit 2).
+The result is `{ command: "skill", data: { path }, text: path }`: human mode
+prints the path, while JSON mode uses the standard single-object envelope.
+`src/cli/registry.ts` registers `skillPath`, so help and argument parsing use
+the same specification.
 
 ### Recipes and new commands
 
@@ -295,6 +311,7 @@ typed code. JSON mode still emits exactly one object.
 | Probe boundary | `../../probe/index.ts` | Discover ffmpeg, encode copies, loudnorm, and type doctor response. |
 | Recipes boundary | `../../recipes/index.ts`, `../../recipes/lint.tool.ts` | Card lookup, starter construction, and lint. |
 | Critic boundary | `../../critic/index.ts` | Audible review and measured DSP. |
+| Shared package root | `../../shared/index.ts` | Locate the installed package for `skill path`. |
 | Node filesystem/path/crypto | `node:fs/promises`, `node:path`, `node:crypto` | Stage files, resolve paths, and name temporary outputs. |
 
 There are no runtime package dependencies. `main.test.ts` uses Node's test,
@@ -314,6 +331,8 @@ assert, filesystem, process-spawn, OS-temp, and path modules.
 | `src/cli/commands/doctor.test.ts` | `./doctor.ts` | Verifies capability reporting and required mode. |
 | `src/cli/commands/analyze.test.ts` | `./analyze.ts` | Verifies analysis command and artifact results. |
 | `src/cli/commands/recipes.test.ts`, `new.test.ts`, `lint.test.ts`, `critique.test.ts` | Adjacent command files | Verify new command contracts. |
+| `src/cli/commands/skill-path.test.ts` | `./skill-path.ts` | Verify argument validation and required skill file. |
+| `skills/music2/SKILL.md` | `music2 skill path` output | Entry document in the returned skill directory. |
 
 No other source feature currently imports `src/cli/index.ts`; it is the
 process entry point. The source-bin test exercises it through `bin/music2.js`.

@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "title": "Corner Store Lanterns",
+  "genre": "boom_bap",
+  "bpm": 90,
+  "meter": {
+    "numerator": 4,
+    "denominator": 4
+  },
+  "key": "C minor",
+  "seed": 9001,
+  "swing": 0.58,
+  "sampleRate": 44100,
+  "tailSeconds": 2,
+  "master": {
+    "ceilingDb": -1,
+    "targetLufs": -14
+  },
+  "tracks": [
+    {
+      "id": "kick",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "bd ~ ~ ~ ~ ~ bd ~ ~ ~ bd ~ ~ ~ ~ ~",
+      "gain": -13,
+      "velocity": 0.75
+    },
+    {
+      "id": "snare",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~",
+      "gain": -13,
+      "velocity": 0.72,
+      "sends": {
+        "reverb": 0.14
+      }
+    },
+    {
+      "id": "hats",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh ~",
+      "gain": -21,
+      "swing": true,
+      "velocity": 0.62
+    },
+    {
+      "id": "bass",
+      "kind": "notes",
+      "instrument": "bass",
+      "pattern": "<[c2 ~ ~ ~ ~ ~ g2 ~ ~ ~ bb1 ~ ~ ~ ~ ~] [f2 ~ ~ ~ ~ ~ c2 ~ ~ ~ eb2 ~ ~ ~ ~ ~] [ab1 ~ ~ ~ ~ ~ eb2 ~ ~ ~ g1 ~ ~ ~ ~ ~] [g1 ~ ~ ~ ~ ~ d2 ~ ~ ~ f2 ~ ~ ~ ~ ~]>",
+      "gain": -13,
+      "mono": true,
+      "params": {
+        "cutoffHz": 490,
+        "releaseMs": 95
+      }
+    },
+    {
+      "id": "keys",
+      "kind": "notes",
+      "instrument": "keys",
+      "pattern": "<[c4,eb4,g4,bb4 ~ ~ ~ eb4,g4,bb4 ~ ~ ~ c4,eb4,g4 ~ ~ ~ bb3,d4,f4 ~ ~ ~] [f3,ab3,c4,eb4 ~ ~ ~ ab3,c4,eb4 ~ ~ ~ f3,ab3,c4 ~ ~ ~ c4,eb4,g4 ~ ~ ~] [ab3,c4,eb4,g4 ~ ~ ~ c4,eb4,g4 ~ ~ ~ ab3,c4,eb4 ~ ~ ~ g3,bb3,d4 ~ ~ ~] [g3,bb3,d4,f4 ~ ~ ~ bb3,d4,f4 ~ ~ ~ g3,bb3,d4 ~ ~ ~ c4,eb4,g4 ~ ~ ~]>",
+      "gain": -20,
+      "gate": 0.7,
+      "sends": {
+        "reverb": 0.22
+      },
+      "params": {
+        "index": 0.9,
+        "releaseMs": 260
+      }
+    }
+  ],
+  "sections": [
+    {
+      "id": "intro",
+      "bars": 4,
+      "role": "intro",
+      "patterns": {
+        "bass": null,
+        "keys": null,
+        "snare": null
+      }
+    },
+    {
+      "id": "verse",
+      "bars": 8,
+      "role": "verse"
+    },
+    {
+      "id": "hook",
+      "bars": 8,
+      "role": "hook",
+      "patterns": {
+        "keys": "<[c4,eb4,g4,bb4 ~ ~ ~ g4,bb4,d5 ~ ~ ~ eb4,g4,bb4 ~ ~ ~ d4,f4,ab4 ~ ~ ~] [f3,ab3,c4,eb4 ~ ~ ~ c4,eb4,ab4 ~ ~ ~ ab3,c4,eb4 ~ ~ ~ g3,bb3,d4 ~ ~ ~]>"
+      }
+    },
+    {
+      "id": "outro",
+      "bars": 4,
+      "role": "outro",
+      "patterns": {
+        "bass": null,
+        "keys": null,
+        "snare": null
+      }
+    }
+  ],
+  "arrangement": [
+    {
+      "section": "intro"
+    },
+    {
+      "section": "verse"
+    },
+    {
+      "section": "hook"
+    },
+    {
+      "section": "outro"
+    }
+  ]
+}

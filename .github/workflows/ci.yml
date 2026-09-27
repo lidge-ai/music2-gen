@@ -27,6 +27,8 @@ jobs:
       - run: npm run lint
       - run: npm run build
       - run: npm run audit:structure
+      - run: npm run docs:genres:check
+      - run: npm run privacy:scan
       - run: npm pack --dry-run
 
   test:

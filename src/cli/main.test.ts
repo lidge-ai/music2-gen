@@ -255,3 +255,11 @@ test("critique maps an unreachable provider to E_PROVIDER exit 4", async () => {
   assert.equal(code, 4);
   assert.equal((out["error"] as { code: string }).code, "E_PROVIDER");
 });
+
+test("skill path is registered; bad subcommands exit 2", async () => {
+  const bad = await runCli(["skill", "install"]);
+  assert.equal(bad.code, 2);
+  assert.equal((bad.out["error"] as { code: string }).code, "E_INPUT");
+  const bare = await runCli(["skill"]);
+  assert.equal(bare.code, 2);
+});

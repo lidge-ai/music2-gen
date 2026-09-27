@@ -41,6 +41,7 @@
     "bin",
     "dist",
     "schema",
+    "skills",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"
@@ -56,7 +57,10 @@
     "schema:json": "node bin/music2.js schema --out schema/song.v1.json",
     "audit:structure": "node scripts/structure-audit.mjs",
     "prepack": "npm run build",
-    "music2": "node src/cli/index.ts"
+    "music2": "node src/cli/index.ts",
+    "docs:genres": "node scripts/gen-genre-docs.mjs",
+    "docs:genres:check": "node scripts/gen-genre-docs.mjs --check",
+    "privacy:scan": "node scripts/privacy-scan.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

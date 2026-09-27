@@ -26,8 +26,8 @@ IN: the file map, CLI `skill path`, example tests, blind dogfood, privacy scan, 
 | `tests/e2e/skill-docs.test.ts` | NEW | Load `SKILL.md` and all five references through the printed `skill path`; assert their relative links resolve, CLI command examples use `new --genre`, `render -o`, `critique --excerpt`, and instrument `json` snippets each form a `Track` that validates when placed into a minimal Song. A missing reference, obsolete flag, or undocumented registry voice fails. |
 | `src/cli/commands/skill-path.ts` | NEW | `export const skillPath: CommandSpec`; name `skill`, usage `music2 skill path [--json]`, zero options beyond global `--json`; require sole positional `path`, otherwise `Music2Error("E_INPUT", ...)` exit 2. Resolve `skills/music2` from `packageRoot()`, return absolute `path` only when `SKILL.md` exists; absent asset → `E_NOT_FOUND` exit 2 with source-install fix. Return `{command:"skill",data:{path}}`; human mode prints path only. No config writes or install. |
 | `src/cli/registry.ts` | MODIFY | Import `skillPath` from `./commands/skill-path.ts` and add exactly one `register(skillPath)` entry in the existing registration list; `help` then discovers command from registry. |
-| `src/cli/commands/help.ts` | MODIFY | Add one `skill path [--json]` usage/description row to the existing help text; keep render/analyze/new/lint/critique flags exactly as defined in 020/030/040. |
-| `src/cli/output.ts` | MODIFY | Add human-mode `skill` case to `renderSuccess`: return `String(result.data["path"])`; retain existing JSON envelope `{ok,command,data,artifacts,warnings,meta:{music2}}`. |
+| `src/cli/commands/help.ts` | NO CHANGE | Help is registry-driven; `skillPath.usage` carries `music2 skill path [--json]` (wp6 P amendment). |
+| `src/cli/output.ts` | NO CHANGE | skill-path returns `text: path` through the existing `CommandResult.text` human-mode path (wp6 P amendment). |
 | `src/cli/main.test.ts` | MODIFY | Add `skill path --json` test: `ok:true`, `data.path` absolute and ends in `skills/music2`, file exists; `skill path` is exactly one path line and makes no files; `skill install` and `skill` exit 2 with `E_INPUT`. |
 | `package.json` | MODIFY | Add npm scripts `docs:genres`: `node scripts/gen-genre-docs.mjs`, `docs:genres:check`: `node scripts/gen-genre-docs.mjs --check`, `privacy:scan`: `node scripts/privacy-scan.mjs`; add `skills` to npm `files` so `music2 skill path` works from an installed package. Keep `dependencies` absent or `{}` and existing `bin`/engines/build scripts. |
 | `.github/workflows/ci.yml` | MODIFY | In `checks` after build add `npm run docs:genres:check` and `npm run privacy:scan` before pack dry-run. Retain `checks`, matrix `test` (ubuntu/macos/windows x Node 22/24), and `ci` aggregate needing both. The genre check may not rewrite source. |
@@ -238,3 +238,24 @@ Keep the receipt in the existing work-phase devlog after the implementation gate
 - Mock critique with `heard_audio:false` or `unsupported_input_modality` triggers `E_CAPABILITY` exit 3 and no fabricated feedback; network refusal triggers `E_PROVIDER` exit 4; `Stream must be set to true` 400 triggers one streaming retry and structured feedback if the stream succeeds.
 - A synthetic token or personal path fixture triggers privacy-scan exit 1 with redacted category and source; a changed recipe card without regenerating `genres.md` triggers `docs:genres:check` exit 1; clean fixtures pass both checks.
 - CI aggregate success with a skipped/cancelled matrix leg is rejected by the explicit job census; a run for a different SHA or `workflow_dispatch` event cannot satisfy c-7.
+
+
+## Execution lanes (wp6 P, 2026-09-28)
+
+Stale check against wp5 code (7f449d5): help is registry-driven (src/cli/commands/help.ts reads CommandSpec usage), so the help.ts row
+becomes NO CHANGE; human output already supports `CommandResult.text` (src/cli/output.ts), so skill-path returns `text: path` and the
+output.ts row becomes NO CHANGE; examples/drill-140.song.json is already clean under `lint --strict` (wp5 receipt), so its row becomes
+NO CHANGE unless the e2e test proves otherwise. Critic limits from the 002 addendum (no low-end hearing) and the static
+generic/clipping_risk proxy (ignores master normalization) must be stated in SKILL.md and references/mixing.md.
+
+| Lane | Write scope (exclusive) | Starts after |
+|---|---|---|
+| SK | src/cli/commands/skill-path.ts + skill-path.test.ts (tests call the CommandSpec directly; CLI-level cases live in main.test.ts under M) | — |
+| D1 | skills/music2/SKILL.md, skills/music2/references/{mini-notation,instruments,mixing,prompts}.md, tests/e2e/skill-docs.test.ts | — writing; its e2e test is run only after G (genres.md exists) and M (skill command registered) — main confirms both before D1 finishes |
+| D2 | README.md, docs/song-format.md, docs/cli.md, CHANGELOG.md, AGENTS.md | — |
+| G | scripts/gen-genre-docs.mjs, skills/music2/references/genres.md (generated), tests/e2e/genre-docs.test.ts | — |
+| X | examples/{trap-150,boom-bap-90,lofi-75,house-124}.song.json, tests/e2e/examples.test.ts (data-driven over a case list). X must finish and main must verify its diff **before** DF starts; main then appends the dogfood case after DF's file exists and validates, and runs the final e2e | — |
+| PV | scripts/privacy-scan.mjs, tests/e2e/privacy-scan.test.ts, tests/e2e/package-boundary.test.ts | — |
+| M | main: package.json (scripts docs:genres, docs:genres:check, privacy:scan; files += skills), .github/workflows/ci.yml, src/cli/registry.ts, src/cli/main.test.ts, str_func (delegated writer) | SK |
+| DF | blind text-only sol subagent: reads only skills/music2/** and runs the CLI; writes only examples/dogfood/boom-bap-dogfood.song.json; main writes evidence/dogfood-summary.md | D1, G, M, X |
+| RL | main: (0) set repo-local `user.name` to the author name already public on lidge-ai/vid2-gen (email is identical), and rewrite the still-unpushed local commits' author/committer to it; (1) **before every push** (first push and the archive push): `git log --format='%an <%ae> | %cn <%ce>' main | sort -u` must list only that public identity (checked via `gh api repos/lidge-ai/vid2-gen/commits`); any other identity blocks the push; (2) `npm run privacy:scan` over the push range; (3) gh repo create lidge-ai/music2-gen --public, push main; (4) verify hosted CI on the exact SHA; (5) archive unit to devlog/_fin, rescan, push | all |

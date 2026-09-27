@@ -1,0 +1,60 @@
+# CLI reference
+
+Run commands from a source checkout as `node bin/music2.js <command>`. `--json` is global; `MUSIC2_JSON=1` has the same effect. `--help` or `-h` prints a command's usage, and `help <command>` does the same. Except for `critique`, commands work locally without a network service. WAV rendering and analysis do not require ffmpeg.
+
+The examples below use the tracked `examples/drill-140.song.json` and illustrative `/tmp` output paths. Run `render` before either WAV analysis or critique example. `new -o` refuses to replace an existing file; choose a fresh output path on a repeated run.
+
+## Commands
+
+| Command and example | Arguments, flags, defaults, and result |
+| --- | --- |
+| `node bin/music2.js help render --json` | `help [command]`: list registered commands or show one command. `data.usage` and `data.commands` include usage and options. `node bin/music2.js help --json` lists all commands. |
+| `node bin/music2.js version --json` | No positional arguments. `data.version` is the package version. |
+| `node bin/music2.js schema --out /tmp/music2-schema.json --json` | `--out file` optionally writes Song v1 JSON Schema and returns `data.written` plus an artifact path. Without `--out`, `data.schema` contains the schema and no file is written. |
+| `node bin/music2.js recipes drill_uk --json` | Optional recipe ID. Without it, `data.recipes` lists ID, title, BPM range, default keys, and roles. With it, `data.recipe` is the full card, including starter song and lint rule IDs. |
+| `node bin/music2.js new --genre drill_uk -o /tmp/music2-new.song.json --json` | `--genre id` is required. Optional `--bpm n`, `--key 'C minor'`, `--seed n`, `--title text` override card defaults; `-o path`/`--out path` writes a new file. With `-o`, result has `data.written`, genre, BPM, key, seed, and an artifact path. Without it, `data.song` is the editable JSON song. Existing output returns `E_ACCESS`. |
+| `node bin/music2.js validate examples/drill-140.song.json --json` | One song path. Returns title, BPM, total bars, duration in seconds, and event count per track. Checks Song v1 structure and mini-notation. |
+| `node bin/music2.js events examples/drill-140.song.json --bars 0:1 --track kick --json` | One song path. `--bars start:end` selects a zero-based half-open range; default is all bars. `--track id` selects one track; default is all. `data.events` contains timed events with track, bar, time, duration, pitch/sample, and velocity fields. |
+| `node bin/music2.js lint examples/drill-140.song.json --json` | One song path. `--genre id` overrides `song.genre`; `--strict` treats warnings as QA failure. `data` is `{genre,barsChecked,results,errors,warnings}`. Each result includes ID, severity, path, observed, expected, and fix. Non-strict warnings can exit 0; errors or strict warnings return `E_QA` exit 6 with the report under `error.details.report`. `generic/clipping_risk` is a static onset proxy and ignores master normalization, so inspect rendered peaks. |
+| `node bin/music2.js render examples/drill-140.song.json -o /tmp/music2-cli.wav --json` | One song path. `-o`/`--out` defaults to a `.wav` beside the song; `--bits 16\|24` defaults to 16. `--bars start:end` is zero-based half-open, default all bars. `--stems dir` writes dry track WAVs. `--mp3`, `--ogg`, and `--loudnorm` are off by default and require ffmpeg; MP3/OGG copies share the WAV basename. Returns WAV/encoded/stem paths, rendered bars, sample rate, frames, duration, peak, true peak, ceiling, and event count. |
+| `node bin/music2.js analyze /tmp/music2-cli.wav --song examples/drill-140.song.json --out /tmp/music2-cli-analysis --json` | Input is a WAV or song JSON. `--song path` is only for a matching, full-song WAV and enables declared-song context and `pianoroll.png`; a WAV without it has no piano roll. Song JSON is rendered internally and gets a piano roll. `--out dir` defaults to `<input basename>.analysis` beside the input. Returns paths for `analysis.json`, `analysis.md`, `spectrogram.png`, optional `pianoroll.png`, optional `beats.json`, and a summary. With a song, `beats.json` uses the declared song grid. For WAV alone, it uses the audio tempo estimate when available; otherwise `data.beatsJson` is null with `NO_BEATS`. Key estimation is advisory (`KEY_UNCERTAIN` can appear); declared key and `generic/out_of_key` lint are the reliable pitch checks. Tempo estimates include half/double alternatives in `analysis.json`. |
+| `node bin/music2.js doctor --json` | No positional arguments. `data.ffmpeg` is path/version/encoders or null; `data.required` reflects `MUSIC2_REQUIRE_FFMPEG`; `data.ready` means both MP3 and OGG encoders are available. Missing optional ffmpeg returns 0 with `ready:false`. |
+| `node bin/music2.js critique /tmp/music2-cli.wav --excerpt 1 --json` | Input is WAV or song JSON. `--model id` defaults to `MUSIC2_CRITIC_MODEL` or `google-antigravity/gemini-3.8-flash`; `--base-url url` defaults to `MUSIC2_CRITIC_BASE_URL` or `http://127.0.0.1:10100`; `--excerpt seconds` defaults to 30 and accepts 1–120. Uses ffmpeg MP3 when available and WAV otherwise. With a working audio-capable Responses route, returns `{review,dsp,audio,model}`; use model advice only when `review.heard_audio` is true. The critic cannot reliably hear sub-bass. A missing route returns `E_PROVIDER`; unsupported audio or `heard_audio:false` returns `E_CAPABILITY`. |
+| `node bin/music2.js skill path --json` | Exact subcommand `skill path`; no other positional argument or file write. `data.path` is the absolute directory of the packaged `skills/music2/SKILL.md`. Human mode prints one path line. |
+
+For `analyze`, use `node bin/music2.js analyze /tmp/music2-cli.wav --out /tmp/music2-wav-only --json` to inspect a WAV without song context. That output has metrics and a spectrogram; `pianoRollPng` is null. Any saved `beats.json` comes from the audio tempo estimate and labels its meter assumption.
+
+## JSON and failures
+
+JSON mode writes exactly one JSON object to stdout, including on a failure:
+
+```json
+{"ok":true,"command":"version","data":{"version":"0.1.0"},"artifacts":[],"warnings":[],"meta":{"music2":"0.1.0"}}
+```
+
+The version values above illustrate the envelope. A failure has `{ "ok": false, "command": "...", "error": { "code": "...", "message": "...", "fix": null, "details": {}, "retryable": false }, "meta": { "music2": "..." }`. Human-mode failures print a message and fix to stderr. `error.details` varies by command; schema errors carry issue paths, and lint QA failures carry a report. A command's own result data may contain warning IDs; the envelope's `warnings` array is separate.
+
+| Exit | Meaning | Error codes |
+| --- | --- | --- |
+| 0 | Success, including non-strict lint warnings. | — |
+| 1 | Unexpected internal failure. | `E_INTERNAL` |
+| 2 | Invalid argument, JSON/song/pattern, or missing input/asset. | `E_INPUT`, `E_SCHEMA`, `E_PARSE`, `E_NOT_FOUND` |
+| 3 | Missing ffmpeg or unsupported capability. | `E_CAPABILITY`, `E_FFMPEG_MISSING` |
+| 4 | File access or critic provider failure. | `E_ACCESS`, `E_PROVIDER` |
+| 5 | Audio rendering failure. | `E_RENDER` |
+| 6 | Lint QA failure. | `E_QA` |
+| 7 | Interrupted operation or timeout. | `E_INTERRUPTED`, `E_TIMEOUT` |
+
+## Environment
+
+| Variable | Effect |
+| --- | --- |
+| `MUSIC2_JSON=1` | Make JSON mode the default for CLI calls. |
+| `MUSIC2_HOME` | Override the default music2 home directory used by library path helpers; current offline CLI commands do not create files there. |
+| `MUSIC2_FFMPEG` | Explicit ffmpeg executable path. If set to an unusable path, probing does not fall back to `PATH`. |
+| `MUSIC2_REQUIRE_FFMPEG=1` | Make `doctor` fail if ffmpeg or required MP3/OGG encoders are unavailable. |
+| `MUSIC2_CRITIC_BASE_URL` | Responses API base URL for `critique`; default `http://127.0.0.1:10100`. |
+| `MUSIC2_CRITIC_MODEL` | Default critic model; overridable by `--model`. |
+| `MUSIC2_CRITIC_API_KEY` | Bearer token for the critic route; default `local` for a local proxy. Do not put a real token in a song or committed file. |
+
+`critique` posts a bounded audio excerpt to the configured route. Other commands do not call that provider. See [song format](song-format.md) for valid source fields and [README](../README.md) for the short workflow.
