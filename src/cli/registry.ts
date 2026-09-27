@@ -3,6 +3,8 @@ import { version } from "./commands/version.ts";
 import { schema } from "./commands/schema.ts";
 import { validate } from "./commands/validate.ts";
 import { events } from "./commands/events.ts";
+import { render } from "./commands/render.ts";
+import { doctor } from "./commands/doctor.ts";
 
 export interface CommandOption {
   type: "string" | "boolean";
@@ -41,4 +43,4 @@ export function register(spec: CommandSpec): void {
   commands.set(spec.name, spec);
 }
 
-for (const spec of [version, help, schema, validate, events]) register(spec);
+for (const spec of [version, help, schema, validate, events, render, doctor]) register(spec);

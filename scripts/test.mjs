@@ -1,9 +1,48 @@
 #!/usr/bin/env node
-import { readdirSync, mkdtempSync } from "node:fs";
+import { mkdirSync, readdirSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { createStereo, readWav, writeWav } from "../src/audio-io/index.ts";
+import { discoverFfmpeg, encodeAudio } from "../src/probe/index.ts";
+
+/** ffmpeg gating (devlog 020): required on CI Linux via MUSIC2_REQUIRE_FFMPEG=1, otherwise optional with a printed SKIP. */
+async function checkFfmpeg(home, env) {
+  const required = env.MUSIC2_REQUIRE_FFMPEG === "1";
+  const ffmpeg = await discoverFfmpeg(env);
+  if (!ffmpeg) {
+    if (required) throw new Error("E_FFMPEG_MISSING: ffmpeg executable not found");
+    console.log("SKIP ffmpeg integration (ffmpeg not found)");
+    return;
+  }
+  if (!ffmpeg.encoders.libmp3lame || !ffmpeg.encoders.libvorbis) {
+    if (required) throw new Error("E_CAPABILITY: ffmpeg requires libmp3lame and libvorbis");
+    console.log("SKIP ffmpeg integration (required encoders unavailable)");
+    return;
+  }
+  const dir = join(home, "ffmpeg-integration");
+  mkdirSync(dir);
+  const wav = join(dir, "source.wav");
+  const audio = createStereo(44100, 4410);
+  for (let i = 0; i < audio.left.length; i++) {
+    const sample = 0.1 * Math.sin((2 * Math.PI * 440 * i) / 44100);
+    audio.left[i] = sample;
+    audio.right[i] = sample;
+  }
+  await writeWav(wav, audio, { bits: 16, seed: 1 });
+  for (const format of ["mp3", "ogg"]) {
+    const encoded = join(dir, `encoded.${format}`);
+    const decoded = join(dir, `decoded-${format}.wav`);
+    await encodeAudio(wav, encoded, ffmpeg, { format });
+    const result = spawnSync(ffmpeg.path, ["-nostdin", "-y", "-i", encoded, "-f", "wav", decoded], { encoding: "utf8" });
+    if (result.error || result.status !== 0) {
+      throw new Error(`E_RENDER: ffmpeg ${format} decode failed: ${result.stderr?.slice(-2000) ?? String(result.error)}`);
+    }
+    if ((await readWav(decoded)).left.length === 0) throw new Error(`E_RENDER: ffmpeg ${format} decoded empty audio`);
+  }
+  console.log(`ffmpeg integration ok (${ffmpeg.version}: mp3 + ogg round trip)`);
+}
 
 function options(args) {
   const result = { root: resolve(dirname(fileURLToPath(import.meta.url)), ".."), unit: false, e2e: false };
@@ -42,6 +81,7 @@ try {
   } else {
     const home = mkdtempSync(join(tmpdir(), "music2-test-"));
     const env = { ...process.env, MUSIC2_HOME: home };
+    await checkFfmpeg(home, env);
     delete env.NODE_TEST_CONTEXT;
     const child = spawnSync(process.execPath, ["--test", "--test-concurrency=4", ...files], {
       cwd: root,

@@ -200,3 +200,24 @@ wp3 peak mastering does not claim LUFS compliance. RIFF WAV identity is promised
 - `fx.test.ts` inserts an impulse and keyed onset; exact first delayed frame and depressed/recovered duck gain prove rate scaling, dotted-eighth timing, and sidechain release. `mixer.test.ts` forces silence, NaN and intersample overshoot; E_RENDER or bounded peak proves protection.
 - `ffmpeg.test.ts` uses a fake executable, an absent override, missing encoder, malformed version and timeout; parsed capabilities/null/E_CAPABILITY prove each discovery path. `master.test.ts` uses fake measured JSON and failed process to prove two-pass invocation and E_RENDER.
 - `render.test.ts`/CLI tests render the 16-bar example twice and compare WAV hashes, inspect finite non-silent samples and peak, then use `MUSIC2_FFMPEG=/nonexistent` with `--mp3`; E_FFMPEG_MISSING exit 3 proves the explicit-override guard. `doctor.test.ts` toggles MUSIC2_REQUIRE_FFMPEG; only the required path fails. `MUSIC2_BENCH=1` activates the 180-second performance threshold.
+
+
+## Execution lanes (wp3 P, 2026-09-28)
+
+Stale check against wp2 code (8e56b98): `ResolvedTrack` (src/song/song.schema.ts:25), `TimedEvent`/`Timeline` (src/song/timeline.tool.ts:8-15),
+`CommandSpec` registry (src/cli/registry.ts) and `fnv1a32`/`mulberry32` (src/shared/prng.tool.ts) match this document; no row needs
+amendment. Lanes write only their scope; main owns registry.ts, help.ts, src/index.ts, str_func/AGENTS.md, commits and integration.
+
+| Lane | Write scope (exclusive) | Starts after |
+|---|---|---|
+| R0 | src/audio-io/** (buffer.schema, buffer.tool, wav.tool, index + tests), src/render/render.schema.ts | — |
+| RP | src/probe/** (+ tests), src/cli/commands/doctor.ts + doctor.test.ts; the scripts/test.mjs ffmpeg-gating change is returned as a patch in its report and applied by main (shared runner) | R0 (probe reads WAV metadata through audio-io) |
+| V1 | src/render/voices/{drums,eight-o-eight,bass}.tool.ts + tests, src/render/voices/registry.tool.ts + test | R0 |
+| V2 | src/render/voices/{bell,keys,pluck,pad,lead}.tool.ts + tests | R0 |
+| FK | src/render/fx.tool.ts + test, src/render/kit.tool.ts + test | R0 |
+| MX | src/render/mixer.tool.ts, render.tool.ts, index.ts + tests, src/cli/commands/render.ts + render.test.ts, examples/drill-140.song.json | V1 (incl. registry), V2, FK, RP |
+| L9 | main: registry/help/index, str_func docs (delegated writer), full acceptance | all |
+
+V1 writes its three voices first; `registry.tool.ts` + test (which import V2's `bellVoice`, `keysVoice`, `pluckVoice`, `padVoice`, `leadVoice`)
+are written only after main confirms V2 finished (architect amendment, wp3 P). Main dispatches the registry as a follow-up to the same V1 agent.
+

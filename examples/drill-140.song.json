@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "title": "Drill 140",
+  "genre": "drill_uk",
+  "bpm": 140,
+  "key": "C minor",
+  "seed": 140,
+  "meter": {
+    "numerator": 4,
+    "denominator": 4
+  },
+  "sampleRate": 44100,
+  "tailSeconds": 2,
+  "master": {
+    "ceilingDb": -1
+  },
+  "tracks": [
+    {
+      "id": "kick",
+      "kind": "drums",
+      "instrument": "drums",
+      "gain": -4,
+      "pattern": "bd ~ ~ ~ ~ ~ bd ~ ~ ~ ~ ~ ~ ~ ~ ~"
+    },
+    {
+      "id": "snare",
+      "kind": "drums",
+      "instrument": "drums",
+      "gain": -3,
+      "sends": {
+        "reverb": 0.12
+      },
+      "pattern": "~ ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~"
+    },
+    {
+      "id": "hats",
+      "kind": "drums",
+      "instrument": "drums",
+      "gain": -9,
+      "pattern": "hh hh hh [hh hh hh] hh hh [hh hh hh hh] hh"
+    },
+    {
+      "id": "sub",
+      "kind": "notes",
+      "instrument": "808",
+      "gain": -3,
+      "mono": true,
+      "glide": 50,
+      "pattern": "<[c2 ~ ~ ~ ~ ~ c2 ~ ~ ~ eb2 ~ ~ ~ ~ ~] [ab1 ~ ~ ~ ~ ~ ab1 ~ ~ ~ c2 ~ ~ ~ ~ ~] [g1 ~ ~ ~ ~ ~ g1 ~ ~ ~ d2 ~ ~ ~ ~ ~] [c2 ~ ~ ~ ~ ~ c2 ~ ~ ~ g1 ~ ~ ~ ~ ~]>"
+    },
+    {
+      "id": "bell",
+      "kind": "notes",
+      "instrument": "bell",
+      "gain": -8,
+      "sends": {
+        "reverb": 0.4
+      },
+      "pattern": "<[c5 ~ eb5 ~ g5 ~ ~ ~ ab5 ~ g5 ~ eb5 ~ ~ ~] [c5 ~ eb5 ~ g5 ~ ~ ~ bb4 ~ ~ ~ d5 ~ ~ ~]>"
+    },
+    {
+      "id": "pad",
+      "kind": "notes",
+      "instrument": "pad",
+      "gain": -12,
+      "sends": {
+        "reverb": 0.35
+      },
+      "pattern": "<[c3,eb3,g3] [ab2,c3,eb3] [g2,bb2,d3] [c3,eb3,g3]>"
+    }
+  ],
+  "sections": [
+    {
+      "id": "intro",
+      "bars": 4,
+      "role": "intro",
+      "patterns": {
+        "kick": "bd ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~",
+        "snare": null,
+        "sub": null,
+        "hats": "hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh ~ hh ~"
+      }
+    },
+    {
+      "id": "hook",
+      "bars": 8,
+      "role": "hook"
+    },
+    {
+      "id": "verse",
+      "bars": 4,
+      "role": "verse",
+      "patterns": {
+        "kick": "bd ~ ~ ~ ~ ~ ~ ~ ~ ~ bd ~ ~ ~ ~ ~",
+        "bell": "c5 ~ ~ ~ eb5 ~ ~ ~ g5 ~ ~ ~ ~ ~ ~ ~",
+        "pad": null
+      }
+    }
+  ],
+  "arrangement": [
+    {
+      "section": "intro"
+    },
+    {
+      "section": "hook"
+    },
+    {
+      "section": "verse"
+    }
+  ]
+}

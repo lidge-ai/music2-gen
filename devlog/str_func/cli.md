@@ -17,7 +17,11 @@ src/cli/
     ├── version.ts       # installed package version
     ├── schema.ts        # print or write song JSON Schema
     ├── validate.ts      # validate song and summarize timeline
-    └── events.ts        # list filtered timed song events
+    ├── events.ts        # list filtered timed song events
+    ├── render.ts        # WAV, optional stems, encoding, and loudnorm
+    ├── render.test.ts   # render command output and failure cases
+    ├── doctor.ts        # ffmpeg and encoder capability report
+    └── doctor.test.ts   # doctor capability and required-mode cases
 ```
 
 ## Module Responsibility
@@ -30,7 +34,7 @@ owns error codes and their exit mapping. The registry supplies command metadata
 used by both parsing and help text.
 
 At this source snapshot the registry contains `help`, `version`, `schema`,
-`validate`, and `events`.
+`validate`, `events`, `render`, and `doctor`.
 
 ## Key Function Signatures
 
@@ -63,6 +67,8 @@ The signatures below come from exported declarations in the current source.
 | `schema` | `export const schema: CommandSpec` | Song v1 JSON Schema command. |
 | `validate` | `export const validate: CommandSpec` | Song and timeline validation command. |
 | `events` | `export const events: CommandSpec` | Timed event listing command. |
+| `render` | `export const render: CommandSpec` | WAV render with optional stems and encoded copies. |
+| `doctor` | `export const doctor: CommandSpec` | ffmpeg capability inspection. |
 
 `CommandSpec` requires `run(ctx: CommandContext): Promise<CommandResult>`.
 The handlers implement `run({ args })` inline on their exported spec objects;
@@ -112,6 +118,8 @@ they have no separately exported `run` function.
 | `schema` | `commands/schema.ts` | No positional args; returns `{ schema }`, or `--out file` writes formatted schema and returns `written` plus artifact path. |
 | `validate` | `commands/validate.ts` | One song path; returns title, BPM, bars, duration seconds, and per-track event counts. |
 | `events` | `commands/events.ts` | One song path; optional `--bars start:end` and `--track id`; returns selected timed events. |
+| `render` | `commands/render.ts` | One song path; WAV plus optional MP3, Ogg, and stems; returns `RenderData` and artifact paths. |
+| `doctor` | `commands/doctor.ts` | No positional args; returns `DoctorData` for ffmpeg and required encoders. |
 
 `help` rejects extra or unknown topics with `E_INPUT`. It generates its
 command list from the live registry, so newly registered specs appear there.
@@ -121,8 +129,69 @@ their usage through command metadata and return `Promise<CommandResult>`.
 failures as `E_INPUT`. `validate` loads and builds the complete timeline.
 `events` validates a zero-based, half-open bar range within the timeline,
 rejects unknown tracks, and rounds event time, duration, and slot to six
-decimal places. Each of these commands requires exactly the positional
-arguments shown in the table and reports mismatches as `E_INPUT`.
+decimal places. Each command requires exactly the positional arguments
+shown in the table and reports mismatches as `E_INPUT`.
+
+### Render command
+
+Usage: `music2 render <song.json> [-o out.wav] [--bits 16|24] [--mp3]
+[--ogg] [--stems dir] [--bars a:b] [--loudnorm] [--json]`.
+The common `--help` / `-h` flag also applies.
+
+| Flag | Meaning and validation |
+|---|---|
+| `-o`, `--out <path>` | Output WAV; defaults beside the input with `.song.json` or `.json` replaced by `.wav`. Must end in `.wav`. |
+| `--bits 16\|24` | WAV and stem depth; defaults to 16. Other values raise `E_INPUT`. |
+| `--mp3` | Encode a same-basename `.mp3` using ffmpeg `libmp3lame`. |
+| `--ogg` | Encode a same-basename `.ogg` using ffmpeg `libvorbis`. |
+| `--stems <dir>` | Write one dry `<track.id>.wav` per track. |
+| `--bars a:b` | Zero-based half-open bar range with safe integers and `a < b`. The mixer checks song bounds. |
+| `--loudnorm` | Two-pass ffmpeg loudness mastering; uses song target LUFS or `-14` and song ceiling. |
+
+Paths resolve from the invocation cwd, except the default WAV path beside
+the song. The command rejects path collisions among input, WAV, encoded
+copies, and stems. It checks ffmpeg only when encoding or loudnorm needs it.
+Output files are staged at temporary paths, then renamed to final names;
+temporary files are removed in `finally`. The returned `artifacts` array
+lists the requested final paths. Loudnorm processes the WAV before optional
+MP3/Ogg encoding; stems retain dry, pre-master audio.
+
+`RenderData` is declared in `src/render/render.schema.ts` and imported
+directly by the command:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `wav` | `string` | Absolute final WAV path. |
+| `mp3`, `ogg` | optional `string` | Absolute encoded-copy paths. |
+| `stems` | optional `string[]` | Absolute dry stem paths in song track order. |
+| `bars`, `sampleRate`, `frames`, `events` | `number` | Render span, PCM dimensions, selected onset count. |
+| `durationSeconds`, `ceilingDb` | `number` | PCM duration and configured ceiling. |
+| `peakDbfs`, `truePeakDbtp` | `number \| null` | PCM peak measurements; silence maps `-Infinity` to JSON `null`. |
+
+### Doctor command
+
+Usage: `music2 doctor [--json]`. It probes ffmpeg and returns `DoctorData`
+from `src/probe/ffmpeg.schema.ts`: `{ ffmpeg: FfmpegInfo | null;
+required: boolean; ready: boolean }`. `FfmpegInfo` contains executable
+`path`, `version`, and `encoders.libmp3lame` / `encoders.libvorbis` booleans.
+`ready` is true only when ffmpeg and both encoders are present. Without
+`MUSIC2_REQUIRE_FFMPEG=1`, missing ffmpeg or encoders is reported in data
+and the command succeeds. With that environment setting, missing ffmpeg
+raises `E_FFMPEG_MISSING`; missing required encoders raises `E_CAPABILITY`.
+
+### Render and doctor errors
+
+| Code | Typical cause | Exit |
+|---|---|---|
+| `E_INPUT`, `E_SCHEMA`, `E_PARSE`, `E_NOT_FOUND` | Arguments, range, song, voice, or kit input is invalid. | 2 |
+| `E_FFMPEG_MISSING`, `E_CAPABILITY` | ffmpeg or required encoder/mastering capability unavailable. | 3 |
+| `E_ACCESS` | Song, kit, or output path cannot be accessed. | 4 |
+| `E_RENDER` | PCM, effect, RIFF size, or peak-master failure. | 5 |
+| `E_INTERNAL` | Unrecognized thrown error at the CLI boundary. | 1 |
+
+All failures use the shared error envelope and exit mapping. Encoded-output
+failures can also carry errors from `src/probe`; the CLI preserves their
+typed code. JSON mode still emits exactly one object.
 
 ## Dependencies
 
@@ -134,8 +203,12 @@ arguments shown in the table and reports mismatches as `E_INPUT`.
 | Registry | `./registry.ts` / `../registry.ts` | Command lookup, specs, and help list. |
 | Args parser | `./args.ts` | `main` parses and selects error mode. |
 | Output formatter | `./output.ts` | `main` writes success and failure envelopes. |
-| Command specs | `./commands/help.ts`, `./commands/version.ts`, `./commands/schema.ts`, `./commands/validate.ts`, `./commands/events.ts` | Registry startup. |
+| Command specs | `./commands/help.ts`, `./commands/version.ts`, `./commands/schema.ts`, `./commands/validate.ts`, `./commands/events.ts`, `./commands/render.ts`, `./commands/doctor.ts` | Registry startup. |
 | Song boundary | `../../song/index.ts` | Schema, loading, and timeline in command handlers. |
+| Render boundary | `../../render/index.ts`, `../../render/render.schema.ts` | Render song PCM and type render response. |
+| Audio I/O | `../../audio-io/index.ts` | Write master and stem WAV files. |
+| Probe boundary | `../../probe/index.ts` | Discover ffmpeg, encode copies, loudnorm, and type doctor response. |
+| Node filesystem/path/crypto | `node:fs/promises`, `node:path`, `node:crypto` | Stage files, resolve paths, and name temporary outputs. |
 
 There are no runtime package dependencies. `main.test.ts` uses Node's test,
 assert, filesystem, process-spawn, OS-temp, and path modules.
@@ -150,6 +223,8 @@ assert, filesystem, process-spawn, OS-temp, and path modules.
 | `src/cli/args.ts` | `./registry.ts` | Looks up spec and options. |
 | `src/cli/output.ts` | `./registry.ts` | Uses result type. |
 | `src/cli/commands/help.ts` | `../registry.ts` | Renders registered specs. |
+| `src/cli/commands/render.test.ts` | `./render.ts` | Verifies render outputs and failures. |
+| `src/cli/commands/doctor.test.ts` | `./doctor.ts` | Verifies capability reporting and required mode. |
 
 No other source feature currently imports `src/cli/index.ts`; it is the
 process entry point. The source-bin test exercises it through `bin/music2.js`.
@@ -161,4 +236,7 @@ process entry point. The source-bin test exercises it through `bin/music2.js`.
 - [ ] Update `src/cli/main.test.ts` for JSON shape, channel, or status changes.
 - [ ] Check shared error/exit definitions before changing failure responses.
 - [ ] Keep `src/cli/index.ts` and `bin/music2.js` entry behavior aligned.
+- [ ] Keep `devlog/str_func/render.md` aligned with render options, data, and mastering.
+- [ ] Keep `devlog/str_func/probe.md` aligned with doctor data and ffmpeg behavior.
+- [ ] Update render and doctor command tests when flags or error mapping change.
 - [ ] Update `devlog/str_func/AGENTS.md` index when adding or moving this document.
