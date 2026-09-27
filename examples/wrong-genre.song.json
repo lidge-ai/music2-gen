@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "title": "House groove declared UK drill",
+  "genre": "drill_uk",
+  "bpm": 124,
+  "meter": { "numerator": 4, "denominator": 4 },
+  "key": "A minor",
+  "seed": 1,
+  "tracks": [
+    { "id": "kick", "kind": "drums", "instrument": "drums", "gain": -4, "pattern": "bd ~ ~ ~ bd ~ ~ ~ bd ~ ~ ~ bd ~ ~ ~" },
+    { "id": "snare", "kind": "drums", "instrument": "drums", "gain": -5, "pattern": "~ ~ ~ ~ cp ~ ~ ~ ~ ~ ~ ~ cp ~ ~ ~" },
+    { "id": "hats", "kind": "drums", "instrument": "drums", "gain": -9, "pattern": "~ ~ oh ~ ~ ~ oh ~ ~ ~ oh ~ ~ ~ oh ~" },
+    { "id": "bass", "kind": "notes", "instrument": "bass", "mono": true, "gain": -4, "pattern": "a1 ~ ~ ~ ~ ~ e2 ~ a1 ~ ~ ~ ~ ~ e2 ~" },
+    { "id": "melody", "kind": "notes", "instrument": "keys", "gain": -9, "pattern": "a4 ~ c5 ~ e5 ~ ~ ~ g5 ~ e5 ~ c5 ~ ~ ~" }
+  ],
+  "sections": [{ "id": "groove", "bars": 4, "role": "groove" }],
+  "arrangement": [{ "section": "groove", "repeats": 1 }]
+}

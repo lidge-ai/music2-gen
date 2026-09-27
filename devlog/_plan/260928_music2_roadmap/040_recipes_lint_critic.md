@@ -123,7 +123,7 @@ Transposition: parse keys with 010's `^[A-G](#|b)? (major|minor)$`; convert root
 
 `lintSong` receives parsed JSON, calls `validateSong`, then `buildTimeline` for valid input. If validation throws E_SCHEMA, recheck every string at `tracks[i].pattern` and `sections[i].patterns.<id>` with `parseMini` plus the 010 atom value parser for that track kind: if every schema issue path matches a caught E_PARSE, return one `generic/pattern_parse` error per bad path, with offsets, `barsChecked:0`, and CLI exit 6; if any other issue remains, rethrow E_SCHEMA/2 because a timeline cannot be trusted. No timeline-based rules run in the parse-only case. Unknown `song.genre` produces `generic/unknown_genre` warning, with only generic rules; explicit `--genre` overrides song.genre and unknown explicit ids are `E_NOT_FOUND` exit 2. Rule results are sorted by severity (error first), id, path. One aggregate result per id except separate parse paths; observed includes the numerator/denominator or bar list when useful. If a denominator is zero, omit that advisory result; do not report a fabricated 0%.
 
-Event geometry: `B` is an absolute bar from `Timeline.placements`; `E(B)` filters events with `event.bar === B`. Use `event.cycleBegin` parsed as `Fraction`, and `phase = fractionalPart(cycleBegin)`, for unswung 16-step positions; swing changes seconds but never a rule's grid. `at(q,e)` means `|phase(e)-q/16| <= 1/64`, where q is zero-based. For bars near a placement boundary, derive B from placement startBar; do not count tails as new onsets. A kick is a drums-track atom `bd`; backbeat is drums atom `sd` or `cp`; hats are drums atoms `hh`,`oh`,`sh`; 808 is a notes track whose instrument is `808`. Use exact track id roles from cards when available, but atom/voice identity governs events. Full bars F are placements with role hook, verse or groove, whose effective kick and snare patterns are non-null; techno additionally includes build only when both patterns active. Hook bars H are role hook; groove bars G are role groove or hook. `ratio(P,S)=count(P in S)/|S|`. `kick(B)` means >=1 bd; `snare9(B)` means >=1 backbeat with `at(8,e)`; `snare5and13(B)` requires backbeats at q=4 and q=12. At minimum one event means count >=1. A short slot means `event.slot < secondsPerBar/16 - 1e-6`, and a 32nd roll means `event.slot <= secondsPerBar/32 + 1e-6` on a hat. `active(B)` is the number of distinct track ids with onsets in B.
+Event geometry: `B` is an absolute bar from `Timeline.placements`; `E(B)` filters events with `event.bar === B`. Use `event.cycleBegin` parsed as `Fraction`, and `phase = fractionalPart(cycleBegin)`, for unswung 16-step positions; swing changes seconds but never a rule's grid. `at(q,e)` means `|phase(e)-q/16| <= 1/64`, where q is zero-based. For bars near a placement boundary, derive B from placement startBar; do not count tails as new onsets. A kick is a drums-track atom `bd`; backbeat is drums atom `sd` or `cp`; hats are drums atoms `hh`,`oh`,`sh`; 808 is a notes track whose instrument is `808`. Lint never imports card data (wp5 P amendment): roles come only from song events and track identity (atom names, `kind`, `instrument`), plus the declared genre id checked against `RECIPE_IDS`. Full bars F are placements with role hook, verse or groove, whose effective kick and snare patterns are non-null; techno additionally includes build only when both patterns active. Hook bars H are role hook; groove bars G are role groove or hook. `ratio(P,S)=count(P in S)/|S|`. `kick(B)` means >=1 bd; `snare9(B)` means >=1 backbeat with `at(8,e)`; `snare5and13(B)` requires backbeats at q=4 and q=12. At minimum one event means count >=1. A short slot means `event.slot < secondsPerBar/16 - 1e-6`, and a 32nd roll means `event.slot <= secondsPerBar/32 + 1e-6` on a hat. `active(B)` is the number of distinct track ids with onsets in B.
 
 Generic rules (all warnings except parse):
 
@@ -204,7 +204,7 @@ On HTTP 400 whose body contains `Stream must be set to true` (case-insensitive),
 
 | Path | Op | Exact content |
 |---|---|---|
-| `src/recipes/recipe.schema.ts` | NEW | Export the recipe interfaces above; no runtime logic. |
+| `src/recipes/recipe.schema.ts` | NEW | Export the recipe interfaces above plus `RECIPE_IDS` (sorted tuple of the seven ids), `RecipeId` and `isRecipeId()` (wp5 P amendment); no other runtime logic. |
 | `src/recipes/cards/drill_uk.ts` | NEW | Export `const drillUk: RecipeCard` with table data, complete starter literal, 006 URLs, `lintRules` drill_uk/1..7. |
 | `src/recipes/cards/drill_ny.ts` | NEW | Export `const drillNy: RecipeCard` with table data, complete starter literal, 006 URLs, `lintRules` drill_ny/1..7. |
 | `src/recipes/cards/trap.ts` | NEW | Export `const trap: RecipeCard` with table data, complete starter literal, 006 URLs, `lintRules` trap/1..7. |
@@ -228,7 +228,7 @@ On HTTP 400 whose body contains `Stream must be set to true` (case-insensitive),
 | `src/cli/commands/critique.ts` | NEW | Export `const critiqueCommand: CommandSpec` with string options `model,base-url,excerpt`; `async run(ctx): Promise<CommandResult>` calls `critique`, returns `CritiqueReport`. |
 | `src/cli/registry.ts` | MODIFY | Import the four `CommandSpec` constants above and append them to the existing `for (const spec of [...]) register(spec)` array; keep existing commands/order. |
 | `src/cli/args.ts` | MODIFY | Keep shared `parseCommand` and `--json`; add duplicate scalar-flag detection before `parseArgs`, returning E_INPUT with the offending flag. The command-specific flag specs live in each `CommandSpec.options`. |
-| `src/cli/commands/help.ts` | MODIFY | Add usage rows for four commands with required/optional flags and exit code notes. |
+| `src/cli/commands/help.ts` | NO CHANGE | Help is generated from the registry (each CommandSpec's `summary`/`usage`/`options`); the four commands' usage strings carry their flags and exit notes (wp5 P amendment). |
 | `src/cli/main.test.ts` | MODIFY | Add cases for all four registrations, JSON envelope, new file write, strict warning exit 6, parse result exit 6, provider/capability exit mappings. |
 | `src/index.ts` | MODIFY | Add named exports for `RecipeRole`, `RecipePaletteEntry`, `RecipeProgression`, `RecipeArrangementBlock`, `RecipeMixTargets`, `RecipeCard`, `NewSongOptions`, `LintOptions`, `LintResult`, `LintReport`, `CritiqueOptions`, `CriticReview`, `CritiqueReport`, `listRecipes`, `getRecipe`, `newSong`, `lintSong`, `critique` from feature boundaries. |
 | `examples/wrong-genre.song.json` | NEW | Full valid Song: genre drill_uk, bpm 124, key A minor, 4/4, seed 1; five tracks using house row above, one 4-bar `groove` section, arrangement once. Four-on-floor bd on steps 1/5/9/13 and clap on 5/13; `--strict` emits drill_uk/1, /2 and exits 6. |
@@ -273,3 +273,23 @@ All success stdout uses 010 `{ok:true,data:<shape>,meta:{music2:<version>}}` wit
 - `critic.test.ts` mock reads request JSON and verifies `input_text`, `input_file` data URL, filename, Bearer header; ffmpeg-found path sends mp3 and forced-missing path sends WAV. The 400 stream-only mock receives exactly two requests and assembled deltas form one valid review.
 - Critic mock `cannot translate audio`, `unsupported_input_modality`, failed status, and `heard_audio:false` each produce E_CAPABILITY/3 with working route fix; 500/network produce retryable E_PROVIDER/4; malformed review produces nonretryable E_PROVIDER/4; delayed response aborts at test `timeoutMs` as E_TIMEOUT/7.
 - Optional live gate exercises the one verified route against a short locally rendered clip; keep it outside default `npm test` and record heard_audio plus DSP fields without trusting model numerical guesses.
+
+
+## Execution lanes (wp5 P, 2026-09-28)
+
+Stale check against wp4 code (cb24b75): `analyzeAudio(pcm, opts)` returns `AnalysisResult` whose `.analysis` is `AnalysisJson`
+(src/analyze/analyze.tool.ts:117), `renderSong(song, path, options)` defaults to peak mastering or `"lufs"` when targetLufs is set
+(src/render/render.tool.ts), `discoverFfmpeg`/`encodeAudio` exist (src/probe/index.ts), `CommandSpec`/`CommandResult.text`
+(src/cli/registry.ts). No row needs amendment. Addition: recipe.schema.ts also exports `RECIPE_IDS` (the seven ids, sorted) so lint can
+recognise genres without importing card data.
+
+| Lane | Write scope (exclusive) | Starts after |
+|---|---|---|
+| W0 | main: src/recipes/recipe.schema.ts (interfaces + RECIPE_IDS) | — |
+| RA | src/recipes/cards/{drill_uk,drill_ny,trap,boom_bap}.ts | W0 |
+| RB | src/recipes/cards/{lofi_hiphop,house,techno}.ts | W0 |
+| LT | src/recipes/lint.tool.ts + lint.test.ts (split rule helpers into src/recipes/lint-rules.tool.ts + test if large), examples/wrong-genre.song.json, src/cli/commands/lint.ts + lint.test.ts | W0 |
+| CR | src/critic/** (critic.tool.ts + test, index.ts), src/cli/commands/critique.ts + critique.test.ts | W0 |
+| NW | src/recipes/recipes.tool.ts + test, src/recipes/new.tool.ts + test, src/recipes/index.ts, src/cli/commands/{recipes,new}.ts + tests | RA, RB, LT (index.ts exports lintSong) |
+| L9 | main: registry list (handoff as each command file lands), args.ts duplicate-flag check, src/index.ts, main.test.ts cases, str_func (delegated), acceptance | all |
+

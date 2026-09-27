@@ -196,3 +196,62 @@ void test("analyze WAV uses an audio beat grid and rejects a misaligned companio
     assert.equal((JSON.parse(mismatch.output().stdout) as { error: { code: string } }).error.code, "E_INPUT");
   } finally { rmSync(fixture, { recursive: true, force: true }); }
 });
+
+test("a repeated scalar flag is rejected with E_INPUT", async () => {
+  const { main } = await import("./main.ts");
+  const chunks: string[] = [];
+  const stdout = { write: (s: string) => { chunks.push(s); return true; } } as unknown as NodeJS.WritableStream;
+  const code = await main(["schema", "--out", "a.json", "--out", "b.json", "--json"], { stdout, stderr: stdout });
+  assert.equal(code, 2);
+  const out = JSON.parse(chunks.join("")) as { error: { code: string; details: { flag: string } } };
+  assert.equal(out.error.code, "E_INPUT");
+  assert.equal(out.error.details.flag, "out");
+});
+
+async function runCli(argv: string[]): Promise<{ code: number; out: Record<string, unknown> }> {
+  const { main } = await import("./main.ts");
+  const chunks: string[] = [];
+  const stream = { write: (s: string) => { chunks.push(s); return true; } } as unknown as NodeJS.WritableStream;
+  const code = await main([...argv, "--json"], { stdout: stream, stderr: stream });
+  return { code, out: JSON.parse(chunks.join("")) as Record<string, unknown> };
+}
+
+test("recipes lists seven genres in one envelope", async () => {
+  const { code, out } = await runCli(["recipes"]);
+  assert.equal(code, 0);
+  const data = out["data"] as { recipes: { id: string }[] };
+  assert.deepEqual(data.recipes.map((r) => r.id), ["boom_bap", "drill_ny", "drill_uk", "house", "lofi_hiphop", "techno", "trap"]);
+});
+
+test("new writes a transposed starter that validates", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "music2-new-"));
+  try {
+    const path = join(dir, "song.json");
+    const made = await runCli(["new", "--genre", "drill_uk", "--key", "D minor", "--seed", "7", "-o", path]);
+    assert.equal(made.code, 0);
+    const validated = await runCli(["validate", path]);
+    assert.equal(validated.code, 0);
+    const again = await runCli(["new", "--genre", "drill_uk", "-o", path]);
+    assert.equal(again.code, 4, "existing destination is refused");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("lint: drill example is clean under --strict, wrong genre fails with named rules", async () => {
+  const clean = await runCli(["lint", "examples/drill-140.song.json", "--strict"]);
+  assert.equal(clean.code, 0);
+  const wrong = await runCli(["lint", "examples/wrong-genre.song.json", "--strict"]);
+  assert.equal(wrong.code, 6);
+  const report = ((wrong.out["error"] as { details: { report: { results: { id: string }[] } } }).details.report);
+  const ids = report.results.map((r) => r.id);
+  assert.ok(ids.includes("drill_uk/1") && ids.includes("drill_uk/2"), ids.join(","));
+  const house = await runCli(["lint", "examples/drill-140.song.json", "--genre", "house", "--strict"]);
+  assert.equal(house.code, 6);
+});
+
+test("critique maps an unreachable provider to E_PROVIDER exit 4", async () => {
+  const { code, out } = await runCli(["critique", "examples/drill-140.song.json", "--base-url", "http://127.0.0.1:9", "--excerpt", "2"]);
+  assert.equal(code, 4);
+  assert.equal((out["error"] as { code: string }).code, "E_PROVIDER");
+});

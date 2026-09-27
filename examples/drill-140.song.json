@@ -19,14 +19,14 @@
       "id": "kick",
       "kind": "drums",
       "instrument": "drums",
-      "gain": -4,
+      "gain": -8,
       "pattern": "bd ~ ~ ~ ~ ~ bd ~ ~ ~ ~ ~ ~ ~ ~ ~"
     },
     {
       "id": "snare",
       "kind": "drums",
       "instrument": "drums",
-      "gain": -3,
+      "gain": -7,
       "sends": {
         "reverb": 0.12
       },
@@ -36,14 +36,14 @@
       "id": "hats",
       "kind": "drums",
       "instrument": "drums",
-      "gain": -9,
+      "gain": -13,
       "pattern": "hh hh hh [hh hh hh] hh hh [hh hh hh hh] hh"
     },
     {
       "id": "sub",
       "kind": "notes",
       "instrument": "808",
-      "gain": -3,
+      "gain": -7,
       "mono": true,
       "glide": 50,
       "pattern": "<[c2 ~ ~ ~ ~ ~ c2 ~ ~ ~ eb2 ~ ~ ~ ~ ~] [ab1 ~ ~ ~ ~ ~ ab1 ~ ~ ~ c2 ~ ~ ~ ~ ~] [g1 ~ ~ ~ ~ ~ g1 ~ ~ ~ d2 ~ ~ ~ ~ ~] [c2 ~ ~ ~ ~ ~ c2 ~ ~ ~ g1 ~ ~ ~ ~ ~]>"
@@ -52,7 +52,7 @@
       "id": "bell",
       "kind": "notes",
       "instrument": "bell",
-      "gain": -8,
+      "gain": -12,
       "sends": {
         "reverb": 0.4
       },
@@ -62,7 +62,7 @@
       "id": "pad",
       "kind": "notes",
       "instrument": "pad",
-      "gain": -12,
+      "gain": -16,
       "sends": {
         "reverb": 0.35
       },

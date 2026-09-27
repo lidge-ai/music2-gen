@@ -11,6 +11,7 @@ export interface ParsedCommand {
 }
 
 function parseOptions(argv: string[], spec: CommandSpec): { values: Record<string, unknown>; positionals: string[] } {
+  rejectDuplicateScalars(argv, spec);
   try {
     return parseArgs({
       args: argv,
@@ -26,6 +27,26 @@ function parseOptions(argv: string[], spec: CommandSpec): { values: Record<strin
     throw new Music2Error("E_INPUT", error instanceof Error ? error.message : "invalid arguments", {
       fix: `run music2 ${spec.name} --help`,
     });
+  }
+}
+
+/** A repeated scalar flag (e.g. two --bpm) is ambiguous; node:util keeps the last silently, so reject it (devlog 040 args.ts row). */
+function rejectDuplicateScalars(argv: string[], spec: CommandSpec): void {
+  const byShort = new Map<string, string>();
+  for (const [name, option] of Object.entries(spec.options)) if (option.short) byShort.set(option.short, name);
+  const seen = new Set<string>();
+  for (const arg of argv) {
+    if (arg === "--") break;
+    let name: string | undefined;
+    if (arg.startsWith("--")) name = arg.slice(2).split("=")[0];
+    else if (/^-[A-Za-z]$/.test(arg)) name = byShort.get(arg.slice(1));
+    if (!name) continue;
+    const option = spec.options[name];
+    if (!option || option.multiple) continue;
+    if (seen.has(name)) {
+      throw new Music2Error("E_INPUT", `duplicate flag --${name}`, { details: { flag: name }, fix: `pass --${name} once` });
+    }
+    seen.add(name);
   }
 }
 

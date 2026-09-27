@@ -23,7 +23,15 @@ src/cli/
     ├── analyze.ts       # WAV/song analysis and artifacts
     ├── analyze.test.ts  # analysis command and output cases
     ├── doctor.ts        # ffmpeg and encoder capability report
-    └── doctor.test.ts   # doctor capability and required-mode cases
+    ├── doctor.test.ts   # doctor capability and required-mode cases
+    ├── recipes.ts       # list or inspect genre cards
+    ├── recipes.test.ts  # recipe command output cases
+    ├── new.ts           # construct and optionally write starter song
+    ├── new.test.ts      # starter flags and write cases
+    ├── lint.ts          # static findings and QA exit policy
+    ├── lint.test.ts     # lint command cases
+    ├── critique.ts      # audible review and local DSP command
+    └── critique.test.ts # critic command cases
 ```
 
 ## Module Responsibility
@@ -36,7 +44,8 @@ owns error codes and their exit mapping. The registry supplies command metadata
 used by both parsing and help text.
 
 At this source snapshot the registry contains `help`, `version`, `schema`,
-`validate`, `events`, `render`, `doctor`, and `analyze`.
+`validate`, `events`, `render`, `doctor`, `analyze`, `recipes`, `new`, `lint`,
+and `critique`.
 
 ## Key Function Signatures
 
@@ -72,6 +81,10 @@ The signatures below come from exported declarations in the current source.
 | `render` | `export const render: CommandSpec` | WAV render with optional stems and encoded copies. |
 | `doctor` | `export const doctor: CommandSpec` | ffmpeg capability inspection. |
 | `analyze` | `export const analyze: CommandSpec` | WAV/song analysis and artifact generation. |
+| `recipes` | `export const recipes: CommandSpec` | List or inspect genre cards. |
+| `newCommand` | `export const newCommand: CommandSpec` | Create a starter song. |
+| `lint` | `export const lint: CommandSpec` | Static song and genre checks. |
+| `critiqueCommand` | `export const critiqueCommand: CommandSpec` | Audible review paired with local DSP. |
 
 `CommandSpec` requires `run(ctx: CommandContext): Promise<CommandResult>`.
 The handlers implement `run({ args })` inline on their exported spec objects;
@@ -86,6 +99,10 @@ they have no separately exported `run` function.
 - An unregistered command raises `E_INPUT`, listing current command names.
 - The command token is removed before `parseOptions` handles remaining args.
 - `parseOptions` uses Node `parseArgs` in strict mode with positional support.
+- Before `parseArgs`, `rejectDuplicateScalars` rejects a repeated command
+  option with `E_INPUT`; long `--name`/`--name=value` and single short aliases
+  share the same name. Options marked `multiple` remain repeatable. Scanning
+  stops at `--`; the check applies to command-specific options in `spec.options`.
 - Every command gets `--json` and `--help` / `-h` in addition to spec options.
 - Bad flags become `E_INPUT` with a command-specific help suggestion.
 - `MUSIC2_JSON=1` forces JSON mode even without an argv flag.
@@ -126,6 +143,44 @@ they have no separately exported `run` function.
 | `render` | `commands/render.ts` | One song path; WAV plus optional MP3, Ogg, and stems; returns `RenderData` and artifact paths. |
 | `doctor` | `commands/doctor.ts` | No positional args; returns `DoctorData` for ffmpeg and required encoders. |
 | `analyze` | `commands/analyze.ts` | One WAV or song JSON path; optional `--song` and `--out`; returns artifacts and summary. |
+| `recipes` | `commands/recipes.ts` | Zero or one recipe ID; returns summaries or a full card. |
+| `new` | `commands/new.ts` | Required `--genre`; optional BPM, key, seed, title, and output path. |
+| `lint` | `commands/lint.ts` | One song JSON path; optional genre override and strict QA policy. |
+| `critique` | `commands/critique.ts` | One WAV/song path; optional model, base URL, and excerpt seconds. |
+
+### Recipes and new commands
+
+`music2 recipes [id] [--json]` lists sorted card summaries when no ID is
+given. One ID returns the complete card, including palette, arrangement, mix
+targets, and sources. An unknown ID raises `E_NOT_FOUND` (exit 2), and more
+than one positional argument raises `E_INPUT`.
+
+`music2 new --genre <id> [--bpm n] [--key 'C minor'] [--seed n]
+[--title text] [-o song.json] [--json]` generates a validated starter.
+`--bpm` and `--seed` use nonnegative integer argument spelling; the recipe
+boundary checks the card BPM range and uint32 seed. A key override retains
+the card's major/minor mode and transposes note patterns. Without `--out`,
+human mode prints formatted song JSON. With `--out`, the command resolves the
+path against cwd and creates a new file with exclusive `wx`; an existing or
+unwritable output raises `E_ACCESS` (exit 4). The result lists the written
+path as an artifact.
+
+### Lint and critique commands
+
+`music2 lint <song.json> [--genre id] [--strict] [--json]` reads JSON, runs
+`lintSong`, and returns the report. Any lint error raises `E_QA` (exit 6);
+`--strict` also treats warnings as QA failures. Non-strict warnings remain a
+successful report. Human output prints one line per finding or `No lint
+findings.` The display suppresses a duplicate generic out-of-key line when
+it matches the UK drill key finding; the returned report retains both.
+
+`music2 critique <audio.wav|song.json> [--model id] [--base-url url]
+[--excerpt s] [--json]` requests a review of the first 1–120 seconds
+(default 30). The command resolves the path against cwd and delegates audio
+preparation, provider request, and local DSP to `src/critic`. Human output
+prints audible review fields and a measured DSP line; JSON includes the full
+report in one envelope. Input failures exit 2, capability failures 3,
+provider failures 4, render failures 5, and timeouts 7.
 
 `help` rejects extra or unknown topics with `E_INPUT`. It generates its
 command list from the live registry, so newly registered specs appear there.
@@ -205,7 +260,7 @@ required: boolean; ready: boolean }`. `FfmpegInfo` contains executable
 and the command succeeds. With that environment setting, missing ffmpeg
 raises `E_FFMPEG_MISSING`; missing required encoders raises `E_CAPABILITY`.
 
-### Render, analyze, and doctor errors
+### Command errors
 
 | Code | Typical cause | Exit |
 |---|---|---|
@@ -213,6 +268,9 @@ raises `E_FFMPEG_MISSING`; missing required encoders raises `E_CAPABILITY`.
 | `E_FFMPEG_MISSING`, `E_CAPABILITY` | ffmpeg or required encoder/mastering capability unavailable. | 3 |
 | `E_ACCESS` | Song, kit, or output path cannot be accessed. | 4 |
 | `E_RENDER` | PCM, effect, RIFF size, or peak-master failure. | 5 |
+| `E_PROVIDER` | Critic provider request or response failure. | 4 |
+| `E_QA` | Lint errors, or warnings under `--strict`. | 6 |
+| `E_TIMEOUT` | Critic request timeout. | 7 |
 | `E_INTERNAL` | Unrecognized thrown error at the CLI boundary. | 1 |
 
 All failures use the shared error envelope and exit mapping. Encoded-output
@@ -229,12 +287,14 @@ typed code. JSON mode still emits exactly one object.
 | Registry | `./registry.ts` / `../registry.ts` | Command lookup, specs, and help list. |
 | Args parser | `./args.ts` | `main` parses and selects error mode. |
 | Output formatter | `./output.ts` | `main` writes success and failure envelopes. |
-| Command specs | `./commands/help.ts`, `./commands/version.ts`, `./commands/schema.ts`, `./commands/validate.ts`, `./commands/events.ts`, `./commands/render.ts`, `./commands/doctor.ts`, `./commands/analyze.ts` | Registry startup. |
+| Command specs | `./commands/*.ts` | Registry startup and individual handlers. |
 | Analysis boundary | `../../analyze/analyze.tool.ts` | Analyze WAV/song input and write artifacts. |
 | Song boundary | `../../song/index.ts` | Schema, loading, and timeline in command handlers. |
 | Render boundary | `../../render/index.ts`, `../../render/render.schema.ts` | Render song PCM and type render response. |
 | Audio I/O | `../../audio-io/index.ts` | Write master and stem WAV files. |
 | Probe boundary | `../../probe/index.ts` | Discover ffmpeg, encode copies, loudnorm, and type doctor response. |
+| Recipes boundary | `../../recipes/index.ts`, `../../recipes/lint.tool.ts` | Card lookup, starter construction, and lint. |
+| Critic boundary | `../../critic/index.ts` | Audible review and measured DSP. |
 | Node filesystem/path/crypto | `node:fs/promises`, `node:path`, `node:crypto` | Stage files, resolve paths, and name temporary outputs. |
 
 There are no runtime package dependencies. `main.test.ts` uses Node's test,
@@ -253,6 +313,7 @@ assert, filesystem, process-spawn, OS-temp, and path modules.
 | `src/cli/commands/render.test.ts` | `./render.ts` | Verifies render outputs and failures. |
 | `src/cli/commands/doctor.test.ts` | `./doctor.ts` | Verifies capability reporting and required mode. |
 | `src/cli/commands/analyze.test.ts` | `./analyze.ts` | Verifies analysis command and artifact results. |
+| `src/cli/commands/recipes.test.ts`, `new.test.ts`, `lint.test.ts`, `critique.test.ts` | Adjacent command files | Verify new command contracts. |
 
 No other source feature currently imports `src/cli/index.ts`; it is the
 process entry point. The source-bin test exercises it through `bin/music2.js`.
@@ -268,4 +329,6 @@ process entry point. The source-bin test exercises it through `bin/music2.js`.
 - [ ] Keep `devlog/str_func/probe.md` aligned with doctor data and ffmpeg behavior.
 - [ ] Update render and doctor command tests when flags or error mapping change.
 - [ ] Update analyze command tests when input, artifact, or human text behavior changes.
+- [ ] Keep `devlog/str_func/recipes.md` and `critic.md` aligned with their CLI commands.
+- [ ] Update the four new command tests when flags, results, or exit policy change.
 - [ ] Update `devlog/str_func/AGENTS.md` index when adding or moving this document.

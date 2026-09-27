@@ -61,3 +61,13 @@ cannot be used to discover audio capability; music2 must probe or be told.
 n = 2 audio runs plus 1 control; one clip; one provider route. The consistency of timbre judgements is a
 hypothesis worth re-checking in wp5 (the critic tests will re-run the probe with at least 3 clips).
 
+
+## Addendum (wp3-wp5 runs, 2026-09-28): the critic cannot hear the low end
+
+Across six critiques of music2 drill renders through google-antigravity/gemini-3.8-flash the critic never reported an 808 or sub,
+while music2 analyze measured sub+low at 0.90 of in-range energy. A targeted probe explains it: a 6 s 1 kHz sine was identified exactly
+("1000 Hz test tone"), but an 8 s solo of the drill 808 stem and a 6 s 55 Hz sine both returned response status "failed"
+("Vertex AI response truncated upstream ... MALFORMED_FUNCTION_CALL"), reproducibly on retry. Conclusions for music2: the critic's
+statements about bass, kick weight and sub are unreliable and must not override analyze's band balance; a failed status maps to
+E_CAPABILITY (critic.tool.ts), which is the correct user-facing outcome for low-end-only audio. Timbre, arrangement and top-end remarks
+remain usable as advisory prose; its genre guesses varied between runs (gamelan, calypso, trap sketch, boom-bap break, deep house).

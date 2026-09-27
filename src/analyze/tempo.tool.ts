@@ -162,8 +162,11 @@ function nearPeak(peaks: { frame: number; strength: number }[], frame: number): 
   return best;
 }
 
+/** Hat peaks for texture use a low floor: quiet hats under loud snares/bells must still count (wp5 evidence: at .3 only 89 of 188 drill hats were seen). */
+const TEXTURE_PEAK_FLOOR = .12;
+
 function texture(hats: Float64Array, bpm: number, phase: number): { occ16: number; off32: number } {
-  const peaks = localPeaks(hats, .3);
+  const peaks = localPeaks(hats, TEXTURE_PEAK_FLOOR);
   const step = 60 * FRAME_RATE / bpm / 4;
   const base = phase * FRAME_RATE;
   let occupied = 0, points = 0, oddEnergy = 0, totalEnergy = 0;

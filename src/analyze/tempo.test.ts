@@ -114,3 +114,15 @@ test("rendered drill fixture estimates 140 from PCM without song metadata", asyn
   const result = estimateTempo(render.audio);
   assert.ok(result.bpm !== null && result.bpm >= 138 && result.bpm <= 142, JSON.stringify({bpm:result.bpm,candidates:result.candidates}));
 });
+
+test("drill tempo is stable when the whole mix level moves (texture floor regression)", async () => {
+  const { loadSong } = await import("../song/index.ts");
+  const { renderSong } = await import("../render/index.ts");
+  for (const delta of [-4, 4]) {
+    const song = await loadSong("examples/drill-140.song.json");
+    for (const track of song.tracks) track.gain += delta;
+    const { audio } = await renderSong(song, "examples/drill-140.song.json");
+    const bpm = estimateTempo(audio).bpm;
+    assert.ok(bpm !== null && bpm >= 138 && bpm <= 142, `gain ${delta}: ${String(bpm)}`);
+  }
+});
