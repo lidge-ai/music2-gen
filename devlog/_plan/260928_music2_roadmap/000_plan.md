@@ -97,3 +97,11 @@ fixed before round 2.
   critic is n = 2; Windows byte-identity of renders is untested. Evidence that would show the direction is wrong: the 75 BPM vector
   promoting to 150, or a Windows CI render hash differing between two runs.
 
+
+- **wp2 D (2026-09-28):** foundations committed as 8e56b98 (L0 main, lanes LA pattern, LC cli, LD meta/CI, LB song+commands, str_func
+  docs). Fresh C: typecheck, lint, 61/61 tests, build, dist CLI, structure audit (receipt in the session evidence dir). Conclusion: the song
+  contract (ResolvedSong, Timeline) and CLI contract are stable; all 004 vectors plus nested/stacked alternation and cross-cycle spans pass.
+  Direction for wp3: re-verify 020 against the real song/timeline exports (TimedEvent fields, ResolvedTrack shape), then lanes: audio-io
+  (buffer/wav) first by main or one lane, voices in two parallel lanes (drums+808+bass / bell+keys+pluck+pad+lead), fx+mixer+render+kit,
+  probe+commands; drill-140 example written by main. Pessimist note: nothing is audible yet; the determinism promise is only as good as
+  the float summation order the mixer fixes, and Windows float results are unmeasured.
