@@ -20,6 +20,8 @@ src/analyze/
 ├── analysis.schema.ts    # analysis JSON, beat map, metric, and artifact contracts
 ├── analyze.tool.ts       # PCM analysis and WAV/song artifact workflow
 ├── analyze.test.ts       # analysis values, warnings, files, and input validation
+├── balance-warnings.tool.ts # genre-aware whole-file six-band balance prompts
+├── balance-warnings.test.ts # A1–A4 boundary and silence vectors
 ├── loop-seam.tool.ts     # pure 50 ms endpoint, RMS, and three-band seam metrics
 ├── loop-seam.test.ts     # activation, exact boundaries, and silent windows
 ├── fft.tool.ts           # cached Hann windows and radix-2 spectral transform
@@ -79,6 +81,7 @@ drawing, and colormap are internal to this feature.
 | Exported signature | Source | Purpose |
 |---|---|---|
 | `export function analyzeAudio(pcm: StereoBuffer, opts: { song?: ResolvedSong; timeline?: Timeline; targetLufs?: number; source?: "wav" \| "song" } = {}): AnalysisResult` | `analyze.tool.ts` | Analyze finite PCM and build in-memory report and images. |
+| `export function balanceWarnings(bands: readonly BandValue[], genre?: string \| null): AnalysisWarning[]` | `balance-warnings.tool.ts` | Internal A1–A4 whole-file power guides in fixed order. |
 | `export async function analyzeFile(inputPath: string, opts: { songPath?: string; outDir?: string } = {}): Promise<AnalysisArtifacts>` | `analyze.tool.ts` | Read or render input and write named artifacts. |
 | `export function estimateTempo(pcm: StereoBuffer, meterNumerator = 4): TempoEstimate` | `tempo.tool.ts` | Estimate BPM candidates, beat times, and confidence. |
 | `export function onsetEnvelopes(pcm: StereoBuffer): OnsetEnvelopes` | `tempo.tool.ts` | Reusable normalized 100 Hz onset, hats, and low envelopes. |
@@ -138,9 +141,15 @@ drawing, and colormap are internal to this feature.
 - `flow.sectionMeans` is one ungated K-power mean per timeline placement; WAV-only input has none. Section gated `integratedLufs` keeps its original meaning. JSON carries complete whole-second short-term points at 1 Hz; drawing receives 10 Hz curves and the full numeric SSM separately.
 - Section metrics use timeline placements and report RMS and integrated LUFS
   over each placement. Track density counts timeline events by track.
-- Warnings cover clipping, LUFS more than 3 LU from target, low-end dominance,
-  almost-empty air band, absent beat map, assumed audio-only meter, and
-  uncertain key.
+- Warnings cover clipping, LUFS more than 3 LU from target, almost-empty air,
+  absent beat map, assumed audio-only meter, uncertain key, then the A1–A4
+  balance prompts before song-backed flow warnings. `balanceWarnings(bands, genre)`
+  uses whole-file linear-power shares: low-end dominance over 0.92 for trap,
+  drill and club genres, 0.85 for boom bap/lo-fi, and 0.55 without a known
+  genre; low-mid buildup over 0.25; sub without body above a 0.65 sub ratio
+  when total low share exceeds 0.50; and thin highs below 0.02 except lo-fi.
+  Silent bands skip all four. Overview verdicts prioritize clipping, LUFS,
+  then A1–A4 while preserving serialized warning order.
 - `analyzeFile` accepts `.wav` or `.json`. A song JSON input is loaded and
   rendered with `peak` or in-process `lufs` mastering as appropriate.
 - `--song` metadata is valid only for WAV input. Its sample rate and full-song

@@ -34,4 +34,11 @@ test("report names unavailable measurements and avoids claiming a WAV transcript
   assert.match(updated, /hook#0 \(hook\) B9–B16, 16\.00–32\.00s: -16\.00 LUFS/);
   assert.ok(updated.includes(analysis.warnings[1]!.fix!));
   assert.ok(updated.includes(analysis.flow.verdicts[0]));
+  for (const code of ["LOW_END_DOMINANCE", "LOW_MID_BUILDUP", "SUB_WITHOUT_BODY", "HIGH_END_THIN"] as const) {
+    analysis.warnings.push({ code, observed: .8, threshold: .5, message: `${code} measurement`, fix: `${code} fix` });
+  }
+  const balanceReport = renderAnalysisReport(analysis);
+  for (const code of ["LOW_END_DOMINANCE", "LOW_MID_BUILDUP", "SUB_WITHOUT_BODY", "HIGH_END_THIN"]) {
+    assert.ok(balanceReport.includes(`| ${code} | 0.80 | 0.50 | ${code} measurement | ${code} fix |`));
+  }
 });

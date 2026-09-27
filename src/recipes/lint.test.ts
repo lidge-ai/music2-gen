@@ -14,6 +14,24 @@ const base = () => ({ version: 1 as const, bpm: 140, genre: "drill_uk", key: "C 
   sections: [{ id: "hook", bars: 4, role: "hook", patterns: {} as Record<string, string | null> }], arrangement: [{ section: "hook" }] });
 const ids = (song: unknown, options?: { genre?: string }): string[] => lintSong(song, options).results.map((result) => result.id);
 
+test("layering findings are wired, sorted, and carry actionable fields", () => {
+  const report = lintSong({ version: 1, bpm: 120, genre: "house", tracks: [
+    { id: "drums", kind: "drums", instrument: "drums", pattern: "bd ~ ~ ~" },
+    { id: "bass", kind: "notes", instrument: "bass", pan: 0.2, pattern: "22 ~ ~ ~" },
+    { id: "keys", kind: "notes", instrument: "keys", mono: false, gate: 1, pattern: "[40,41] ~ ~ ~" },
+    { id: "lead", kind: "notes", instrument: "lead", pattern: "47 ~ ~ ~" },
+  ], sections: [{ id: "groove", bars: 2, role: "groove" }], arrangement: [{ section: "groove" }] });
+  const layering = report.results.filter((row) => ["low_end_overlap", "low_chord_spacing", "low_pan",
+    "kick_bass_unducked", "register_collision", "sub_floor"].includes(row.id.split("/")[1]!));
+  assert.deepEqual(layering.map((row) => row.id), ["generic/kick_bass_unducked", "generic/low_chord_spacing",
+    "generic/low_end_overlap", "generic/low_pan", "generic/register_collision", "generic/sub_floor"]);
+  for (const row of layering) {
+    assert.equal(row.severity, "warning");
+    assert.ok(row.path && String(row.observed) && String(row.expected) && row.fix);
+  }
+  assert.equal(report.warnings, report.results.filter((row) => row.severity === "warning").length);
+});
+
 test("drill example has zero UK drill warnings and wrong-genre names tempo/backbeat", () => {
   const drill = lintSong(fixture("drill-140.song.json"));
   assert.deepEqual(drill.results.filter((result) => result.id.startsWith("drill_uk/")), []);

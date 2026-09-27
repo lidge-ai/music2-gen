@@ -35,3 +35,20 @@ test("audio-only annotations use seconds and no bar or hook claim", () => {
   assert.equal(result.verdicts[2], "NO HOOK DECLARED");
   assert.deepEqual(result.annotations, ["BOUNDARY 0:08", "0:00-0:04 REPEAT 0:08-0:12; SIM 0.93"]);
 });
+
+test("overview verdict uses explicit warning priority without reordering findings", () => {
+  const flow: Pick<FlowAnalysis, "axisKind" | "sectionDeltas" | "noveltyPeaks" | "repeats"> = {
+    axisKind: "0.5 s", sectionDeltas: [], noveltyPeaks: [], repeats: [],
+  };
+  const order: AnalysisWarning["code"][] = ["CLIPPING", "LUFS_OFF_TARGET", "LOW_END_DOMINANCE",
+    "LOW_MID_BUILDUP", "SUB_WITHOUT_BODY", "HIGH_END_THIN"];
+  for (let i = 0; i < order.length; i++) {
+    const rows = [warning("EMPTY_HIGH_BAND"), warning("LOOP_SEAM_DISCONTINUITY"),
+      ...order.slice(i).reverse().map(warning)];
+    assert.equal(flowAnnotations(flow, rows, []).verdicts[0], `${order[i]} 1.0`);
+  }
+  assert.equal(flowAnnotations(flow, [warning("EMPTY_HIGH_BAND"), warning("LOW_END_DOMINANCE"), warning("HIGH_END_THIN")], []).verdicts[0], "LOW_END_DOMINANCE 1.0");
+  assert.equal(flowAnnotations(flow, [warning("EMPTY_HIGH_BAND"), warning("HIGH_END_THIN")], []).verdicts[0], "HIGH_END_THIN 1.0");
+  assert.equal(flowAnnotations(flow, [warning("EMPTY_HIGH_BAND")], []).verdicts[0], "EMPTY_HIGH_BAND 1.0");
+  assert.equal(flowAnnotations(flow, [], []).verdicts[0], "NO FLAGS");
+});

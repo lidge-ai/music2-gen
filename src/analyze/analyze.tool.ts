@@ -8,6 +8,7 @@ import { buildTimeline, loadSong } from "../song/index.ts";
 import type { ResolvedSong, Timeline } from "../song/index.ts";
 import { ANALYSIS_VERSION } from "./analysis.schema.ts";
 import type { AnalysisArtifacts, AnalysisJson, AnalysisResult, AnalysisWarning, SectionMetrics, TrackDensity } from "./analysis.schema.ts";
+import { balanceWarnings } from "./balance-warnings.tool.ts";
 import { measureBands } from "./bands.tool.ts";
 import { makeBeatMap } from "./beats.tool.ts";
 import { analyzeFlow } from "./flow/flow.tool.ts";
@@ -98,7 +99,7 @@ function trackDensity(song: ResolvedSong, timeline: Timeline): TrackDensity[] {
 }
 
 function warnings(a: Pick<AnalysisJson, "clippedSamples" | "targetLufs" | "integratedLufs" | "bands" | "keyConfidence">,
-  beatSource: "song" | "audio" | null): AnalysisWarning[] {
+  beatSource: "song" | "audio" | null, genre?: string | null): AnalysisWarning[] {
   const result: AnalysisWarning[] = [];
   const push = (code: AnalysisWarning["code"], observed: number | null, threshold: number | null, message: string): void => {
     result.push({ code, observed, threshold, message });
@@ -107,14 +108,13 @@ function warnings(a: Pick<AnalysisJson, "clippedSamples" | "targetLufs" | "integ
   if (a.targetLufs !== null && a.integratedLufs !== null && Math.abs(a.integratedLufs - a.targetLufs) > 3) {
     push("LUFS_OFF_TARGET", Math.abs(a.integratedLufs - a.targetLufs), 3, "Integrated loudness differs from the target by over 3 LU.");
   }
-  const low = a.bands[0]!.share + a.bands[1]!.share;
-  if (low > .55) push("LOW_END_DOMINANCE", low, .55, "Sub and low bands dominate in-range spectral energy.");
   if (a.bands.some((band) => band.share > 0) && a.bands[5]!.share < .001) {
     push("EMPTY_HIGH_BAND", a.bands[5]!.share, .001, "Air band contains very little in-range energy.");
   }
   if (!beatSource) push("NO_BEATS", null, null, "No reliable beat map was measured.");
   if (beatSource === "audio") push("METER_ASSUMED", 4, null, "Audio-only beat map assumes 4/4 meter.");
   if (a.keyConfidence < .2) push("KEY_UNCERTAIN", a.keyConfidence, .2, "Estimated key has low confidence.");
+  result.push(...balanceWarnings(a.bands, genre));
   return result;
 }
 
@@ -165,7 +165,7 @@ export function analyzeAudio(pcm: StereoBuffer, opts: { song?: ResolvedSong; tim
   const tracks = opts.song && timeline ? trackDensity(opts.song, timeline) : [];
   const targetLufs = opts.targetLufs ?? opts.song?.master.targetLufs ?? null;
   const warningRows = warnings({ clippedSamples: stats.clipped, targetLufs,
-    integratedLufs: loudness.integratedLufs, bands: bands.bands, keyConfidence: key.confidence }, beatMap?.source ?? null);
+    integratedLufs: loudness.integratedLufs, bands: bands.bands, keyConfidence: key.confidence }, beatMap?.source ?? null, opts.song?.genre);
   const flow = analyzeFlow(pcm, { beatMap, onset, warnings: warningRows, sections, bands: bands.bands, metered,
     ...(opts.song ? { song: opts.song } : {}), ...(timeline ? { timeline } : {}) });
   if (opts.song) warningRows.push(...songWarnings(opts.song, flow.analysis, pcm));

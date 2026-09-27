@@ -13,8 +13,9 @@ export function flowAnnotations(
   flow: Pick<FlowAnalysis, "axisKind" | "sectionDeltas" | "noveltyPeaks" | "repeats">,
   warnings: readonly AnalysisWarning[], _sections: readonly SectionMetrics[], timeline?: Timeline,
 ): { verdicts: [string, string, string]; annotations: string[] } {
-  const priority = warnings.find((warning) => warning.code === "CLIPPING") ??
-    warnings.find((warning) => warning.code === "LUFS_OFF_TARGET") ?? warnings[0];
+  const priorityCodes: readonly AnalysisWarning["code"][] = ["CLIPPING", "LUFS_OFF_TARGET", "LOW_END_DOMINANCE",
+    "LOW_MID_BUILDUP", "SUB_WITHOUT_BODY", "HIGH_END_THIN"];
+  const priority = priorityCodes.map((code) => warnings.find((warning) => warning.code === code)).find((warning) => warning !== undefined) ?? warnings[0];
   const first = priority ? `${priority.code}${priority.observed === null ? "" : ` ${priority.observed.toFixed(1)}`}` : "NO FLAGS";
   const largest = flow.sectionDeltas.filter((delta) => delta.deltaLu !== null)
     .sort((a, b) => Math.abs(b.deltaLu!) - Math.abs(a.deltaLu!) || a.atSeconds - b.atSeconds)[0];

@@ -4,12 +4,45 @@ import type { Placement, ResolvedSong, TimedEvent, Timeline } from "../song/inde
 export const GRID_TOLERANCE = 1 / 64;
 export interface LintGeometry {
   song: ResolvedSong;
+  genre: string | null;
   timeline: Timeline;
   events: Map<number, TimedEvent[]>;
   full: number[];
   hooks: number[];
   grooves: number[];
   placements: Placement[];
+}
+
+export interface PitchedInterval { event: TimedEvent; start: number; end: number }
+export function placementOrdinalByBar(g: LintGeometry): number[] {
+  const ordinalByBar: number[] = [];
+  for (const placement of g.placements)
+    for (let bar = placement.startBar; bar < placement.startBar + placement.bars; bar++) ordinalByBar[bar] = placement.ordinal;
+  return ordinalByBar;
+}
+export function placementSpan(g: LintGeometry, placement: Placement): { start: number; end: number } {
+  const start = placement.startBar * g.timeline.secondsPerBar;
+  return { start, end: start + placement.bars * g.timeline.secondsPerBar };
+}
+/** Match the mixer's mono stop at the next same-track onset; release tails are intentionally excluded. */
+export function pitchedIntervals(g: LintGeometry): PitchedInterval[] {
+  const nextByTrack = new Map<string, number>();
+  const intervals: PitchedInterval[] = [];
+  const placementEndByBar: number[] = [];
+  for (const placement of g.placements) {
+    const end = (placement.startBar + placement.bars) * g.timeline.secondsPerBar;
+    for (let bar = placement.startBar; bar < placement.startBar + placement.bars; bar++) placementEndByBar[bar] = end;
+  }
+  for (let i = g.timeline.events.length - 1; i >= 0; i--) {
+    const event = g.timeline.events[i]!;
+    if (event.midi === null) continue;
+    const track = g.song.tracks[event.trackIndex]!;
+    const end = Math.min(event.time + event.duration, placementEndByBar[event.bar]!,
+      track.mono ? nextByTrack.get(event.track) ?? Infinity : Infinity);
+    if (end > event.time) intervals.push({ event, start: event.time, end });
+    nextByTrack.set(event.track, event.time);
+  }
+  return intervals.reverse();
 }
 
 export function phase(event: TimedEvent): number {
@@ -118,5 +151,5 @@ export function createGeometry(song: ResolvedSong, timeline: Timeline, genre: st
     const activeDrums = (ids: Set<string>): boolean => [...ids].some((id) => effective(id) !== null);
     if (["hook", "verse", "groove", ...(genre === "techno" ? ["build"] : [])].includes(placement.role ?? "") && activeDrums(kickTracks) && activeDrums(snareTracks)) full.push(...bars);
   }
-  return { song, timeline, events, full, hooks, grooves, placements: timeline.placements };
+  return { song, genre, timeline, events, full, hooks, grooves, placements: timeline.placements };
 }

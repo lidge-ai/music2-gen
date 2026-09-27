@@ -18,6 +18,12 @@ src/recipes/
 ├── lint-generic.test.ts        # generic warning vectors
 ├── lint-geometry.tool.ts       # bar/step predicates and geometry
 ├── lint-geometry.test.ts       # timing and geometry vectors
+├── lint-layering-low.tool.ts   # low overlap, pan, and sub floor warnings
+├── lint-layering-low.test.ts   # low-layer boundary vectors
+├── lint-layering-harmony.tool.ts # low chord spacing and focal register collision
+├── lint-layering-harmony.test.ts # harmony boundary vectors
+├── lint-layering-rhythm.tool.ts # house/techno kick-bass duck warning
+├── lint-layering-rhythm.test.ts # rhythm boundary vectors
 ├── lint-rules.tool.ts          # hip-hop and drill genre rules
 ├── lint-rules.test.ts          # genre rule vectors
 ├── lint-rules-dance.tool.ts    # house and techno rules
@@ -87,6 +93,9 @@ re-exports public card, starter, and lint functions and types.
 | `export function genericRules(g: LintGeometry, unknownGenre: boolean): LintResult[]` | `lint-generic.tool.ts` | Apply shared warnings. |
 | `export function genreRules(g: LintGeometry, genre: RecipeId, generic: LintResult[]): LintResult[]` | `lint-rules.tool.ts` | Dispatch genre formulas. |
 | `export function danceRules(g: LintGeometry, genre: "house" \| "techno", generic: LintResult[]): LintResult[]` | `lint-rules-dance.tool.ts` | Apply dance formulas. |
+| `export function lowLayeringRules(g: LintGeometry): LintResult[]` | `lint-layering-low.tool.ts` | Apply L1, L3, and L6 from expanded notes. |
+| `export function harmonyLayeringRules(g: LintGeometry): LintResult[]` | `lint-layering-harmony.tool.ts` | Apply L2 and L5 in placements. |
+| `export function rhythmLayeringRules(g: LintGeometry): LintResult[]` | `lint-layering-rhythm.tool.ts` | Apply L4 for club genres. |
 | `export function renderGenreDocs(cards)` (JSDoc: `readonly RecipeCard[]` → `string`) | `scripts/gen-genre-docs.mjs` | Render the generated genre reference. |
 | `export async function main(argv)` (JSDoc: `string[]` → `Promise<number>`) | `scripts/gen-genre-docs.mjs` | Generate or check the reference file. |
 
@@ -135,6 +144,12 @@ and generic findings are warnings unless noted otherwise.
 | `generic/out_of_key` | Every pitched onset must fit the declared major/minor scale. |
 | `generic/808_polyphony` | 808 tracks need `mono=true`; overlapping or simultaneous conflicting 808 pitches warn. |
 | `generic/clipping_risk` | Maximum coincident onset sum, `Σ velocity × 10^(gain/20)`, must be ≤1.5. |
+| `generic/low_end_overlap` | In one placement, two distinct audible pitched tracks at MIDI ≤46 overlap for ≥25% of its duration; gain must exceed −24 dB. Mono notes stop at the next same-track onset. |
+| `generic/low_chord_spacing` | Simultaneous same-track 1–11 semitone chord pairs below the interval-specific lower-MIDI floor (52, 51, 48, 46, 46, 47, 34, 43, 41, 41, 41); bass/808 excluded. |
+| `generic/low_pan` | Bass/808, or a pitched track with ≥25% MIDI ≤46 notes, has `abs(pan)>0.1`. |
+| `generic/kick_bass_unducked` | In house/techno, ≥50% of actual `bd` onsets coincide with a bass/808 note sounding or attacking within ±30 ms, without duck by a `bd` source of amount ≥0.1. A mixed drum source ducks on every event. |
+| `generic/register_collision` | Two focal tracks (lead/bell/pluck/keys) in a ≥2-bar placement have median MIDI distance ≤7 and ≥75% shared eighth-note onset slots on the sparser track. |
+| `generic/sub_floor` | A pitched note at MIDI ≤22 occurs. |
 | `drill_uk/1` | BPM must be 138..146. |
 | `drill_uk/2` | At least 75% of full bars need a snare/clap on step 9, or step 13 without a step-5 backbeat (the alternate-bar moving snare). |
 | `drill_uk/3` | At least 75% of full bars need a kick. |

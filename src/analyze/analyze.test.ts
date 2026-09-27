@@ -62,6 +62,33 @@ test("PCM validation and ordered threshold warnings", () => {
   assert.ok(codes.includes("LOW_END_DOMINANCE"));
   assert.ok(codes.includes("EMPTY_HIGH_BAND"));
   assert.ok(codes.includes("NO_BEATS"));
+  assert.ok(codes.includes("SUB_WITHOUT_BODY"));
+  assert.ok(codes.includes("HIGH_END_THIN"));
+  assert.ok(codes.indexOf("EMPTY_HIGH_BAND") < codes.indexOf("LOW_END_DOMINANCE"));
+  assert.equal(report.analysis.flow.verdicts[0].split(" ")[0], "CLIPPING");
+});
+
+test("the same measured bands use song genre for WAV-backed and song analysis", () => {
+  const rate = 8000;
+  const left = Float32Array.from({ length: rate }, (_, i) =>
+    .2 * Math.sin(2 * Math.PI * 50 * i / rate) + .1 * Math.sin(2 * Math.PI * 1000 * i / rate));
+  const pcm: StereoBuffer = { sampleRate: rate, left, right: left, sourceChannels: 1 };
+  const song = validateSong({ version: 1, bpm: 120, genre: "trap",
+    tracks: [{ id: "tone", kind: "notes", instrument: "lead", pattern: "~" }],
+    sections: [{ id: "part", role: "verse", bars: 1 }], arrangement: [{ section: "part" }] });
+  const plain = analyzeAudio(pcm);
+  const withSong = analyzeAudio(pcm, { song, source: "wav" });
+  const lowShare = plain.analysis.bands[0]!.share + plain.analysis.bands[1]!.share;
+  assert.ok(lowShare > .55 && lowShare < .85, `low share ${lowShare}`);
+  assert.ok(plain.analysis.warnings.some((row) => row.code === "LOW_END_DOMINANCE" && row.threshold === .55));
+  assert.ok(!withSong.analysis.warnings.some((row) => row.code === "LOW_END_DOMINANCE"));
+  assert.equal(withSong.analysis.source, "wav");
+  assert.deepEqual(withSong.analysis.bands, plain.analysis.bands);
+  assert.ok(plain.analysis.warnings.some((row) => row.code === "EMPTY_HIGH_BAND"));
+  assert.ok(plain.analysis.warnings.some((row) => row.code === "HIGH_END_THIN"));
+  assert.ok(plain.reportMarkdown.includes("| EMPTY_HIGH_BAND |"));
+  assert.ok(plain.reportMarkdown.includes("| HIGH_END_THIN |"));
+  assert.equal(plain.analysis.flow.verdicts[0].split(" ")[0], "LOW_END_DOMINANCE");
 });
 
 test("analysis accepts finite PCM rates outside the shared meter range", () => {
@@ -112,7 +139,9 @@ test("drill song produces six reproducible artifacts with independent 140 BPM es
     const first = await Promise.all(paths.map((path) => readFile(path)));
     checkPng(first[2]!); checkOverview(first[3]!); checkPng(first[4]!);
     const analysis = JSON.parse(first[0]!.toString()) as { declaredBpm: number; estimatedBpm: number; sections: unknown[]; tracks: unknown[];
-      flow: { sectionMeans: unknown[]; annotations: string[] } };
+      warnings: { code: string }[]; flow: { sectionMeans: unknown[]; annotations: string[] } };
+    assert.deepEqual(artifacts.summary.warnings.map((row) => row.code), analysis.warnings.map((row) => row.code));
+    for (const row of analysis.warnings) assert.ok(first[1]!.toString().includes(`| ${row.code} |`));
     assert.ok(first[0]!.toString().indexOf('"bands"') < first[0]!.toString().indexOf('"flow"'));
     assert.ok(first[0]!.toString().indexOf('"flow"') < first[0]!.toString().indexOf('"sections"'));
     assert.equal(analysis.declaredBpm, 140);
@@ -193,7 +222,7 @@ test("loop seam warning follows section warning and refreshes the overview verdi
   assert.ok(codes.includes("SECTION_LOUDNESS_FLAT"));
   assert.ok(codes.includes("LOOP_SEAM_DISCONTINUITY"));
   assert.ok(codes.indexOf("SECTION_LOUDNESS_FLAT") < codes.indexOf("LOOP_SEAM_DISCONTINUITY"));
-  assert.equal(result.analysis.flow.verdicts[0].split(" ")[0], codes[0]);
+  assert.equal(result.analysis.flow.verdicts[0].split(" ")[0], "HIGH_END_THIN");
   assert.ok(result.reportMarkdown.includes(result.analysis.flow.verdicts[0]));
   const detail = result.analysis.warnings.find((row) => row.code === "LOOP_SEAM_DISCONTINUITY")!.details;
   assert.ok(detail && "jumpFs" in detail);

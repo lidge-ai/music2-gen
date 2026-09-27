@@ -40,7 +40,7 @@ export interface SectionMetrics {
 }
 export interface TrackDensity { id: string; kind: Track["kind"]; eventCount: number; eventsPerBar: number; eventsPerSecond: number }
 export interface AnalysisWarning {
-  code: "CLIPPING" | "LUFS_OFF_TARGET" | "LOW_END_DOMINANCE" | "EMPTY_HIGH_BAND" | "NO_BEATS" | "METER_ASSUMED" | "KEY_UNCERTAIN" | "SECTION_LOUDNESS_FLAT" | "LOOP_SEAM_DISCONTINUITY";
+  code: "CLIPPING" | "LUFS_OFF_TARGET" | "LOW_END_DOMINANCE" | "LOW_MID_BUILDUP" | "SUB_WITHOUT_BODY" | "HIGH_END_THIN" | "EMPTY_HIGH_BAND" | "NO_BEATS" | "METER_ASSUMED" | "KEY_UNCERTAIN" | "SECTION_LOUDNESS_FLAT" | "LOOP_SEAM_DISCONTINUITY";
   observed: number | null; threshold: number | null; message: string;
   fix?: string;
   details?: { loudRole: string; quietRole: string } | {

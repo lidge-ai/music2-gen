@@ -6,7 +6,7 @@ Compare `flow.sectionMeans` for a hook and verse occurrence when the overview sh
 
 An integrated loudness near -14 LUFS and true peak at or below -1 dBTP are streaming-oriented starting points, not required exact scores. If you aim louder, consider a ceiling at or below -2 dBTP. The song's `master.targetLufs` only creates an advisory `LUFS_OFF_TARGET` warning when measured loudness differs by more than 3 LU. `truePeakEstimateDbtp` is a 4x oversampled estimate, not an exact intersample guarantee; verify the final encode if the delivery format matters. LRA on material under 60 seconds is provisional.
 
-The six `bands` in `analysis.json` are shares of measured 20 Hz–20 kHz spectral energy. Fixed ratios are not universal pass/fail rules; compare a revision against the same song and target sound.
+The six `bands` in `analysis.json` are shares of measured 20 Hz–20 kHz spectral energy. Fixed ratios are not universal pass/fail rules; compare a revision against the same song and target sound. Use the [layering pass](layering.md) to assign band owners, voice chords, and interpret genre-aware balance warnings.
 
 | Band | Range | What an excess or absence may suggest | First edit to try |
 | --- | --- | --- | --- |
@@ -17,7 +17,7 @@ The six `bands` in `analysis.json` are shares of measured 20 Hz–20 kHz spectra
 | `presence` | 2–8 kHz | Hats, clap, or metallic bell are harsh. | Lower hat velocity, bell `index`, or send level. |
 | `air` | 8–20 kHz | A nearly empty band can sound dull; too much can hiss. | Restore quiet hats or reduce bright noise by velocity. |
 
-Use track `gain`, `sends`, `duck`, note length, and voice parameters before raising `master.gainDb`. Keep sub and kick centered. `LOW_END_DOMINANCE` means sub+low share exceeds 0.55, and `EMPTY_HIGH_BAND` means air share is below 0.001 on non-silent audio; these are investigation prompts. `CLIPPING` counts PCM samples at full scale. Inspect `clippedSamples`, sample peak, and true peak after each edit.
+Use track `gain`, `sends`, `duck`, note length, and voice parameters before raising `master.gainDb`. Keep sub and kick centered. `LOW_END_DOMINANCE` compares sub+low with the declared genre's guide: above 0.92 for trap/drill/house/techno, 0.85 for boom bap/lo-fi, or 0.55 only for unknown genre and WAV-only analysis. `EMPTY_HIGH_BAND` means air share is below 0.001 on non-silent audio; these are investigation prompts. `CLIPPING` counts PCM samples at full scale. Inspect `clippedSamples`, sample peak, and true peak after each edit.
 
 Lint's `generic/clipping_risk` is a static sum of coincident onset velocity and track gain. It ignores master normalization and does not prove rendered clipping. Check the rendered peak and `CLIPPING` before changing the master because of this warning. Audio key estimation is also advisory: `KEY_UNCERTAIN` signals weak evidence, and an apparent mismatch can come from percussion or sparse harmony. Use the declared key, `events` note pitches, and lint `generic/out_of_key` for source pitch checks. Tempo estimation may prefer half-time or double-time; compare `tempoCandidates` with the declared BPM and event grid.
 
