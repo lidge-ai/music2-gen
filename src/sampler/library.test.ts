@@ -6,9 +6,11 @@ import { libraryInstrument, libraryManifest } from "./library.tool.ts";
 test("library manifest exposes valid built-in instruments and useful unknown-id errors", () => {
   const manifest = libraryManifest();
   assert.equal(manifest.version, 1);
-  assert.deepEqual(manifest.instruments.map((item) => item.id), ["grand-piano", "strings", "strings-staccato"]);
+  assert.deepEqual(manifest.instruments.map((item) => item.id), ["grand-piano", "strings", "strings-staccato", "brass", "brass-staccato"]);
   assert.equal(libraryInstrument("grand-piano").role, "focal");
   assert.equal(libraryInstrument("strings").role, "bed");
   assert.throws(() => libraryInstrument("missing"), (error: unknown) => error instanceof Music2Error &&
-    error.code === "E_SCHEMA" && /grand-piano, strings, strings-staccato/.test(error.message));
+    error.code === "E_SCHEMA" && /grand-piano, strings, strings-staccato, brass, brass-staccato/.test(error.message));
+  assert.equal(libraryInstrument("brass").role, "bed");
+  assert.equal(libraryInstrument("brass-staccato").family, "brass");
 });

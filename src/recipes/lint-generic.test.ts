@@ -29,17 +29,17 @@ test("generic rules identify empty, chromatic, polyphonic and high onset sum", (
 
 test("generic lint warns only for synthetic strings and brass acoustic emulations", () => {
   const song = validateSong({ version: 1, bpm: 120, tracks: [
-    { id: "syntheticStrings", kind: "notes", instrument: "strings", pattern: "c4" },
-    { id: "syntheticBrass", kind: "notes", instrument: "brass", pattern: "c4" },
-    { id: "synthLead", kind: "notes", instrument: "lead", pattern: "c4", params: { wave: 0 } },
-    { id: "sampleStrings", kind: "notes", instrument: "lib:strings", pattern: "c4" },
-    { id: "sampleBrass", kind: "notes", instrument: "lib:brass", pattern: "c4" },
+    { id: "synthetic-strings", kind: "notes", instrument: "strings", pattern: "c4" },
+    { id: "synthetic-brass", kind: "notes", instrument: "brass", pattern: "c4" },
+    { id: "synth-lead", kind: "notes", instrument: "lead", pattern: "c4", params: { wave: 0 } },
+    { id: "sample-strings", kind: "notes", instrument: "lib:strings", pattern: "c4" },
+    { id: "sample-brass", kind: "notes", instrument: "lib:brass", pattern: "c4" },
     { id: "choir", kind: "notes", instrument: "choir", pattern: "c4" },
   ], sections: [{ id: "main", bars: 1 }], arrangement: [{ section: "main" }] });
   const findings = genericRules(createGeometry(song, buildTimeline(song)), false)
     .filter((result) => result.id === "generic/synthetic_acoustic");
   assert.deepEqual(findings.map(({ path }) => path),
-    ["tracks.syntheticStrings.instrument", "tracks.syntheticBrass.instrument"]);
+    ["tracks.synthetic-strings.instrument", "tracks.synthetic-brass.instrument"]);
   assert.match(findings[0]!.fix, /lib:strings-staccato/);
   assert.match(findings[1]!.fix, /lib:brass-staccato/);
 });
