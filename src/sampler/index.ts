@@ -1,5 +1,7 @@
 export { parseSfz } from "./sfz-parse.tool.ts";
 export { loadSfz, renderSfz } from "./sfz-render.tool.ts";
+export { createDecodeBudget } from "./decode-budget.tool.ts";
+export type { DecodeBudget } from "./decode-budget.tool.ts";
 export { selectSfzRegions } from "./sfz-region.tool.ts";
 export type { SfzInstrument, SfzRegion, SfzWarning, SfzEvent, SfzVoice, SfzSelectionState,
   SfzControl, SfzSource, SfzSmpl, LoadedSfz } from "./sfz.schema.ts";

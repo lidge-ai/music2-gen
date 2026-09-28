@@ -96,26 +96,33 @@ function peakCandidates(values: Float64Array, delta: number): Candidate[] {
   return candidates;
 }
 
-/** Locate the steepest rise, then backtrack to its preceding local envelope minimum. */
-function refine(mono: Float64Array, center: number, hop: number, prefix: Float64Array): number {
-  const width = Math.max(1, Math.round(Math.min(32, hop / 8)));
+/** Find the first significant rise within the analysis hop. A noise minimum is not an onset. */
+function refine(mono: Float64Array, center: number, hop: number): number {
   const first = Math.max(0, center - hop);
-  const last = Math.min(mono.length - 1, center);
-  let best = Math.min(center, mono.length - 1);
-  let largestRise = -Infinity;
+  const last = Math.min(mono.length - 1, center + hop);
+  let peak = 0;
   for (let frame = first; frame <= last; frame++) {
-    const before = prefix[frame]! - prefix[Math.max(0, frame - width)]!;
-    const after = prefix[Math.min(mono.length, frame + width)]! - prefix[frame]!;
-    const rise = after - before;
-    if (rise >= largestRise) { largestRise = rise; best = frame; }
+    peak = Math.max(peak, Math.abs(mono[frame]!));
   }
-  let minimum = Infinity;
-  let onset = best;
-  for (let frame = Math.max(first, best - width); frame <= best; frame++) {
-    const envelope = prefix[frame]! - prefix[Math.max(0, frame - width)]!;
-    if (envelope <= minimum) { minimum = envelope; onset = frame; }
+  const threshold = peak * 0.2;
+  for (let frame = first; frame <= last; frame++) {
+    if (Math.abs(mono[frame]!) >= threshold) return frame;
   }
-  return onset;
+  return first;
+}
+
+function significantRise(mono: Float64Array, frame: number, sampleRate: number): boolean {
+  const width = Math.max(1, Math.round(sampleRate * 0.005));
+  let before = 0;
+  let after = 0;
+  let peak = 0;
+  for (let i = Math.max(0, frame - width); i < frame; i++) before += mono[i]! ** 2;
+  for (let i = frame; i < Math.min(mono.length, frame + width); i++) {
+    after += mono[i]! ** 2;
+    peak = Math.max(peak, Math.abs(mono[i]!));
+  }
+  const baseline = Math.sqrt(before / width);
+  return Math.sqrt(after / width) > baseline * 1.3 || peak > baseline * 4;
 }
 
 /** Sample positions in ascending time order. Competing peaks keep the higher score, then the earlier frame. */
@@ -126,17 +133,15 @@ export function detectOnsets(audio: StereoBuffer, input: OnsetOptions = {}): num
   if (length === 0 || maxOnsets === 0) return [];
   const hop = Math.round(audio.sampleRate / 100);
   const mono = new Float64Array(length);
-  const prefix = new Float64Array(length + 1);
   for (let i = 0; i < length; i++) {
     mono[i] = (audio.left[i]! + audio.right[i]!) / 2;
-    prefix[i + 1] = prefix[i]! + Math.abs(mono[i]!);
   }
   const values = normalized(spectralFlux(mono, hop));
   if (values.every((value) => value === 0)) return [];
   const delta = 1 - 0.9 * sensitivity;
   const candidates = peakCandidates(values, delta).map(({ frame, score }) => ({
-    frame: refine(mono, frame * hop + Math.floor(hop / 2), hop, prefix), score,
-  }));
+    frame: refine(mono, frame * hop + Math.floor(hop / 2), hop), score,
+  })).filter((candidate) => significantRise(mono, candidate.frame, audio.sampleRate));
   const minGap = Math.round(minGapMs * audio.sampleRate / 1000);
   candidates.sort((a, b) => b.score - a.score || a.frame - b.frame);
   const selected: Candidate[] = [];

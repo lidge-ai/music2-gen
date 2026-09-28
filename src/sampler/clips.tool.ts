@@ -2,12 +2,14 @@ import { open, stat } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { StereoBuffer } from "../audio-io/buffer.schema.ts";
 import { readWav } from "../audio-io/wav.tool.ts";
-import { confinedRealpath, Music2Error, ticksToSeconds } from "../shared/index.ts";
+import { confinedRealpath, isMusic2Error, Music2Error, ticksToSeconds } from "../shared/index.ts";
 import type { ResolvedAudioTrack, ResolvedClip } from "../song/song-daw.schema.ts";
 import { fft, hann } from "./fft.tool.ts";
 import { detectOnsets } from "./onsets.tool.ts";
 import { resample } from "./resample.tool.ts";
 import { timeStretch } from "./stretch.tool.ts";
+import { createDecodeBudget } from "./decode-budget.tool.ts";
+import type { DecodeBudget } from "./decode-budget.tool.ts";
 
 const MAX_FRAMES = 1 << 24;
 const MAX_PCM_BYTES = 512 * 1024 * 1024;
@@ -44,10 +46,9 @@ async function decodedBytes(path: string): Promise<number | null> {
 }
 
 /** The returned map and canonical-path cache exist only for this load invocation. */
-export async function loadClipSources(songPath: string, clips: readonly ResolvedClip[]): Promise<ReadonlyMap<string, StereoBuffer>> {
+export async function loadClipSources(songPath: string, clips: readonly ResolvedClip[],
+  budget: DecodeBudget = createDecodeBudget()): Promise<ReadonlyMap<string, StereoBuffer>> {
   const sources = new Map<string, StereoBuffer>();
-  const cache = new Map<string, StereoBuffer>();
-  let decodedTotal = 0;
   for (const clip of clips) {
     if (sources.has(clip.file)) continue;
     if (!clip.file.endsWith(".wav") || clip.file.startsWith("/") || clip.file.split("/").includes("..") ||
@@ -55,24 +56,21 @@ export async function loadClipSources(songPath: string, clips: readonly Resolved
       throw new Music2Error("E_ACCESS", "invalid clip source path", { details: { file: clip.file } });
     }
     const path = await confinedRealpath(dirname(songPath), clip.file);
-    let audio = cache.get(path);
-    if (!audio) {
+    const audio = await budget.load(path, async () => {
       let size: number;
       try { size = (await stat(path)).size; }
       catch (cause) { throw new Music2Error("E_ACCESS", "cannot inspect clip source", { details: { file: clip.file }, cause }); }
       if (size > MAX_PCM_BYTES) throw new Music2Error("E_CAPABILITY", "clip WAV exceeds 512 MiB file limit");
-      let required: number | null;
-      try { required = await decodedBytes(path); }
+      try { return await decodedBytes(path); }
       catch (cause) { throw new Music2Error("E_ACCESS", "cannot inspect clip source", { details: { file: clip.file }, cause }); }
-      if (required !== null && decodedTotal + required > MAX_PCM_BYTES)
-        throw new Music2Error("E_CAPABILITY", "decoded clip sources exceed 512 MiB");
-      audio = await readWav(path);
-      const bytes = audio.left.byteLength + audio.right.byteLength;
-      if (decodedTotal + bytes > MAX_PCM_BYTES)
-        throw new Music2Error("E_CAPABILITY", "decoded clip sources exceed 512 MiB");
-      decodedTotal += bytes;
-      cache.set(path, audio);
-    }
+    }, async () => {
+      try { return await readWav(path); }
+      catch (cause) {
+        if (isMusic2Error(cause) && (cause.code === "E_INPUT" || cause.code === "E_ACCESS"))
+          throw new Music2Error(cause.code, cause.message, { details: { ...cause.details, file: clip.file }, cause });
+        throw cause;
+      }
+    });
     sources.set(clip.file, audio);
   }
   return sources;

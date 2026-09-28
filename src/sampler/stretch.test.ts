@@ -105,7 +105,7 @@ test("eight separated transients retain their scaled timing when lengthened", ()
   for (const start of starts) left[start] = 1;
   const source: StereoBuffer = { sampleRate: RATE, left, right: left.slice(), sourceChannels: 2 };
   for (const method of ["wsola", "pv"] as const) {
-    for (const alpha of [1.5, 2]) {
+    for (const alpha of method === "pv" ? [0.75, 1.25, 1.5, 2] : [1.5, 2]) {
       const output = timeStretch(source, alpha, { method });
       for (const start of starts) {
         const expected = Math.round(alpha * start);
@@ -118,6 +118,30 @@ test("eight separated transients retain their scaled timing when lengthened", ()
         assert.ok(Math.abs(peak - expected) <= toleranceMs * RATE / 1000,
           `${method}/${alpha}: transient at ${start} landed at ${peak}`);
         assert.ok(Math.abs(output.left[peak]!) > 0.01);
+      }
+    }
+  }
+});
+
+test("seeded noise bursts retain timing through WSOLA and PV stretch", () => {
+  const left = new Float32Array(Math.round(2.1 * RATE));
+  const starts = Array.from({ length: 8 }, (_, i) => Math.round((0.1 + i * 0.25) * RATE));
+  let seed = 12345;
+  for (const start of starts) for (let j = 0; j < 240; j++) {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    left[start + j] = (seed / 4294967296 * 2 - 1) * 0.9;
+  }
+  const source: StereoBuffer = { sampleRate: RATE, left, right: left.slice(), sourceChannels: 2 };
+  for (const method of ["wsola", "pv"] as const) {
+    for (const alpha of method === "pv" ? [0.75, 1, 1.25, 1.5, 2] : [1.5, 2]) {
+      const output = timeStretch(source, alpha, { method });
+      for (const start of starts) {
+        const expected = Math.round(alpha * start);
+        let peak = expected - Math.round(0.05 * RATE);
+        for (let i = peak + 1; i <= expected + Math.round(0.05 * RATE); i++)
+          if (Math.abs(output.left[i]!) > Math.abs(output.left[peak]!)) peak = i;
+        assert.ok(Math.abs(peak - expected) <= (method === "pv" ? 10 : 15) * RATE / 1000,
+          `${method}/${alpha}: burst at ${start} landed at ${peak}`);
       }
     }
   }

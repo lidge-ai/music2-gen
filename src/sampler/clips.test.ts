@@ -1,12 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, rm, symlink } from "node:fs/promises";
+import { mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { StereoBuffer } from "../audio-io/buffer.schema.ts";
 import { writeWav } from "../audio-io/wav.tool.ts";
 import type { ResolvedAudioTrack, ResolvedClip } from "../song/song-daw.schema.ts";
 import { loadClipSources, renderClips } from "./clips.tool.ts";
+import { createDecodeBudget } from "./decode-budget.tool.ts";
 
 const RATE = 44100;
 function tone(seconds: number): StereoBuffer {
@@ -84,6 +85,14 @@ test("source loading caches aliases and rejects symlink escape", async () => {
       { code: "E_ACCESS" });
     await assert.rejects(loadClipSources(join(root, "song.json"), [clip({ mode: "none" }, { file: "../outside.wav" })]),
       { code: "E_ACCESS" });
+    await writeFile(join(root, "broken.wav"), "not a RIFF file");
+    await assert.rejects(loadClipSources(join(root, "song.json"), [clip({ mode: "none" }, { file: "broken.wav" })]),
+      (error: unknown) => typeof error === "object" && error !== null && "details" in error
+        && (error as { details: { file: string } }).details.file === "broken.wav");
+    const budget = createDecodeBudget(tone(0.1).left.byteLength * 2);
+    const shared = await loadClipSources(join(root, "song.json"), [clips[0]!], budget);
+    assert.equal((await loadClipSources(join(root, "song.json"), [clips[1]!], budget)).get("./source.wav"),
+      shared.get("source.wav"));
   } finally {
     await rm(root, { recursive: true, force: true });
     await rm(outside, { recursive: true, force: true });

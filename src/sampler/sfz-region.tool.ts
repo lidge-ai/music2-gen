@@ -4,7 +4,7 @@ import type { SfzEvent, SfzInstrument, SfzRegion, SfzSelectionState, SfzVoice } 
 /** One call handles either a note-on or a velocity-zero note-off at event.startFrame. */
 export function selectSfzRegions(instrument: SfzInstrument, event: SfzEvent, state: SfzSelectionState): readonly SfzRegion[] {
   const off = event.velocity === 0;
-  const held = state.held ?? (state.held = new Map<number, { eventIndex: number; velocity: number; startFrame: number }[]>());
+  const held = state.held ?? (state.held = new Map<number, { eventIndex: number; velocity: number; startFrame: number; positions: Map<string, number> }[]>());
   const heldNotes = held.get(event.midi) ?? [];
   const priorIndex = heldNotes.findIndex((note) => note.eventIndex === event.eventIndex);
   const prior = heldNotes[priorIndex];
@@ -20,14 +20,15 @@ export function selectSfzRegions(instrument: SfzInstrument, event: SfzEvent, sta
     if (key < 0 || key > 127 || key < region.key[0] || key > region.key[1]
       || velocity < region.velocity[0] || velocity > region.velocity[1]
       || draw < region.lorand || draw >= region.hirand) continue;
+    const counterKey = `${key}:${region.seqLength}`;
+    if (!positions.has(counterKey)) positions.set(counterKey, off
+      ? prior!.positions.get(counterKey) ?? 1 : state.counters.get(counterKey) ?? 1);
     if (off ? region.trigger !== "release" && region.trigger !== "release_key"
       : region.trigger === "release" || region.trigger === "release_key"
         || region.trigger === "first" && legato || region.trigger === "legato" && !legato) continue;
-    const counterKey = `${key}:${region.seqLength}`;
-    if (!positions.has(counterKey)) positions.set(counterKey, state.counters.get(counterKey) ?? 1);
     if (positions.get(counterKey) === region.seqPosition) candidates.push({ region, index: i });
   }
-  for (const [key, position] of positions) {
+  for (const [key, position] of off ? [] : positions) {
     const length = Number(key.slice(key.lastIndexOf(":") + 1));
     state.counters.set(key, position === length ? 1 : position + 1);
   }
@@ -40,7 +41,7 @@ export function selectSfzRegions(instrument: SfzInstrument, event: SfzEvent, sta
     }
   } else {
     state.heldKeys.add(event.midi);
-    heldNotes.push({ eventIndex: event.eventIndex, velocity, startFrame: event.startFrame });
+    heldNotes.push({ eventIndex: event.eventIndex, velocity, startFrame: event.startFrame, positions });
     held.set(event.midi, heldNotes);
   }
   const earlier = [...state.active];

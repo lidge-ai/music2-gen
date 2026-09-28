@@ -11,6 +11,7 @@ import { assertDistinct, commitNoReplace, commitReplace, stage } from "../files.
 import type { CommandSpec } from "../registry.ts";
 
 const invalid = (message: string): Music2Error => new Music2Error("E_INPUT", message);
+const MAX_INPUT_WAV_BYTES = 512 * 1024 * 1024;
 
 function numericFlag(value: unknown, flag: string, min: number, max: number, integer: boolean): number {
   if (value === undefined) throw invalid(`--${flag} requires a value`);
@@ -103,7 +104,14 @@ export const slice: CommandSpec = {
     const input = resolve(cwd, args[0]);
     const output = resolve(cwd, values["out"]);
     const parsed = options(values);
+    let inputBytes: number;
+    try { inputBytes = (await stat(input)).size; }
+    catch (cause) { throw new Music2Error("E_ACCESS", "cannot inspect slice input", { cause }); }
+    if (inputBytes > MAX_INPUT_WAV_BYTES)
+      throw new Music2Error("E_CAPABILITY", "slice WAV exceeds 512 MiB file limit");
     const source = await readWav(input);
+    if (source.left.byteLength + source.right.byteLength > MAX_INPUT_WAV_BYTES)
+      throw new Music2Error("E_CAPABILITY", "slice decoded PCM exceeds 512 MiB");
     if (source.left.length === 0) throw invalid("cannot slice empty audio");
     const slices = sliceTransients(source, parsed);
     const rate = source.sampleRate === 44100 || source.sampleRate === 48000 ? source.sampleRate : 44100;

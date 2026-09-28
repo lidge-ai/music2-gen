@@ -2,6 +2,7 @@ import type { StereoBuffer } from "../audio-io/buffer.schema.ts";
 import { validateStereo } from "../audio-io/buffer.tool.ts";
 import { Music2Error } from "../shared/index.ts";
 import { fft, hann } from "./fft.tool.ts";
+import { detectOnsets } from "./onsets.tool.ts";
 
 export interface StretchOptions {
   method?: "wsola" | "pv";
@@ -21,6 +22,14 @@ function warpPosition(output: number, anchors: readonly (readonly [number, numbe
   const [in0, out0] = anchors[segment]!;
   const [in1, out1] = anchors[segment + 1]!;
   return in0 + (output - out0) * (in1 - in0) / (out1 - out0);
+}
+
+function outputPosition(input: number, anchors: readonly (readonly [number, number])[]): number {
+  let segment = 0;
+  while (segment + 2 < anchors.length && input > anchors[segment + 1]![0]) segment++;
+  const [in0, out0] = anchors[segment]!;
+  const [in1, out1] = anchors[segment + 1]!;
+  return out0 + (input - in0) * (out1 - out0) / (in1 - in0);
 }
 
 function monoAt(src: StereoBuffer, index: number): number {
@@ -207,6 +216,26 @@ function vocoder(src: StereoBuffer, out: StereoBuffer, anchors: readonly (readon
   normalize(out, weights, sums);
 }
 
+/** Reset the waveform around attacks so overlap search and phase propagation cannot smear their timing. */
+function preserveTransients(src: StereoBuffer, out: StereoBuffer,
+  anchors: readonly (readonly [number, number])[]): void {
+  const radius = Math.round(src.sampleRate * 0.05);
+  const fade = Math.max(1, Math.round(src.sampleRate * 0.008));
+  const onsets = detectOnsets(src, { maxOnsets: Math.min(4096, Math.ceil(src.left.length / src.sampleRate * 20)) });
+  for (const onset of onsets) {
+    const center = Math.round(outputPosition(onset, anchors));
+    for (let offset = -radius; offset <= radius; offset++) {
+      const destination = center + offset;
+      const source = onset + offset;
+      if (destination < 0 || destination >= out.left.length) continue;
+      const edge = radius - Math.abs(offset);
+      const blend = Math.min(1, edge / fade);
+      out.left[destination] = out.left[destination]! * (1 - blend) + at(src, 0, source) * blend;
+      out.right[destination] = out.right[destination]! * (1 - blend) + at(src, 1, source) * blend;
+    }
+  }
+}
+
 /** alpha = output duration / input duration; values above one lengthen audio. */
 export function timeStretch(src: StereoBuffer, alpha: number, opts: StretchOptions = {}): StereoBuffer {
   validateStereo(src);
@@ -242,5 +271,6 @@ export function timeStretch(src: StereoBuffer, alpha: number, opts: StretchOptio
   }
   if (method === "wsola") wsola(src, out, anchors);
   else vocoder(src, out, anchors);
+  preserveTransients(src, out, anchors);
   return out;
 }

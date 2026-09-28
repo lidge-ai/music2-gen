@@ -34,7 +34,7 @@ export interface SfzVoice {
 }
 export interface SfzSelectionState {
   counters: Map<string, number>; heldKeys: Set<number>; active: SfzVoice[];
-  held?: Map<number, { eventIndex: number; velocity: number; startFrame: number }[]>;
+  held?: Map<number, { eventIndex: number; velocity: number; startFrame: number; positions: Map<string, number> }[]>;
 }
 export interface SfzSmpl { unityNote: number | null; pitchFraction: number; loop: { start: number; end: number } | null }
 export interface LoadedSfz {

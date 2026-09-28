@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, truncate, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { writeWav } from "../../audio-io/index.ts";
@@ -123,5 +123,15 @@ test("invalid flags and empty input fail with E_INPUT", async () => {
     await writeWav(empty, { sampleRate: 44100, left: new Float32Array(), right: new Float32Array(), sourceChannels: 2 },
       { bits: 16, seed: 1 });
     await assert.rejects(slice.run(context(empty, output)), { code: "E_INPUT" });
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("oversized input is rejected from stat before WAV decode", async () => {
+  const root = await mkdtemp(join(tmpdir(), "music2-slice-size-"));
+  try {
+    const input = join(root, "oversized.wav");
+    await writeFile(input, "not a WAV");
+    await truncate(input, 512 * 1024 * 1024 + 1);
+    await assert.rejects(slice.run(context(input, join(root, "out"))), { code: "E_CAPABILITY" });
   } finally { await rm(root, { recursive: true, force: true }); }
 });

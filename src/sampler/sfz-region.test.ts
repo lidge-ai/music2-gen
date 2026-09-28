@@ -42,6 +42,19 @@ test("round robin counts once for each key and sequence length", () => {
   assert.equal(run.counters.get("60:3"), 2);
 });
 
+test("release round robin reuses its own note-on position without advancing the sequence", () => {
+  const attacks = [1, 2, 3].map((seqPosition) => region({ seqLength: 3, seqPosition }));
+  const releases = [1, 2, 3].map((seqPosition) => region({ trigger: "release", seqLength: 3, seqPosition }));
+  const regions = [...attacks, ...releases];
+  const run = state();
+  for (let i = 0; i < 4; i++) {
+    assert.deepEqual(selectSfzRegions({ regions, warnings: [] }, event(i), run), [attacks[i % 3]]);
+    assert.deepEqual(selectSfzRegions({ regions, warnings: [] },
+      { ...event(i), velocity: 0, startFrame: i * 100 + 50 }, run), [releases[i % 3]]);
+  }
+  assert.equal(run.counters.get("60:3"), 2);
+});
+
 test("first, legato, release velocity, and group choke", () => {
   const regions = [region({ trigger: "first", offBy: 8 }), region({ trigger: "legato" }),
     region({ trigger: "release", group: 8, rtDecay: 20 })];

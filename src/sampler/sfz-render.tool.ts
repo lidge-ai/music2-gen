@@ -6,6 +6,8 @@ import { Music2Error, confinedRealpath, isMusic2Error } from "../shared/index.ts
 import { parseSfz } from "./sfz-parse.tool.ts";
 import { selectSfzRegions } from "./sfz-region.tool.ts";
 import { resample } from "./resample.tool.ts";
+import { createDecodeBudget } from "./decode-budget.tool.ts";
+import type { DecodeBudget } from "./decode-budget.tool.ts";
 import { SFZ_SOURCE_ORDER, sfzWarning } from "./sfz.schema.ts";
 import type { LoadedSfz, SfzEvent, SfzRegion, SfzSelectionState, SfzSmpl, SfzSource, SfzVoice, SfzWarning } from "./sfz.schema.ts";
 
@@ -86,7 +88,8 @@ async function decodedSize(path: string, display: string): Promise<number | null
 }
 
 /** Load one SFZ and its WAVs, with decode cache scoped to this invocation. */
-export async function loadSfz(songPath: string, ref: string, sampleRate: number): Promise<LoadedSfz> {
+export async function loadSfz(songPath: string, ref: string, sampleRate: number,
+  budget: DecodeBudget = createDecodeBudget()): Promise<LoadedSfz> {
   if (!Number.isInteger(sampleRate) || sampleRate < 8000 || sampleRate > 192000) {
     throw new Music2Error("E_INPUT", "invalid SFZ output rate");
   }
@@ -97,8 +100,7 @@ export async function loadSfz(songPath: string, ref: string, sampleRate: number)
   const warnings = [...instrument.warnings];
   const samples = new Map<string, StereoBuffer>();
   const smpl = new Map<string, SfzSmpl>();
-  const cache = new Map<string, { audio: StereoBuffer; meta: SfzSmpl }>();
-  let decodedBytes = 0;
+  const cache = new Map<string, SfzSmpl>();
   for (const region of instrument.regions) {
     const key = sampleKey(region);
     if (samples.has(key)) continue;
@@ -110,14 +112,8 @@ export async function loadSfz(songPath: string, ref: string, sampleRate: number)
       continue;
     }
     const path = await confinedRealpath(root, key);
-    let decoded = cache.get(path);
-    if (!decoded) {
-      const needed = await decodedSize(path, key);
-      if (needed !== null && decodedBytes + needed > MAX_PCM_BYTES) {
-        throw new Music2Error("E_CAPABILITY", "SFZ decoded PCM exceeds 512 MiB");
-      }
-      let audio: StereoBuffer;
-      try { audio = await readWav(path); }
+    const audio = await budget.load(path, () => decodedSize(path, key), async () => {
+      try { return await readWav(path); }
       catch (cause) {
         if (isMusic2Error(cause) && (cause.code === "E_INPUT" || cause.code === "E_ACCESS")) {
           throw new Music2Error(cause.code, cause.code === "E_INPUT" ? "invalid SFZ sample WAV" : "cannot read SFZ sample",
@@ -125,16 +121,17 @@ export async function loadSfz(songPath: string, ref: string, sampleRate: number)
         }
         throw cause;
       }
-      decodedBytes += audio.left.byteLength + audio.right.byteLength;
-      if (decodedBytes > MAX_PCM_BYTES) throw new Music2Error("E_CAPABILITY", "SFZ decoded PCM exceeds 512 MiB");
+    });
+    let meta = cache.get(path);
+    if (!meta) {
       let bytes: Buffer;
       try { bytes = await readFile(path); }
       catch (cause) { throw new Music2Error("E_ACCESS", "cannot read SFZ sample", { details: { file: key }, cause }); }
-      decoded = { audio, meta: smplMetadata(bytes, region.source, warnings) };
-      cache.set(path, decoded);
+      meta = smplMetadata(bytes, region.source, warnings);
+      cache.set(path, meta);
     }
-    samples.set(key, decoded.audio);
-    smpl.set(key, decoded.meta);
+    samples.set(key, audio);
+    smpl.set(key, meta);
   }
   for (const region of instrument.regions) {
     const key = sampleKey(region);
@@ -266,7 +263,9 @@ function renderVoice(output: StereoBuffer, voice: SfzVoice, region: SfzRegion, l
 }
 
 /** Render Timeline-ordered note on/off events into bounded stereo PCM. */
-export function renderSfz(events: readonly SfzEvent[], loaded: LoadedSfz, sampleRate: number, frames: number): StereoBuffer {
+export function renderSfz(events: readonly SfzEvent[], loaded: LoadedSfz, sampleRate: number, frames: number,
+  _budget: DecodeBudget = createDecodeBudget()): StereoBuffer {
+  void _budget;
   if (!Number.isInteger(sampleRate) || sampleRate < 8000 || sampleRate > 192000
     || !Number.isSafeInteger(frames) || frames < 0 || frames > 1 << 26) {
     throw new Music2Error("E_RENDER", "invalid SFZ render window");
