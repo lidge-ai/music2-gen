@@ -10,7 +10,7 @@ import { renderSong } from "../render/index.ts";
 import { loadSong } from "../song/index.ts";
 import { validateSong } from "../song/index.ts";
 import type { Song } from "../song/index.ts";
-import { analyzeAudio, analyzeFile } from "./analyze.tool.ts";
+import { analyzeAudio, analyzeFile, declaredTempoMatch } from "./analyze.tool.ts";
 
 const drill = resolve("examples/drill-140.song.json");
 function sine(seconds: number, hz = 1000, amplitude = .1): StereoBuffer {
@@ -246,4 +246,12 @@ test("song-backed loop WAV alignment uses the body frame count", async () => {
     await writeWav(wav, extra, { bits: 24, seed: 1 });
     await assert.rejects(analyzeFile(wav, { songPath: path, outDir: join(dir, "too-long") }), { code: "E_INPUT" });
   } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test("declared tempo match picks a near-tied candidate and never changes the audio estimate", () => {
+  const candidates = [{ bpm: 94.73, score: 1, relation: "primary" as const }, { bpm: 71.02, score: .999999, relation: "half" as const },
+    { bpm: 142.2, score: .968, relation: "three_halves" as const }, { bpm: 141.1, score: .5, relation: "primary" as const }];
+  assert.deepEqual(declaredTempoMatch(candidates, 142), candidates[2]);
+  assert.equal(declaredTempoMatch(candidates, null), null);
+  assert.equal(declaredTempoMatch(candidates.slice(0, 2), 142), null);
 });

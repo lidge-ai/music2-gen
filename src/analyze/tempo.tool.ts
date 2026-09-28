@@ -211,6 +211,15 @@ function beatsAndDownbeats(onset: Float64Array, low: Float64Array, bpm: number, 
 }
 
 /** Estimate pulse from PCM only; no song metadata enters this path. */
+/** Label an unrelated peak that sits at 2:3 or 3:2 of the chosen tempo (within 2%); other labels pass through. */
+export function relateToChosen(bpm: number, chosenBpm: number, relation: TempoCandidate["relation"]): TempoCandidate["relation"] {
+  if (relation !== "primary" || chosenBpm <= 0) return relation;
+  const ratio = bpm / chosenBpm;
+  if (Math.abs(ratio - 2 / 3) <= .02 * 2 / 3) return "two_thirds";
+  if (Math.abs(ratio - 1.5) <= .02 * 1.5) return "three_halves";
+  return relation;
+}
+
 export function estimateTempo(pcm: StereoBuffer, meterNumerator = 4): TempoEstimate {
   if (pcm.left.length === 0) return { ...NO_TEMPO };
   return estimateTempoFromEnvelopes(pcm, onsetEnvelopes(pcm), meterNumerator);
@@ -256,7 +265,8 @@ export function estimateTempoFromEnvelopes(pcm: StereoBuffer, envelopes: OnsetEn
   });
   candidateScores.sort((a, b) => b.selection - a.selection || a.bpm - b.bpm);
   const candidates: TempoCandidate[] = candidateScores.map(({ bpm, selection, relation }) =>
-    ({ bpm: Math.round(bpm * 100) / 100, score: Math.max(0, Math.min(1, selection)), relation }));
+    ({ bpm: Math.round(bpm * 100) / 100, score: Math.max(0, Math.min(1, selection)),
+      relation: bpm === chosen.bpm ? relation : relateToChosen(bpm, chosen.bpm, relation) }));
   const duration = pcm.left.length / pcm.sampleRate;
   const { beats, downbeats, phaseConfidence } = beatsAndDownbeats(onset, low, chosen.bpm, meterNumerator, duration);
   const runner = possible.filter((candidate) => Math.abs(candidate.bpm - chosen.bpm) > 2)

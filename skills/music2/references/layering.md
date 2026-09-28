@@ -35,7 +35,7 @@ Move the root to the `bass`/`808` track and move close chord tones up an octave:
 
 ### Keep a mids and presence pocket
 
-Give `lead` (or a future vocal) the phrase you want heard. Let `keys`, `pluck`, or `bell` answer in its rests, an octave away, or on a different rhythm; for example lead `c5 ~ ~ g5` and pluck `~ c4 ~ ~`. If both focal tracks repeatedly attack in the same eighth-note slots and register, change one pattern or transpose its line. `generic/register_collision` is an **I** timing/register proxy, not measured masking. [EDMProd: call and response by pitch/intensity/sound (V)](https://www.edmprod.com/using-call-and-response/), [iZotope: vocal/pad/synth masking (V)](https://www.izotope.com/en/learn/what-is-frequency-masking).
+Give `lead` (or a future vocal) the phrase you want heard. Let `keys`, `pluck`, or `bell` answer in its rests, an octave away, or on a different rhythm; for example lead `c5 ~ ~ g5` and pluck `~ c4 ~ ~`. If both focal tracks repeatedly attack on the same 16th-note steps in the same register, change one pattern or transpose its line. `generic/register_collision` is an **I** timing/register proxy, not measured masking. [EDMProd: call and response by pitch/intensity/sound (V)](https://www.edmprod.com/using-call-and-response/), [iZotope: vocal/pad/synth masking (V)](https://www.izotope.com/en/learn/what-is-frequency-masking).
 
 Center `808`/`bass` (`"pan":0`) and the kick. Pan higher support parts such as hats, keys, and bell for width when it helps the focal part. Music2's track pan moves the entire voice; `generic/low_pan` checks that control, not frequency-specific mono compatibility. [EDMProd: mono lows guidance (V)](https://www.edmprod.com/mono-vs-stereo/), [iZotope: mid/side low-frequency control (V)](https://www.izotope.com/community/blog/what-is-midside-processing), [iZotope: secondary parts to the sides (V)](https://www.izotope.com/en/learn/what-is-panning-in-music).
 
@@ -66,7 +66,7 @@ Each row is an **I music2 warning response**, grounded in the arrangement and fr
 | `generic/low_chord_spacing` | Raise the offending close note in the `keys`/`pad` pattern by an octave; leave the root on `bass`. Use the table's exact lower-note floor. |
 | `generic/low_pan` | Set the low track's `pan` to `0`; split a wide pad into a low centered part and higher side part if needed. The lint tolerance is `abs(pan)>0.1`. |
 | `generic/kick_bass_unducked` | In house/techno, put `duck` on bass/808 with `by` pointing to a `bd` track and `amount` at least 0.1, or move bass attacks away from kick hits. |
-| `generic/register_collision` | Change one lead/bell/pluck/keys `pattern` to answer in rests or transpose it by an octave. The warning compares focal register and shared eighth-note onsets. |
+| `generic/register_collision` | Change one lead/bell/pluck/keys `pattern` to answer in rests or transpose it by an octave. The warning compares focal register and shared 16th-note onsets, counting a chord once; moving one line an octave away or onto 16th steps the other leaves empty clears it. |
 | `generic/sub_floor` | Move pitched notes at MIDI ≤22 up an octave, or remove them from the pattern; inspect whether the intended sub still translates. |
 | `LOW_END_DOMINANCE` | Shorten or lower 808/bass, reduce its `gain`/velocity, or restore audible mid/high parts; rerender to check the selected genre guide. |
 | `LOW_MID_BUILDUP` | Revoice low keys/pad chords upward, shorten overlapping notes, or lower the contributing part's `gain`; remeasure `lowMid`. |

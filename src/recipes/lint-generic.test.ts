@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildTimeline, validateSong } from "../song/index.ts";
 import { createGeometry } from "./lint-geometry.tool.ts";
-import { genericRules } from "./lint-generic.tool.ts";
+import { CLIP_RISK_SUM, SLOW_ATTACK_MS, clippingRisk, genericRules } from "./lint-generic.tool.ts";
+import { VOICES } from "../render/index.ts";
 import type { Song } from "../song/index.ts";
 
 function check(genre: string, arrangement: { role: "verse" | "hook" | "groove" | "breakdown"; bars: number; layers: number }[],
@@ -20,6 +21,7 @@ function check(genre: string, arrangement: { role: "verse" | "hook" | "groove" |
 test("generic rules identify empty, chromatic, polyphonic and high onset sum", () => {
   const song = validateSong({ version: 1, bpm: 120, key: "C minor", tracks: [
     { id: "drums", kind: "drums", instrument: "drums", pattern: "bd" },
+    { id: "clap", kind: "drums", instrument: "drums", pattern: "cp" },
     { id: "bass", kind: "notes", instrument: "808", mono: false, pattern: "[c2,e2]" },
     { id: "empty", kind: "notes", instrument: "bass", pattern: "~" }],
     sections: [{ id: "groove", bars: 1, role: "groove" }], arrangement: [{ section: "groove" }] });
@@ -66,4 +68,39 @@ test("density compares onset-bearing occurrence track counts at exact limits", (
   }
   assert.equal(check("trap", [{ role: "verse", bars: 1, layers: 4 }]).has("generic/no_density_contrast"), false);
   assert.equal(check("lofi_hiphop", [{ role: "verse", bars: 1, layers: 4 }, { role: "hook", bars: 1, layers: 4 }]).has("generic/no_density_contrast"), false);
+});
+
+const risk = (tracks: Song["tracks"]): number => {
+  const song = validateSong({ version: 1, bpm: 142, tracks, sections: [{ id: "hook", bars: 1, role: "hook" }], arrangement: [{ section: "hook" }] });
+  return clippingRisk(createGeometry(song, buildTimeline(song)));
+};
+
+test("a default kick and 808 downbeat stays under the clipping threshold (issue #1 repro 3)", () => {
+  const value = risk([{ id: "kick", kind: "drums", instrument: "drums", pattern: "bd ~ ~ ~" },
+    { id: "sub", kind: "notes", instrument: "808", pattern: "g1 ~ ~ ~" }]);
+  assert.ok(Math.abs(value - 1.6) < .01, String(value));
+  assert.ok(value <= CLIP_RISK_SUM);
+});
+
+test("three separate drum hits plus an 808 on one step still exceed the threshold", () => {
+  const value = risk([{ id: "kick", kind: "drums", instrument: "drums", velocity: 1, pattern: "bd" },
+    { id: "clap", kind: "drums", instrument: "drums", velocity: 1, pattern: "cp" },
+    { id: "hat", kind: "drums", instrument: "drums", velocity: 1, pattern: "hh" },
+    { id: "sub", kind: "notes", instrument: "808", velocity: 1, pattern: "g1" }]);
+  assert.ok(value > CLIP_RISK_SUM, String(value));
+});
+
+test("chord tones add as sqrt(n) and slow attacks are weighted down", () => {
+  const chord = risk([{ id: "keys", kind: "notes", instrument: "keys", velocity: 1, mono: false, pattern: "[c4,e4,g4]" }]);
+  assert.ok(Math.abs(chord - Math.sqrt(3)) < 1e-9, String(chord));
+  const strings = risk([{ id: "strings", kind: "notes", instrument: "strings", velocity: 1, mono: false, pattern: "[c4,e4,g4]" }]);
+  assert.ok(Math.abs(strings - Math.sqrt(3) * 10 / 300) < 1e-9, String(strings));
+  const library = risk([{ id: "bed", kind: "notes", instrument: "lib:strings", velocity: 1, pattern: "c4" }]);
+  assert.ok(Math.abs(library - 10 / 250) < 1e-9, String(library));
+  const fastPad = risk([{ id: "pad", kind: "notes", instrument: "pad", velocity: 1, params: { attackMs: 10 }, pattern: "c4" }]);
+  assert.ok(Math.abs(fastPad - 1) < 1e-9, String(fastPad));
+});
+
+test("slow-attack table matches the render voice defaults", () => {
+  for (const [id, attack] of Object.entries(SLOW_ATTACK_MS)) assert.equal(VOICES[id]?.params["attackMs"]?.default, attack, id);
 });

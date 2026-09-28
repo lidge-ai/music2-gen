@@ -1,14 +1,12 @@
 import { active, barsOf, densityChange, mean, motif, signature } from "./lint-geometry.tool.ts";
 import type { LintGeometry } from "./lint-geometry.tool.ts";
 
-export function melodyId(g: LintGeometry): string | null {
-  return g.song.tracks.find((track) => track.kind === "notes" && track.instrument !== "808" && track.id !== "bass")?.id ?? null;
-}
 export function bassId(g: LintGeometry): string | null {
   return g.song.tracks.find((track) => track.kind === "notes" && (track.instrument === "bass" || track.instrument === "808"))?.id ?? null;
 }
-export function motifIn(g: LintGeometry, bars: number[], sizes: number[], track: string | null): boolean {
-  return track !== null && sizes.some((size) => motif(g, bars, size, track));
+/** True when any listed track repeats a motif of one of the sizes. */
+export function motifIn(g: LintGeometry, bars: number[], sizes: number[], tracks: readonly string[]): boolean {
+  return tracks.some((track) => sizes.some((size) => motif(g, bars, size, track)));
 }
 export function phraseChange(g: LintGeometry, bars: number[], size: number, track: string | null): boolean {
   if (track === null || bars.length < size * 2) return false;
@@ -29,8 +27,11 @@ export function muteChange(g: LintGeometry): boolean {
       }));
   });
 }
-export function sectionMotifChange(g: LintGeometry, track: string | null): boolean {
-  if (track === null) return false;
+/** True when any listed track changes its first-bar signature between adjacent placements. */
+export function sectionMotifChange(g: LintGeometry, tracks: readonly string[]): boolean {
+  return tracks.some((track) => sectionMotifChangeFor(g, track));
+}
+function sectionMotifChangeFor(g: LintGeometry, track: string): boolean {
   for (let i = 1; i < g.placements.length; i++) {
     const previous = g.placements[i - 1]!, current = g.placements[i]!;
     if (signature(g, previous.startBar, track) !== signature(g, current.startBar, track)) return true;

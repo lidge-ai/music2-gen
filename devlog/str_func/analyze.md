@@ -113,7 +113,10 @@ drawing, and colormap are internal to this feature.
 | Type | Source | Shape and use |
 |---|---|---|
 | `ComplexSpectrum` | `analysis.schema.ts` | Real and imaginary `Float64Array` outputs. |
-| `TempoCandidate`, `TempoEstimate` | `analysis.schema.ts` | BPM, score, relation, confidence, beats, downbeats. |
+| `TempoCandidate`, `TempoEstimate` | `analysis.schema.ts` | BPM, score, relation (`primary`, `half`, `double`, `two_thirds`, `three_halves`), confidence, beats, downbeats. |
+| `export function relateToChosen(bpm, chosenBpm, relation)` | `tempo.tool.ts` | Label unrelated peaks at 2:3 or 3:2 of the chosen tempo. |
+| `export function declaredTempoMatch(candidates, declared)` | `analyze.tool.ts` | Best candidate within 1.5 BPM of the declared tempo with score ≥ 0.9 (`tempoDeclaredMatch`). |
+| `export function bpmHeadline(analysis)` | `overview/panels.top.tool.ts` | Overview BPM text; prefers the declared match and names the audio relation. |
 | `KeyCandidate`, `KeyEstimate` | `analysis.schema.ts` | Key scores, nullable winner, confidence, twelve-bin chroma. |
 | `BandValue`, `BandMetrics` | `analysis.schema.ts` | Named frequency interval, energy share, relative dB. |
 | `BeatSection`, `BeatMap` | `analysis.schema.ts` | Versioned beat/downbeat times, meter, source, sections. |
@@ -171,7 +174,7 @@ drawing, and colormap are internal to this feature.
   hops. It builds onset, hat, and low-frequency envelopes, scores BPM lags in
   50..220, and evaluates phase and half/double-time relationships.
 - `analyzeAudio` computes those envelopes once and passes them to both tempo ranking and flow onset counting. Flow uses exact declared bars, reliable measured beats, or 0.5 s WAV frames; song render tail is excluded.
-- Tempo results include candidate relations (`primary`, `half`, `double`),
+- Tempo results include candidate relations (`primary`, `half`, `double`, and `two_thirds`/`three_halves` relative to the chosen tempo),
   beat/downbeat times, and confidence. No reliable rhythm yields null BPM,
   zero confidence, and empty timing arrays.
 - `estimateKey` uses 8192-point frames with 2048-frame hops over tonal

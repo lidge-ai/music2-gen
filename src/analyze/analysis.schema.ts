@@ -9,7 +9,8 @@ export const BEATS_VERSION = 1;
 export const BAND_EDGES_HZ = [20, 60, 250, 500, 2000, 8000, 20000] as const;
 
 export interface ComplexSpectrum { real: Float64Array; imag: Float64Array }
-export interface TempoCandidate { bpm: number; score: number; relation: "primary" | "half" | "double" }
+/** half/double are relative to the peak they were derived from; two_thirds/three_halves are relative to the chosen tempo. */
+export interface TempoCandidate { bpm: number; score: number; relation: "primary" | "half" | "double" | "two_thirds" | "three_halves" }
 export interface TempoEstimate {
   bpm: number | null; confidence: number; candidates: TempoCandidate[];
   beatsSeconds: number[]; downbeatsSeconds: number[];
@@ -56,6 +57,8 @@ export interface AnalysisJson {
   truePeakEstimateDbtp: number | null; truePeakOversample: 4;
   declaredBpm: number | null; estimatedBpm: number | null;
   tempoConfidence: number; tempoCandidates: TempoCandidate[];
+  /** Best candidate within 1.5 BPM of the declared tempo with score >= 0.9; null without a song or a match. */
+  tempoDeclaredMatch: TempoCandidate | null;
   declaredKey: string | null; estimatedKey: string | null;
   keyConfidence: number; keyCandidates: KeyCandidate[]; chroma: number[];
   bands: BandValue[]; flow: FlowAnalysis; sections: SectionMetrics[]; tracks: TrackDensity[];

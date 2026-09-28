@@ -28,6 +28,8 @@ src/recipes/
 ├── lint-rules.test.ts          # genre rule vectors
 ├── lint-rules-dance.tool.ts    # house and techno rules
 ├── lint-rules-dance.test.ts    # dance rule vectors
+├── lint-roles.tool.ts          # focal, bed and bass voice roles; melody track selection
+├── lint-roles.test.ts          # role and order-independence vectors
 ├── lint-rules-phrase.tool.ts   # motif, density, and section helpers
 ├── lint-rules-phrase.test.ts   # phrase helper vectors
 └── cards/
@@ -150,26 +152,26 @@ and generic findings are warnings unless noted otherwise.
 | `generic/unknown_genre` | Declared genre must match a recipe ID when no override is supplied. |
 | `generic/out_of_key` | Every pitched onset must fit the declared major/minor scale. |
 | `generic/808_polyphony` | 808 tracks need `mono=true`; overlapping or simultaneous conflicting 808 pitches warn. |
-| `generic/clipping_risk` | Maximum coincident onset sum, `Σ velocity × 10^(gain/20)`, must be ≤1.5. |
+| `generic/clipping_risk` | Maximum coincident onset sum must be ≤2 (`CLIP_RISK_SUM`). Per track: drums add every hit; a notes track adds max velocity × √(chord size); each is × 10^(gain/20) × min(1, 10 ms / attack), with `SLOW_ATTACK_MS` (strings 300, pad 400, choir 300), 250 ms for `lib:` beds and `params.attackMs` overriding. |
 | `generic/low_end_overlap` | In one placement, two distinct audible pitched tracks at MIDI ≤46 overlap for ≥25% of its duration; gain must exceed −24 dB. Mono notes stop at the next same-track onset. |
 | `generic/low_chord_spacing` | Simultaneous same-track 1–11 semitone chord pairs below the interval-specific lower-MIDI floor (52, 51, 48, 46, 46, 47, 34, 43, 41, 41, 41); bass/808 excluded. |
 | `generic/low_pan` | Bass/808, or a pitched track with ≥25% MIDI ≤46 notes, has `abs(pan)>0.1`. |
 | `generic/kick_bass_unducked` | In house/techno, ≥50% of actual `bd` onsets coincide with a bass/808 note sounding or attacking within ±30 ms, without duck by a `bd` source of amount ≥0.1. A mixed drum source ducks on every event. |
-| `generic/register_collision` | Two focal tracks (lead/bell/pluck/keys/piano/epiano/guitar/flute/brass/marimba/vibraphone/glockenspiel/kalimba) in a ≥2-bar placement have median MIDI distance ≤7 and ≥75% shared eighth-note onset slots on the sparser track. Strings, choir, and organ remain bed voices outside this check. |
+| `generic/register_collision` | Two focal tracks (lead/bell/pluck/keys/piano/epiano/guitar/flute/brass/marimba/vibraphone/glockenspiel/kalimba) in a ≥2-bar placement have median MIDI distance ≤7 and ≥75% of the sparser track's unique 16th-note onsets shared (a chord counts once). Strings, choir, and organ remain bed voices outside this check. |
 | `generic/sub_floor` | A pitched note at MIDI ≤22 occurs. |
 | `drill_uk/1` | BPM must be 138..146. |
 | `drill_uk/2` | At least 75% of full bars need a snare/clap on step 9, or step 13 without a step-5 backbeat (the alternate-bar moving snare). |
 | `drill_uk/3` | At least 75% of full bars need a kick. |
 | `drill_uk/4` | Short hat events in full bars must number at least `ceil(full bars / 2)`. |
 | `drill_uk/5` | A monophonic 808 track must exist. |
-| `drill_uk/6` | 808 pitch transitions in full bars must number at least `ceil(full bars / 8)`. |
+| `drill_uk/6` | 808 pitch transitions inside each contiguous run of full bars must total at least `ceil(full bars / 8)`. |
 | `drill_uk/7` | Selected non-bass notes must fit the declared key. |
 | `drill_ny/1` | BPM must be 138..145. |
 | `drill_ny/2` | At least 75% of full bars need a step-9 snare/clap. |
 | `drill_ny/3` | Every hook placement needs at least one kick and one 808 onset. |
 | `drill_ny/4` | A monophonic 808 track must exist. |
-| `drill_ny/5` | Hook 808 pitch transitions must number at least `ceil(hook bars / 8)`. |
-| `drill_ny/6` | Every hook of at least two bars needs a repeated one-bar melody motif. |
+| `drill_ny/5` | 808 pitch transitions counted inside each hook placement must total at least `ceil(hook bars / 8)`; a jump between hooks does not count. |
+| `drill_ny/6` | Every hook of at least two bars needs a repeated one-bar motif on any melody track (`melodyTrackIds`). |
 | `drill_ny/7` | Every hook/verse of at least 16 bars needs an 8-bar density or pattern change. |
 | `trap/1` | BPM must be 130..170. |
 | `trap/2` | At least 75% of full bars need a step-9 snare/clap. |
@@ -190,7 +192,7 @@ and generic findings are warnings unless noted otherwise.
 | `lofi_hiphop/3` | Song swing must exceed 0.5 and a hat/percussion track must enable swing. |
 | `lofi_hiphop/4` | If comparable blocks exist, repeat a 2-, 4-, or 8-bar melody motif. |
 | `lofi_hiphop/5` | At most 50% of full bars may contain a 32nd-note hat onset. |
-| `lofi_hiphop/6` | Static onset sum must be ≤1.5; mirrors generic clipping risk. |
+| `lofi_hiphop/6` | Static onset sum must be ≤2; mirrors generic clipping risk. |
 | `house/1` | BPM must be 120..130. |
 | `house/2` | At least 90% of groove bars need kicks on steps 1/5/9/13. |
 | `house/3` | At least 75% of groove bars need snares/claps on steps 5/13. |
@@ -203,7 +205,7 @@ and generic findings are warnings unless noted otherwise.
 | `techno/3` | If comparable blocks exist, repeat a 1- or 2-bar bass/percussion motif. |
 | `techno/4` | Comparable build/groove 8- or 16-bar windows need a track-set or median-layer change. |
 | `techno/5` | Every breakdown mean must be below the first groove mean. |
-| `techno/6` | Static onset sum must be ≤1.5; mirrors generic clipping risk. |
+| `techno/6` | Static onset sum must be ≤2; mirrors generic clipping risk. |
 
 `lintSong` sorts errors first, then ID and path. Unknown `--genre` values
 raise `E_NOT_FOUND`; an unknown declared genre gets the generic warning.

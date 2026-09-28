@@ -4,7 +4,7 @@ import type { AnalysisJson } from "../analysis.schema.ts";
 import type { FlowRenderData } from "../flow/flow.schema.ts";
 import { createCanvas } from "./canvas.tool.ts";
 import { C } from "./panels.shared.tool.ts";
-import { drawHeader, drawVerdicts } from "./panels.top.tool.ts";
+import { bpmHeadline, drawHeader, drawVerdicts } from "./panels.top.tool.ts";
 
 test("header and three verdict slots stay in their fixed bands", () => {
   const canvas = createCanvas(1600, 1400, C.background);
@@ -18,4 +18,12 @@ test("header and three verdict slots stay in their fixed bands", () => {
   assert.deepEqual(pixel(24, 109), C.primary); // N of NO FLAGS
   assert.deepEqual(pixel(539, 120), C.grid); // verdict separator
   assert.deepEqual(pixel(1000, 170), C.background);
+});
+
+test("BPM headline prefers the declared match and names the audio relation", () => {
+  const base = { estimatedBpm: 94.73, declaredBpm: 142, tempoDeclaredMatch: { bpm: 142.2, score: .968, relation: "three_halves" } } as AnalysisJson;
+  assert.equal(bpmHeadline(base), "BPM 142 (DECLARED 142, AUDIO TOP 95 2:3)");
+  assert.equal(bpmHeadline({ ...base, tempoDeclaredMatch: null }), "BPM 95 (DECLARED 142)");
+  assert.equal(bpmHeadline({ estimatedBpm: 94.73, declaredBpm: 142 } as AnalysisJson), "BPM 95 (DECLARED 142)");
+  assert.equal(bpmHeadline({ ...base, estimatedBpm: 142.1 }), "BPM 142 (DECLARED 142)");
 });

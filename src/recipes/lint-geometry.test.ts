@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildTimeline, validateSong } from "../song/index.ts";
-import { at, createGeometry, fourKick, isBackbeat, isHat, isKick, snare9 } from "./lint-geometry.tool.ts";
+import { at, contiguousRuns, createGeometry, fourKick, isBackbeat, isHat, isKick, snare9, transitions } from "./lint-geometry.tool.ts";
 
 test("geometry uses unswung cycle positions and excludes a muted intro", () => {
   const song = validateSong({ version: 1, bpm: 140, swing: .65,
@@ -54,4 +54,22 @@ test("list drum activity follows events in each repeated placement", () => {
     ], sections: [{ id: "hook", bars: 2, role: "hook" }], arrangement: [{ section: "hook", repeats: 3 }] });
   const geometry = createGeometry(song, buildTimeline(song));
   assert.deepEqual(geometry.full, [2, 3]);
+});
+
+test("contiguous runs split bar indexes at gaps", () => {
+  assert.deepEqual(contiguousRuns([5, 0, 4, 1]), [[0, 1], [4, 5]]);
+  assert.deepEqual(contiguousRuns([]), []);
+});
+
+test("808 transitions reset between non-adjacent full-drum runs", () => {
+  const drums = { id: "drums", kind: "drums" as const, instrument: "drums", pattern: "bd ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~" };
+  const song = validateSong({ version: 1, bpm: 140, tracks: [drums,
+    { id: "sub", kind: "notes", instrument: "808", mono: true, pattern: "g1 ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~" }],
+    sections: [{ id: "a", bars: 2, role: "hook" }, { id: "gap", bars: 2, role: "intro", patterns: { drums: null } },
+      { id: "b", bars: 2, role: "hook", patterns: { sub: "c2 ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~" } }],
+    arrangement: [{ section: "a" }, { section: "gap" }, { section: "b" }] });
+  const g = createGeometry(song, buildTimeline(song));
+  assert.deepEqual(contiguousRuns(g.full), [[0, 1], [4, 5]]);
+  assert.equal(transitions(g, contiguousRuns(g.full)), 0);
+  assert.equal(transitions(g, [g.full]), 1);
 });

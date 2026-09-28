@@ -3,7 +3,7 @@ import { test } from "node:test";
 import type { StereoBuffer } from "../audio-io/buffer.schema.ts";
 import { renderSong } from "../render/index.ts";
 import { loadSong } from "../song/index.ts";
-import { estimateTempo, estimateTempoFromEnvelopes, onsetEnvelopes } from "./tempo.tool.ts";
+import { estimateTempo, estimateTempoFromEnvelopes, onsetEnvelopes, relateToChosen } from "./tempo.tool.ts";
 
 function mulberry32(seed: number): () => number {
   let state = seed;
@@ -133,4 +133,11 @@ test("drill tempo is stable when the whole mix level moves (texture floor regres
     const bpm = estimateTempo(audio).bpm;
     assert.ok(bpm !== null && bpm >= 138 && bpm <= 142, `gain ${delta}: ${String(bpm)}`);
   }
+});
+
+test("unrelated peaks at 2:3 and 3:2 of the chosen tempo are labelled", () => {
+  assert.equal(relateToChosen(94.7, 142, "primary"), "two_thirds");
+  assert.equal(relateToChosen(213, 142, "primary"), "three_halves");
+  assert.equal(relateToChosen(120, 142, "primary"), "primary");
+  assert.equal(relateToChosen(71, 142, "half"), "half");
 });

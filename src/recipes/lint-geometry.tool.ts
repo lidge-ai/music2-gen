@@ -126,12 +126,25 @@ export function motif(g: LintGeometry, bars: number[], size: number, track: stri
   }
   return false;
 }
-export function transitions(g: LintGeometry, bars: number[]): number {
-  const allowed = new Set(bars);
-  const notes = g.timeline.events.filter((e) => allowed.has(e.bar) && is808(g, e) && e.midi !== null);
+/** Count 808 pitch changes inside each bar group; a jump from one group to the next is not a transition. */
+export function transitions(g: LintGeometry, groups: readonly (readonly number[])[]): number {
   let count = 0;
-  for (let i = 1; i < notes.length; i++) if (notes[i - 1]!.midi !== notes[i]!.midi) count++;
+  for (const bars of groups) {
+    const allowed = new Set(bars);
+    const notes = g.timeline.events.filter((e) => allowed.has(e.bar) && is808(g, e) && e.midi !== null);
+    for (let i = 1; i < notes.length; i++) if (notes[i - 1]!.midi !== notes[i]!.midi) count++;
+  }
   return count;
+}
+/** Split bar indexes into runs of consecutive bars, in ascending order. */
+export function contiguousRuns(bars: readonly number[]): number[][] {
+  const runs: number[][] = [];
+  for (const bar of [...bars].sort((a, b) => a - b)) {
+    const run = runs.at(-1);
+    if (run && bar === run.at(-1)! + 1) run.push(bar);
+    else runs.push([bar]);
+  }
+  return runs;
 }
 export function createGeometry(song: ResolvedSong, timeline: Timeline, genre: string | null = song.genre): LintGeometry {
   const events = new Map<number, TimedEvent[]>();

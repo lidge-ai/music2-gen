@@ -7,7 +7,7 @@ import { Music2Error } from "../shared/index.ts";
 import { buildTimeline, loadSong } from "../song/index.ts";
 import type { ResolvedSong, Timeline } from "../song/index.ts";
 import { ANALYSIS_VERSION } from "./analysis.schema.ts";
-import type { AnalysisArtifacts, AnalysisJson, AnalysisResult, AnalysisWarning, SectionMetrics, TrackDensity } from "./analysis.schema.ts";
+import type { AnalysisArtifacts, AnalysisJson, AnalysisResult, AnalysisWarning, SectionMetrics, TempoCandidate, TrackDensity } from "./analysis.schema.ts";
 import { balanceWarnings } from "./balance-warnings.tool.ts";
 import { measureBands } from "./bands.tool.ts";
 import { makeBeatMap } from "./beats.tool.ts";
@@ -147,6 +147,15 @@ function songWarnings(song: ResolvedSong, flow: AnalysisJson["flow"], pcm: Stere
   return result;
 }
 
+export const DECLARED_MATCH_BPM = 1.5;
+export const DECLARED_MATCH_SCORE = .9;
+/** Best audio candidate that agrees with the declared tempo; the estimate itself stays audio-only. */
+export function declaredTempoMatch(candidates: readonly TempoCandidate[], declared: number | null): TempoCandidate | null {
+  if (declared === null) return null;
+  return candidates.filter((c) => Math.abs(c.bpm - declared) <= DECLARED_MATCH_BPM && c.score >= DECLARED_MATCH_SCORE)
+    .sort((a, b) => b.score - a.score || a.bpm - b.bpm)[0] ?? null;
+}
+
 /** Analyze finite PCM; song metadata never enters the audio estimators. */
 export function analyzeAudio(pcm: StereoBuffer, opts: { song?: ResolvedSong; timeline?: Timeline; targetLufs?: number; source?: "wav" | "song" } = {}): AnalysisResult {
   validatePcm(pcm);
@@ -182,6 +191,7 @@ export function analyzeAudio(pcm: StereoBuffer, opts: { song?: ResolvedSong; tim
     truePeakOversample: loudness.truePeakOversample,
     declaredBpm: opts.song?.bpm ?? null, estimatedBpm: tempo.bpm,
     tempoConfidence: tempo.confidence, tempoCandidates: tempo.candidates,
+    tempoDeclaredMatch: declaredTempoMatch(tempo.candidates, opts.song?.bpm ?? null),
     declaredKey: opts.song?.key ?? null, estimatedKey: key.key, keyConfidence: key.confidence,
     keyCandidates: key.candidates, chroma: key.chroma, bands: bands.bands, flow: flow.analysis,
     sections, tracks, targetLufs, warnings: warningRows,

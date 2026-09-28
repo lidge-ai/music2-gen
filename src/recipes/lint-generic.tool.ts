@@ -1,11 +1,19 @@
-import type { TimedEvent } from "../song/index.ts";
+import type { ResolvedTrack, TimedEvent } from "../song/index.ts";
 import { GRID_TOLERANCE, is808, phase } from "./lint-geometry.tool.ts";
 import type { LintGeometry } from "./lint-geometry.tool.ts";
 import type { LintResult } from "./lint.tool.ts";
 import type { Placement } from "../song/index.ts";
 import { mean } from "./lint-geometry.tool.ts";
+import { isBedInstrument } from "./lint-roles.tool.ts";
 
-const CLIP_RISK_SUM = 1.5;
+/** Static onset-sum ceiling: a default kick + 808 downbeat (1.6) passes; three unity hits + an 808 fail. */
+export const CLIP_RISK_SUM = 2;
+/** An onset shorter than this reaches full level at once; slower attacks are weighted down proportionally. */
+const ONSET_MS = 10;
+/** Default attack of the slow synth voices (kept equal to their render specs by a parity test). */
+export const SLOW_ATTACK_MS: Readonly<Record<string, number>> = { strings: 300, pad: 400, choir: 300 };
+/** Heuristic attack for bundled bed samples, whose attack is part of the recording. */
+const LIBRARY_BED_ATTACK_MS = 250;
 const ROOTS: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 export function outsideKey(g: LintGeometry, select: (event: TimedEvent) => boolean): TimedEvent[] {
   if (!g.song.key) return [];
@@ -34,14 +42,36 @@ export function polyphonic808(g: LintGeometry): string[] {
   }
   return [...new Set(failures)];
 }
+function onsetWeight(track: ResolvedTrack): number {
+  const attack = track.params["attackMs"] ?? SLOW_ATTACK_MS[track.instrument] ??
+    (track.instrument.startsWith("lib:") && isBedInstrument(track.instrument) ? LIBRARY_BED_ATTACK_MS : 0);
+  return attack > ONSET_MS ? ONSET_MS / attack : 1;
+}
+/**
+ * Largest static sum of simultaneous onsets. Chord tones on one notes track add as uncorrelated sources (sqrt of
+ * the count at the loudest velocity); drum hits are transients and add fully; slow attacks are weighted down.
+ */
 export function clippingRisk(g: LintGeometry): number {
   let maximum = 0;
   for (const events of g.events.values()) {
-    const ordered = [...events].sort((a, b) => phase(a) - phase(b));
-    for (const event of ordered) {
+    for (const event of events) {
       const position = phase(event);
-      const sum = ordered.filter((other) => Math.abs(phase(other) - position) <= GRID_TOLERANCE)
-        .reduce((total, other) => total + other.velocity * 10 ** ((g.song.tracks[other.trackIndex]?.gain ?? 0) / 20), 0);
+      const byTrack = new Map<number, { velocity: number; total: number; count: number }>();
+      for (const other of events) {
+        if (Math.abs(phase(other) - position) > GRID_TOLERANCE) continue;
+        const entry = byTrack.get(other.trackIndex) ?? { velocity: 0, total: 0, count: 0 };
+        entry.velocity = Math.max(entry.velocity, other.velocity);
+        entry.total += other.velocity;
+        entry.count++;
+        byTrack.set(other.trackIndex, entry);
+      }
+      let sum = 0;
+      for (const [index, entry] of byTrack) {
+        const track = g.song.tracks[index];
+        if (!track) continue;
+        const level = track.kind === "notes" ? entry.velocity * Math.sqrt(entry.count) : entry.total;
+        sum += level * 10 ** (track.gain / 20) * onsetWeight(track);
+      }
       maximum = Math.max(maximum, sum);
     }
   }

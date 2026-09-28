@@ -3,6 +3,20 @@ import { fillRect, line, text } from "./canvas.tool.ts";
 import type { RgbCanvas } from "./canvas.tool.ts";
 import { C, RAIL_LEFT, RAIL_RIGHT, RAIL_ROW, TIME_LEFT, TIME_RIGHT, boundedText, clock, duration, heading, number, outlinedRect, separator, timeX } from "./panels.shared.tool.ts";
 import type { OverviewInput } from "./panels.shared.tool.ts";
+import type { AnalysisJson } from "../analysis.schema.ts";
+
+const RATIO_LABELS: readonly [number, string][] = [[2 / 3, "2:3"], [.5, "1:2"], [2, "2:1"], [1.5, "3:2"]];
+/** Headline BPM: prefer an audio candidate that matches the declared tempo, and name how the top estimate relates. */
+export function bpmHeadline(analysis: AnalysisJson): string {
+  const estimated = analysis.estimatedBpm, declared = analysis.declaredBpm, match = analysis.tempoDeclaredMatch;
+  const declaredText = declared === null ? "" : ` (DECLARED ${number(declared, 0)})`;
+  if (match != null && estimated !== null && declared !== null && Math.abs(estimated - declared) > 1.5) {
+    const ratio = estimated / match.bpm;
+    const label = RATIO_LABELS.find(([value]) => Math.abs(ratio - value) <= .02 * value)?.[1];
+    return `BPM ${number(match.bpm, 0)} (DECLARED ${number(declared, 0)}, AUDIO TOP ${number(estimated, 0)}${label ? ` ${label}` : ""})`;
+  }
+  return `BPM ${estimated === null ? "N/A" : number(estimated, 0)}${declaredText}`;
+}
 
 export function drawHeader(canvas: RgbCanvas, input: OverviewInput): void {
   const title = input.song?.title ?? "AUDIO ANALYSIS";
@@ -11,9 +25,7 @@ export function drawHeader(canvas: RgbCanvas, input: OverviewInput): void {
   const infoY = lines.length > 1 ? 52 : 35;
   const meter = input.song ? `${input.song.meter.numerator}/4` : input.flow.analysis.axisKind.toUpperCase();
   text(canvas, 24, infoY, `DURATION ${clock(duration(input))} | ${meter}`, C.secondary, 3);
-  const bpm = input.analysis.estimatedBpm === null ? "N/A" : number(input.analysis.estimatedBpm, 0);
-  const declared = input.analysis.declaredBpm === null ? "" : ` (DECLARED ${number(input.analysis.declaredBpm, 0)})`;
-  const summary = `BPM ${bpm}${declared} | ${input.analysis.declaredKey ?? input.analysis.estimatedKey ?? "N/A"} | ${number(input.analysis.integratedLufs)} LUFS | TP ${number(input.analysis.truePeakEstimateDbtp)} DBTP`;
+  const summary = `${bpmHeadline(input.analysis)} | ${input.analysis.declaredKey ?? input.analysis.estimatedKey ?? "N/A"} | ${number(input.analysis.integratedLufs)} LUFS | TP ${number(input.analysis.truePeakEstimateDbtp)} DBTP`;
   boundedText(canvas, 24, infoY + 24, summary, 1540, C.primary);
   separator(canvas, 99);
 }

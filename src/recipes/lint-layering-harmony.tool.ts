@@ -2,15 +2,11 @@ import { median, pitchedIntervals, placementOrdinalByBar, placementSpan } from "
 import type { LintGeometry, PitchedInterval } from "./lint-geometry.tool.ts";
 import type { LintResult } from "./lint.tool.ts";
 import type { Placement, TimedEvent } from "../song/index.ts";
-import { libraryInstrument } from "../sampler/index.ts";
+import { isFocalInstrument as focal } from "./lint-roles.tool.ts";
 
 const LOW_INTERVAL_FLOORS = [0, 52, 51, 48, 46, 46, 47, 34, 43, 41, 41, 41];
-const FOCAL = new Set(["lead", "bell", "pluck", "keys", "piano", "epiano", "guitar", "flute",
-  "brass", "marimba", "vibraphone", "glockenspiel", "kalimba"]);
 const REGISTER_DISTANCE = 7;
 const SLOT_SHARE = 0.75;
-const focal = (instrument: string): boolean => instrument.startsWith("lib:")
-  ? libraryInstrument(instrument.slice(4)).role === "focal" : FOCAL.has(instrument);
 
 function warning(id: string, path: string, observed: string, expected: string, fix: string): LintResult {
   return { id: `generic/${id}`, severity: "warning", path, observed, expected, fix };
@@ -49,8 +45,8 @@ function chordSpacing(g: LintGeometry, intervals: PitchedInterval[]): LintResult
 }
 function slot(g: LintGeometry, placement: Placement, event: TimedEvent): number {
   const { start } = placementSpan(g, placement);
-  const eighth = 30 / g.song.bpm;
-  return Math.round((event.time - start) / eighth);
+  const sixteenth = 15 / g.song.bpm;
+  return Math.round((event.time - start) / sixteenth);
 }
 function registerCollision(g: LintGeometry): LintResult[] {
   const out: LintResult[] = [];
@@ -65,16 +61,17 @@ function registerCollision(g: LintGeometry): LintResult[] {
       const a = candidates[i]!, b = candidates[j]!;
       const distance = Math.abs(median(a.notes.map((note) => note.midi!)) - median(b.notes.map((note) => note.midi!)));
       if (distance > REGISTER_DISTANCE) continue;
-      const sparse = a.notes.length <= b.notes.length ? a : b;
-      const dense = sparse === a ? b : a;
-      const occupied = new Set(dense.notes.map((note) => slot(g, placement, note)));
-      const matches = sparse.notes.filter((note) => occupied.has(slot(g, placement, note))).length;
-      const share = matches / sparse.notes.length;
+      // Each chord counts once: compare the sets of 16th steps the two lines occupy.
+      const slotsA = new Set(a.notes.map((note) => slot(g, placement, note)));
+      const slotsB = new Set(b.notes.map((note) => slot(g, placement, note)));
+      const [sparse, dense] = slotsA.size <= slotsB.size ? [slotsA, slotsB] : [slotsB, slotsA];
+      const matches = [...sparse].filter((step) => dense.has(step)).length;
+      const share = matches / sparse.size;
       if (share < SLOT_SHARE) continue;
       out.push(warning("register_collision", `arrangement.${placement.ordinal}`,
-        `section ${placement.section} occurrence ${placement.occurrence + 1}; tracks ${a.track.id}/${b.track.id}; median distance ${distance}; shared ${matches}/${sparse.notes.length}`,
-        `median distance > ${REGISTER_DISTANCE} or shared slots < ${SLOT_SHARE}`,
-        "Move one focal line to another register or stagger its onsets."));
+        `section ${placement.section} occurrence ${placement.occurrence + 1}; tracks ${a.track.id}/${b.track.id}; median distance ${distance}; shared 16th onsets ${matches}/${sparse.size}`,
+        `median distance > ${REGISTER_DISTANCE} or shared 16th onsets < ${SLOT_SHARE}`,
+        "Move one focal line at least an octave away, or put its onsets on 16th steps the other line leaves empty."));
     }
   }
   return out;

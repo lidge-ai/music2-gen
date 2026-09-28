@@ -1,9 +1,10 @@
 import type { RecipeId } from "./recipe.schema.ts";
-import { barsOf, comparableBlocks, densityChange, has, is808, isHat, kick, snare5and13, snare9, snare9or13, transitions } from "./lint-geometry.tool.ts";
+import { barsOf, comparableBlocks, contiguousRuns, densityChange, has, is808, isHat, kick, snare5and13, snare9, snare9or13, transitions } from "./lint-geometry.tool.ts";
 import type { LintGeometry } from "./lint-geometry.tool.ts";
-import { has808, outsideKey } from "./lint-generic.tool.ts";
-import { meanActive, melodyId, motifIn, muteChange, phraseChange, sectionMotifChange } from "./lint-rules-phrase.tool.ts";
+import { CLIP_RISK_SUM, has808, outsideKey } from "./lint-generic.tool.ts";
+import { meanActive, motifIn, muteChange, phraseChange, sectionMotifChange } from "./lint-rules-phrase.tool.ts";
 import { danceRules } from "./lint-rules-dance.tool.ts";
+import { melodyTrackIds } from "./lint-roles.tool.ts";
 import type { LintResult } from "./lint.tool.ts";
 
 const trackPath = (g: LintGeometry, test: (id: string, kind: string, instrument: string) => boolean, fallback: string): string =>
@@ -56,13 +57,15 @@ function outOfKeyRule(out: LintResult[], id: string, g: LintGeometry, select: (t
 export function genreRules(g: LintGeometry, genre: RecipeId, generic: LintResult[]): LintResult[] {
   if (genre === "house" || genre === "techno") return danceRules(g, genre, generic);
   const out: LintResult[] = [];
-  const melody = melodyId(g);
+  const melodies = melodyTrackIds(g);
+  const melodyPath = `tracks.${melodies[0] ?? "melody"}`;
   if (genre === "drill_uk") {
     bpm(out, genre, g.song.bpm, 138, 146); beat(out, genre, g, .75, "9or13");
     addRatio(out, "drill_uk/3", g, g.full, .75, (bar) => kick(g, bar), "Add a kick onset to full-drum bars.");
     if (g.full.length && shortHats(g) < Math.ceil(g.full.length / 2)) out.push(warning("drill_uk/4", trackPath(g, (id) => g.timeline.events.some((event) => event.track === id && isHat(g, event)), "hats"), shortHats(g), `>=${Math.ceil(g.full.length / 2)} short hat events`, "Add brief hat subdivisions in full-drum bars."));
     poly(out, genre, generic, g, 5);
-    if (g.full.length && transitions(g, g.full) < Math.ceil(g.full.length / 8)) out.push(warning("drill_uk/6", trackPath(g, (_id, kind, instrument) => kind === "notes" && instrument === "808", "808"), transitions(g, g.full), `>=${Math.ceil(g.full.length / 8)} 808 transitions`, "Add occasional 808 pitch transitions."));
+    const fullMoves = transitions(g, contiguousRuns(g.full));
+    if (g.full.length && fullMoves < Math.ceil(g.full.length / 8)) out.push(warning("drill_uk/6", trackPath(g, (_id, kind, instrument) => kind === "notes" && instrument === "808", "808"), fullMoves, `>=${Math.ceil(g.full.length / 8)} 808 transitions`, "Add occasional 808 pitch transitions."));
     outOfKeyRule(out, "drill_uk/7", g, (_id, instrument) => instrument !== "bass");
   } else if (genre === "drill_ny") {
     bpm(out, genre, g.song.bpm, 138, 145); beat(out, genre, g, .75, "9");
@@ -70,8 +73,9 @@ export function genreRules(g: LintGeometry, genre: RecipeId, generic: LintResult
       !barsOf(p).some((bar) => has(g, bar, (event) => is808(g, event)))));
     if (failed.length) out.push(warning("drill_ny/3", sectionPath(failed[0]!.section), failed.map((p) => p.section).join(","), "kick and 808 in every hook", "Add kick and 808 onsets to each hook."));
     poly(out, genre, generic, g, 4);
-    if (g.hooks.length && transitions(g, g.hooks) < Math.ceil(g.hooks.length / 8)) out.push(warning("drill_ny/5", trackPath(g, (_id, kind, instrument) => kind === "notes" && instrument === "808", "808"), transitions(g, g.hooks), `>=${Math.ceil(g.hooks.length / 8)} hook 808 transitions`, "Vary 808 pitch in the hook."));
-    const noMotif = g.placements.filter((p) => p.role === "hook" && p.bars >= 2 && !motifIn(g, barsOf(p), [1], melody));
+    const hookMoves = transitions(g, g.placements.filter((p) => p.role === "hook").map(barsOf));
+    if (g.hooks.length && hookMoves < Math.ceil(g.hooks.length / 8)) out.push(warning("drill_ny/5", trackPath(g, (_id, kind, instrument) => kind === "notes" && instrument === "808", "808"), hookMoves, `>=${Math.ceil(g.hooks.length / 8)} hook 808 transitions`, "Vary 808 pitch in the hook."));
+    const noMotif = g.placements.filter((p) => p.role === "hook" && p.bars >= 2 && !motifIn(g, barsOf(p), [1], melodies));
     if (noMotif.length) out.push(warning("drill_ny/6", sectionPath(noMotif[0]!.section), noMotif.map((p) => p.section).join(","), "repeated one-bar hook melody", "Repeat a one-bar melodic motif in each hook."));
     const noPhrase = g.placements.filter((p) => ["hook", "verse"].includes(p.role ?? "") && p.bars >= 16 &&
       !densityChange(g, barsOf(p), 8) && !g.song.tracks.some((track) => phraseChange(g, barsOf(p), 8, track.id)));
@@ -90,13 +94,13 @@ export function genreRules(g: LintGeometry, genre: RecipeId, generic: LintResult
     bpm(out, genre, g.song.bpm, 80, 100); beat(out, genre, g, .75, "5and13"); swingRule(out, genre, g);
     if (g.full.length && rollBars(g) / g.full.length > .5) out.push(warning("boom_bap/4", trackPath(g, (id) => g.timeline.events.some((event) => event.track === id && isHat(g, event)), "hats"), pct(rollBars(g), g.full.length), "<=50.0% full bars with 32nd hats", "Reserve fast hat rolls for occasional fills."));
     outOfKeyRule(out, "boom_bap/5", g, (id, instrument) => id === "bass" || instrument === "bass" || instrument === "808");
-    if ([2, 4].some((size) => comparableBlocks(g.full, size)) && !motifIn(g, g.full, [2, 4], melody)) out.push(warning("boom_bap/6", `tracks.${melody ?? "melody"}`, "no repeated 2/4-bar melody", "repeated melodic phrase", "Repeat a two- or four-bar melody phrase."));
-    if (!muteChange(g) && !sectionMotifChange(g, melody)) out.push(warning("boom_bap/7", "arrangement", "no mute or melody change", "section variation", "Mute a layer or change the melody between sections."));
+    if ([2, 4].some((size) => comparableBlocks(g.full, size)) && !motifIn(g, g.full, [2, 4], melodies)) out.push(warning("boom_bap/6", melodyPath, "no repeated 2/4-bar melody", "repeated melodic phrase", "Repeat a two- or four-bar melody phrase."));
+    if (!muteChange(g) && !sectionMotifChange(g, melodies)) out.push(warning("boom_bap/7", "arrangement", "no mute or melody change", "section variation", "Mute a layer or change the melody between sections."));
   } else {
     bpm(out, genre, g.song.bpm, 60, 95); beat(out, genre, g, .70, "5and13"); swingRule(out, genre, g);
-    if ([2, 4, 8].some((size) => comparableBlocks(g.full, size)) && !motifIn(g, g.full, [2, 4, 8], melody)) out.push(warning("lofi_hiphop/4", `tracks.${melody ?? "melody"}`, "no repeated 2/4/8-bar melody", "repeated harmonic loop proxy", "Repeat a short melodic loop."));
+    if ([2, 4, 8].some((size) => comparableBlocks(g.full, size)) && !motifIn(g, g.full, [2, 4, 8], melodies)) out.push(warning("lofi_hiphop/4", melodyPath, "no repeated 2/4/8-bar melody", "repeated harmonic loop proxy", "Repeat a short melodic loop."));
     if (g.full.length && rollBars(g) / g.full.length > .5) out.push(warning("lofi_hiphop/5", trackPath(g, (id) => g.timeline.events.some((event) => event.track === id && isHat(g, event)), "hats"), pct(rollBars(g), g.full.length), "<=50.0% full bars with 32nd hats", "Reduce recurring fast hat rolls."));
-    if (generic.some((r) => r.id === "generic/clipping_risk")) out.push(warning("lofi_hiphop/6", "arrangement", "static clipping risk", "onset sum <=1.5", "Lower gains or velocities and inspect rendered audio."));
+    if (generic.some((r) => r.id === "generic/clipping_risk")) out.push(warning("lofi_hiphop/6", "arrangement", "static clipping risk", `onset sum <=${CLIP_RISK_SUM}`, "Lower gains or velocities and inspect rendered audio."));
   }
   return out;
 }

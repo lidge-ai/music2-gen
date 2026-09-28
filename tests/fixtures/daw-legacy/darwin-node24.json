@@ -274,7 +274,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "fbcdfd45e8ec3617548d04d1c97f9bb2a15ad284861c65a88fe2d4580950381e"
+        "sha256": "d462609eba415904009a88fb984846e51149d3c9c7247994b803f41a3fa15a96"
       }
     },
     "examples/pop-transition.song.json": {

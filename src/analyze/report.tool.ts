@@ -8,7 +8,7 @@ export function renderAnalysisReport(a: AnalysisJson, beatMap?: BeatMap): string
     "# Music analysis",
     "",
     `Source: ${a.source} · Duration: ${number(a.durationSeconds)} s · Tail: ${number(a.tailSeconds)} s`,
-    `BPM: declared ${number(a.declaredBpm)} · estimated ${number(a.estimatedBpm)} · confidence ${number(a.tempoConfidence)}`,
+    `BPM: declared ${number(a.declaredBpm)} · estimated ${number(a.estimatedBpm)} · confidence ${number(a.tempoConfidence)}${a.tempoDeclaredMatch != null ? ` · declared match ${number(a.tempoDeclaredMatch.bpm)} (${number(a.tempoDeclaredMatch.score)})` : ""}`,
     `Alternatives: ${a.tempoCandidates.slice(1, 4).map((candidate) => `${number(candidate.bpm)} (${number(candidate.score)})`).join(", ") || "n/a"}`,
     `Key: declared ${a.declaredKey ?? "n/a"} · estimated ${a.estimatedKey ?? "n/a"} · confidence ${number(a.keyConfidence)}`,
     `Top keys: ${a.keyCandidates.map((candidate) => `${candidate.key} (KK ${number(candidate.kkScore)}, Temperley ${number(candidate.temperleyScore)})`).join(", ") || "n/a"}`,

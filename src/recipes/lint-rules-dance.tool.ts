@@ -1,6 +1,6 @@
 import { active, barsOf, comparableBlocks, densityChange, fourKick, isHat, median, offhat, snare5and13 } from "./lint-geometry.tool.ts";
 import type { LintGeometry } from "./lint-geometry.tool.ts";
-import { outsideKey } from "./lint-generic.tool.ts";
+import { CLIP_RISK_SUM, outsideKey } from "./lint-generic.tool.ts";
 import { activeSet, bassId, meanActive, motifIn } from "./lint-rules-phrase.tool.ts";
 import type { LintResult } from "./lint.tool.ts";
 
@@ -35,7 +35,8 @@ export function danceRules(g: LintGeometry, genre: "house" | "techno", generic: 
     const bass = bassId(g);
     const percussion = g.song.tracks.find((track) =>
       g.timeline.events.some((e) => e.track === track.id && isHat(g, e)))?.id ?? null;
-    if ([1, 2].some((size) => comparableBlocks(g.grooves, size)) && !motifIn(g, g.grooves, [1, 2], bass ?? percussion)) out.push(warning("techno/3", `tracks.${bass ?? percussion ?? "bass"}`, "no repeated bass/percussion motif", "repeated 1- or 2-bar motif", "Repeat a short bass or percussion motif."));
+    const motifTrack = bass ?? percussion;
+    if ([1, 2].some((size) => comparableBlocks(g.grooves, size)) && !motifIn(g, g.grooves, [1, 2], motifTrack === null ? [] : [motifTrack])) out.push(warning("techno/3", `tracks.${bass ?? percussion ?? "bass"}`, "no repeated bass/percussion motif", "repeated 1- or 2-bar motif", "Repeat a short bass or percussion motif."));
     const candidates = g.placements.filter((p) => p.role === "build" || p.role === "groove").flatMap(barsOf);
     let changed = false, compared = false;
     for (const size of [8, 16]) for (let i = 0; i + size * 2 <= candidates.length; i += size) {
@@ -48,7 +49,7 @@ export function danceRules(g: LintGeometry, genre: "house" | "techno", generic: 
     const breakdowns = g.placements.filter((p) => p.role === "breakdown");
     const groove = g.placements.find((p) => p.role === "groove");
     if (groove && breakdowns.some((p) => meanActive(g, barsOf(p)) >= meanActive(g, barsOf(groove)))) out.push(warning("techno/5", `sections.${breakdowns[0]!.section}`, "breakdown mean layers >= groove", "breakdown mean layers < groove", "Mute a layer in the breakdown."));
-    if (generic.some((r) => r.id === "generic/clipping_risk")) out.push(warning("techno/6", "arrangement", "static clipping risk", "onset sum <=1.5", "Lower gains or velocities and inspect rendered audio."));
+    if (generic.some((r) => r.id === "generic/clipping_risk")) out.push(warning("techno/6", "arrangement", "static clipping risk", `onset sum <=${CLIP_RISK_SUM}`, "Lower gains or velocities and inspect rendered audio."));
   }
   return out;
 }

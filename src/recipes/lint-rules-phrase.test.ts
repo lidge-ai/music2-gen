@@ -11,6 +11,6 @@ test("repeated melody is a motif and an intro mute changes the arrangement", () 
     sections: [{ id: "intro", bars: 1, role: "intro", patterns: { melody: null } }, { id: "hook", bars: 4, role: "hook" }],
     arrangement: [{ section: "intro" }, { section: "hook" }] });
   const g = createGeometry(song, buildTimeline(song));
-  assert.ok(motifIn(g, [1, 2, 3, 4], [2], "melody"));
+  assert.ok(motifIn(g, [1, 2, 3, 4], [2], ["melody"]));
   assert.ok(muteChange(g));
 });

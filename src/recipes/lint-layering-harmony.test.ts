@@ -90,3 +90,19 @@ test("L5 75% shared slots fires and 74% skips", () => {
   assert.equal(check(75), 1);
   assert.equal(check(74), 0);
 });
+
+test("L5 compares unique 16th onsets, so a 16th stagger clears the collision (issue #1 repro 4)", () => {
+  const song = validateSong({ version: 1, bpm: 142, tracks: [
+    { id: "guitar", kind: "notes", instrument: "guitar", pattern: "<[g3 ~ d4 ~ bb3 ~ d4 g4 ~ ~ a4 ~ bb4 ~ a4 ~] [eb3 ~ bb3 ~ g3 ~ bb3 eb4 ~ ~ f4 ~ g4 ~ f4 ~]>" },
+    { id: "brass", kind: "notes", instrument: "brass", mono: false, pattern: "<[~ [g3,bb3,d4] ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~] [~ [eb3,g3,bb3] ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~]>" },
+  ], sections: [{ id: "hook", bars: 4 }], arrangement: [{ section: "hook" }] });
+  const rows = has(harmonyLayeringRules(createGeometry(song, buildTimeline(song))), "register_collision");
+  assert.equal(rows.length, 0);
+  const aligned = validateSong({ version: 1, bpm: 142, tracks: [
+    { id: "guitar", kind: "notes", instrument: "guitar", pattern: "g3 ~ d4 ~ bb3 ~ d4 g4 ~ ~ a4 ~ bb4 ~ a4 ~" },
+    { id: "brass", kind: "notes", instrument: "brass", mono: false, pattern: "[g3,bb3,d4] ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~" },
+  ], sections: [{ id: "hook", bars: 4 }], arrangement: [{ section: "hook" }] });
+  const hit = has(harmonyLayeringRules(createGeometry(aligned, buildTimeline(aligned))), "register_collision");
+  assert.equal(hit.length, 1);
+  assert.match(String(hit[0]!.observed), /shared 16th onsets 4\/4/);
+});
