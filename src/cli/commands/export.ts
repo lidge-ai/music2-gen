@@ -1,4 +1,5 @@
-import { lstat, mkdir, open, readdir, rm, rmdir, writeFile } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, open, readFile, readdir, rm, rmdir, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { buildProject } from "../../project/index.ts";
 import { projectToSmf, writeSmf } from "../../midi/index.ts";
@@ -7,8 +8,9 @@ import { loadKitMidiMap } from "../../render/kit.tool.ts";
 import { Music2Error } from "../../shared/index.ts";
 import { buildTimeline, loadSong } from "../../song/index.ts";
 import { renderSong } from "../../render/index.ts";
-import { writeWav } from "../../audio-io/index.ts";
-import { planAls, planStems } from "../../export/index.ts";
+import { readWav, writeWav } from "../../audio-io/index.ts";
+import { planAls, planDawproject, planStems, type DawClipRegion, type DawContent, type DawMedia } from "../../export/index.ts";
+import { confinedRealpath, fnv1a32 } from "../../shared/index.ts";
 import { validateDawVoiceLanes } from "../../render/voices/registry.tool.ts";
 import { assertDistinct, commitNoReplace, commitReplace, stage } from "../files.ts";
 import type { CommandSpec } from "../registry.ts";
@@ -168,9 +170,98 @@ async function exportAls(input: string, output: string, values: Record<string, u
     text: `EXPERIMENTAL (Live 12 open test pending): wrote ${als}` };
 }
 
+async function exportDawproject(input: string, output: string, values: Record<string, unknown>) {
+  const content = (values["content"] ?? "both") as DawContent;
+  if (!["midi", "audio", "both"].includes(content)) throw inputError("--content must be midi, audio or both");
+  if (extname(input).toLowerCase() !== ".json" || extname(output).toLowerCase() !== ".dawproject")
+    throw inputError("export dawproject requires .json input and .dawproject output");
+  if (["bits", "premaster", "no-master", "bars"].some((flag) => values[flag] !== undefined))
+    throw inputError("stem-only flags are unsupported for export dawproject");
+  const force = values["force"] === true;
+  await assertDistinct([input], [output]);
+  if (!force) {
+    try { await lstat(output); throw new Music2Error("E_ACCESS", `output already exists: ${output}`); }
+    catch (cause) { if (cause instanceof Music2Error) throw cause;
+      if ((cause as NodeJS.ErrnoException).code !== "ENOENT") throw cause; }
+  }
+  const song = await loadSong(input);
+  validateDawVoiceLanes(song);
+  const project = buildProject(song, buildTimeline(song));
+  const sources = new Map<number, DawMedia>();
+  if (content !== "audio") {
+    const used = new Set(project.tracks.flatMap((track) => track.type === "audio" ? track.clips.map((clip) => clip.sample) : []));
+    let ordinal = 0;
+    for (const [sampleIndex, sample] of project.samples.entries()) if (used.has(sampleIndex)) {
+      const path = await confinedRealpath(dirname(input), sample.ref);
+      await assertDistinct([path], [output]);
+      let wav;
+      try { wav = await readWav(path); }
+      catch (cause) {
+        if (cause instanceof Music2Error && cause.code === "E_INPUT")
+          throw new Music2Error("E_SCHEMA", `invalid source WAV: ${sample.ref}`, { cause });
+        throw cause;
+      }
+      sources.set(sampleIndex, { path: `audio/source-${String(ordinal++).padStart(4, "0")}.wav`,
+        bytes: await readFile(path), frames: wav.left.length, sampleRate: wav.sampleRate,
+        channels: wav.sourceChannels, owner: { kind: "source", sampleIndex } });
+    }
+  }
+  const kitMaps: Record<string, Record<string, number>> = {};
+  if (content !== "audio") for (const track of project.tracks) if (track.type !== "audio" && track.instrument.kind === "kit") {
+    const { names, explicit } = await loadKitMidiMap(input, `kit:${track.instrument.ref}`);
+    const mapping = kitMidiMap(names, explicit);
+    kitMaps[track.id] = mapping.byName;
+  }
+  const regions: DawClipRegion[] = [];
+  if (content !== "audio") for (const track of project.tracks) if (track.type === "audio")
+    for (const [clipIndex, clip] of track.clips.entries()) {
+      const media = sources.get(clip.sample);
+      if (!media) throw new Music2Error("E_RENDER", `missing source WAV for ${track.id}`);
+      const startSeconds = Math.round(clip.offsetSeconds * media.sampleRate) / media.sampleRate;
+      const seconds = clip.lengthTicks / 960 * 60 / project.tempo[0]!.bpm;
+      const speed = clip.stretch.mode === "varispeed" ? clip.stretch.ratio : 1;
+      const endSeconds = clip.stretch.mode === "fit" ? startSeconds +
+        Math.round(clip.stretch.sourceSeconds * media.sampleRate) / media.sampleRate :
+        clip.stretch.mode === "tempo" ? media.frames / media.sampleRate :
+          startSeconds + seconds * speed * 2 ** (clip.pitchSemitones / 12);
+      regions.push({ trackId: track.id, clipIndex, startSeconds, endSeconds });
+    }
+  const media: DawMedia[] = [...sources.values()];
+  let temporaryDir: string | undefined;
+  try {
+    if (content !== "midi") {
+      const rendered = await renderSong(song, input, { stems: true, returns: true });
+      temporaryDir = await mkdtemp(join(tmpdir(), "music2-dawproject-"));
+      const all = [...rendered.stems.map((stem) => ({ owner: { kind: "stem" as const, trackId: stem.trackId },
+        path: `audio/stem-${stem.trackId}.wav` as const, audio: stem.audio })),
+        ...(["reverb", "delay"] as const).flatMap((bus) => rendered.returns?.[bus] ?
+          [{ owner: { kind: "return" as const, bus }, path: `audio/return-${bus}.wav` as const,
+            audio: rendered.returns[bus] }] : [])];
+      for (const entry of all) {
+        const path = join(temporaryDir, "media.wav");
+        await writeWav(path, entry.audio, { bits: 24,
+          seed: fnv1a32(song.seed, entry.path, "dawproject") });
+        media.push({ path: entry.path, bytes: await readFile(path), frames: entry.audio.left.length,
+          sampleRate: entry.audio.sampleRate, channels: 2, owner: entry.owner });
+      }
+    }
+    const plan = planDawproject(project, media, regions,
+      { content, outputName: output.split(/[\\/]/).at(-1)!, kitMaps });
+    const staged = stage(output);
+    try {
+      const artifact = plan.files[0]!;
+      if (!("bytes" in artifact)) throw new Music2Error("E_RENDER", "DAWproject planner returned no ZIP bytes");
+      await writeFile(staged.temporary, artifact.bytes, { flag: "wx" });
+      if (force) await commitReplace([staged]); else await commitNoReplace([staged]);
+    } finally { await rm(staged.temporary, { force: true }); }
+    return { command: "export", data: { ...plan.data, dawproject: output }, artifacts: [output],
+      warnings: plan.warnings, text: `wrote ${output}` };
+  } finally { if (temporaryDir) { await rm(join(temporaryDir, "media.wav"), { force: true }); await rmdir(temporaryDir); } }
+}
+
 export const exportCommand: CommandSpec = {
-  name: "export", summary: "Export a song to ProjectIR JSON, MIDI, aligned WAV stems, or experimental Ableton Live Set",
-  usage: "music2 export ir <song.json> [-o ir.json] | music2 export midi <song.json> -o file.mid | music2 export stems <song.json> -o dir [--bits 16|24] [--premaster] [--no-master] [--bars a:b] [--force] [--json] | music2 export als <song.json> -o dir [--content midi|audio|both] [--bits 16|24] [--force] [--json]",
+  name: "export", summary: "Export ProjectIR, MIDI, WAV stems, Ableton Live Set, or DAWproject",
+  usage: "music2 export ir <song.json> [-o ir.json] | music2 export midi <song.json> -o file.mid | music2 export stems <song.json> -o dir [--bits 16|24] [--premaster] [--no-master] [--bars a:b] [--force] [--json] | music2 export als <song.json> -o dir [--content midi|audio|both] [--bits 16|24] [--force] [--json] | music2 export dawproject <song.json> -o file.dawproject [--content midi|audio|both] [--force] [--json]",
   options: {
     out: { type: "string", short: "o", description: "Output file or stems directory" },
     force: { type: "boolean", description: "Replace planned output files" },
@@ -178,18 +269,19 @@ export const exportCommand: CommandSpec = {
     premaster: { type: "boolean", description: "Include pre-master WAV" },
     "no-master": { type: "boolean", description: "Omit mastered WAV" },
     bars: { type: "string", description: "Stem crop, zero-based half-open a:b" },
-    content: { type: "string", description: "ALS content: midi, audio or both (default both)" },
+    content: { type: "string", description: "DAW export content: midi, audio or both (default both)" },
   },
   async run({ args, values, cwd }) {
-    if ((args[0] !== "ir" && args[0] !== "midi" && args[0] !== "stems" && args[0] !== "als") || args.length !== 2 || !args[1])
-      throw inputError("export requires: ir|midi|stems|als <song.json>");
+    if ((args[0] !== "ir" && args[0] !== "midi" && args[0] !== "stems" && args[0] !== "als" && args[0] !== "dawproject") || args.length !== 2 || !args[1])
+      throw inputError("export requires: ir|midi|stems|als|dawproject <song.json>");
     const midi = args[0] === "midi";
     const stems = args[0] === "stems";
     const als = args[0] === "als";
-    if (!als && values["content"] !== undefined) throw inputError("--content requires export als");
+    const dawproject = args[0] === "dawproject";
+    if (!als && !dawproject && values["content"] !== undefined) throw inputError("--content requires export als or dawproject");
     if (als && ["premaster", "no-master", "bars"].some((flag) => values[flag] !== undefined))
       throw inputError("stem-only flags are unsupported for export als");
-    if (!stems && !als && ["bits", "premaster", "no-master", "bars"].some((flag) => values[flag] !== undefined))
+    if (!stems && !als && !dawproject && ["bits", "premaster", "no-master", "bars"].some((flag) => values[flag] !== undefined))
       throw inputError("stem flags require export stems");
     const input = resolve(cwd, args[1]);
     if (midi && extname(input).toLowerCase() !== ".json") throw inputError("export midi requires .json input");
@@ -197,9 +289,10 @@ export const exportCommand: CommandSpec = {
     if (outValue !== undefined && (typeof outValue !== "string" || outValue.length === 0))
       throw inputError("--out requires a path");
     const output = typeof outValue === "string" ? resolve(cwd, outValue) : undefined;
-    if ((midi || stems || als) && output === undefined) throw inputError(`export ${args[0]} requires -o`);
+    if ((midi || stems || als || dawproject) && output === undefined) throw inputError(`export ${args[0]} requires -o`);
     if (stems && output) return exportStems(input, output, values);
     if (als && output) return exportAls(input, output, values);
+    if (dawproject && output) return exportDawproject(input, output, values);
     if (output !== undefined && extname(output).toLowerCase() !== (midi ? ".mid" : ".json"))
       throw inputError(`out must end in ${midi ? ".mid" : ".json"}`);
     const force = values["force"] === true;

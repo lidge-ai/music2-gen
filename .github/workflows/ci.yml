@@ -50,6 +50,7 @@ jobs:
       - run: npm test
         env:
           MUSIC2_REQUIRE_FFMPEG: ${{ runner.os == 'Linux' && '1' || '' }}
+          MUSIC2_REQUIRE_XMLLINT: ${{ runner.os == 'Linux' && '1' || '' }}
 
   ci:
     if: always()

@@ -276,3 +276,55 @@ test("export als emits one experimental JSON envelope for MIDI and both", async 
     assert.equal(invalid.stdout.trim().split("\n").length, 1);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+test("dawproject content flags, one-object output, collision and force", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-dawproject-cli-"));
+  try {
+    await writeFile(join(dir, "song.json"), JSON.stringify(source));
+    const args = ["export", "dawproject", "song.json", "-o", "song.dawproject", "--content", "midi", "--json"];
+    const first = await invoke(args, dir);
+    assert.equal(first.exit, 0, first.stdout);
+    assert.equal(first.stdout.trim().split("\n").length, 1);
+    const result = JSON.parse(first.stdout) as { data: { content: string; entries: string[] }; artifacts: string[] };
+    assert.equal(result.data.content, "midi");
+    assert.deepEqual(result.data.entries, ["metadata.xml", "project.xml"]);
+    assert.deepEqual(result.artifacts, [join(dir, "song.dawproject")]);
+    const bytes = await readFile(join(dir, "song.dawproject"));
+    assert.equal(bytes.readUInt32LE(0), 0x04034b50);
+    const occupied = await invoke(args, dir);
+    assert.equal(occupied.exit, 4);
+    assert.equal(envelope(occupied.stdout).error.code, "E_ACCESS");
+    assert.deepEqual(await readFile(join(dir, "song.dawproject")), bytes);
+    const forced = await invoke([...args, "--force"], dir);
+    assert.equal(forced.exit, 0);
+    assert.deepEqual(await readFile(join(dir, "song.dawproject")), bytes);
+    for (const invalid of [
+      ["export", "dawproject", "song.json", "-o", "bad.zip", "--json"],
+      ["export", "dawproject", "song.json", "-o", "new.dawproject", "--content", "wrong", "--json"],
+      ["export", "dawproject", "song.json", "-o", "new.dawproject", "--bits", "16", "--json"],
+    ]) {
+      const response = await invoke(invalid, dir);
+      assert.equal(response.exit, 2, invalid.join(" "));
+      assert.equal(envelope(response.stdout).error.code, "E_INPUT");
+    }
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test("dawproject confines original clip media before staging output", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-dawproject-confine-"));
+  const outside = await mkdtemp(join(tmpdir(), "music2-dawproject-outside-"));
+  try {
+    await writeFile(join(outside, "source.wav"), "outside");
+    await symlink(join(outside, "source.wav"), join(dir, "source.wav"));
+    await writeFile(join(dir, "song.json"), JSON.stringify({ ...source,
+      audioTracks: [{ id: "vox", clips: [{ file: "source.wav", start: 0, length: 1 }] }] }));
+    const response = await invoke(["export", "dawproject", "song.json", "-o", "blocked.dawproject",
+      "--content", "midi", "--json"], dir);
+    assert.equal(response.exit, 4);
+    assert.equal(envelope(response.stdout).error.code, "E_ACCESS");
+    await assert.rejects(readFile(join(dir, "blocked.dawproject")));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+    await rm(outside, { recursive: true, force: true });
+  }
+});
