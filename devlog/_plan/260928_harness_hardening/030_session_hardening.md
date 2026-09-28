@@ -127,3 +127,8 @@ Verification: hosted CI only (see 010 "Verification constraint"); local evidence
 - R11 short-note fade activation test: a notes kit track with a 2 ms note (shorter than 10 ms) ends at 0 and the fade spans half the note.
 - Digest recapture split: wp1 B recaptures only `lint` digests (clipping and rule changes); wp3 B recaptures `examples/cinematic-cue.song.json` `render` and stem digests after the revcymbal taper, with the 010 F3 procedure.
 
+
+## wp3 P entry (stale check)
+
+Previous D (wp2): issue #2 guard landed at `cb0646b`, CI run 36442221532 8/8 green; direction unchanged. Stale check: `git diff 084c1c0 HEAD --stat -- src/audio-io src/cli/commands/validate.ts src/sfx src/render/kit.tool.ts src/render/render.schema.ts` is empty. `skills/music2/references/mixing.md` gained an "Automation lanes replace static levels" section in wp2; the three new guidance sections go before it. Architect consultation reused (no design decision changed).
+
