@@ -297,3 +297,8 @@ Reviewer round 1: FAIL with 6 blockers; synthesis and dispositions:
 
 - Non-blocking notes folded: stale wording updated in `skills/music2/references/layering.md:38,69` (16th onsets), `mixing.md:24` and `skills/music2/SKILL.md:69` (clipping 2, weighted), `docs/cli.md:21`, `SKILL.md:26`, `README.md:48` (tempo relations and declared match). Behavior change stated: a song whose only melodic tracks are beds (strings, pad, choir, organ) now warns on drill_ny/6, boom_bap/6, boom_bap/7 and lofi_hiphop/4 because beds no longer count as the melody; 001 wording corrected accordingly.
 
+
+## wp1 P entry (stale check)
+
+Previous D (wp0): roadmap locked at `aa04880`; direction unchanged: implement 010 as amended, verify through hosted CI on the draft PR, recapture only lint digests in wp1. Stale check: `git diff 8050ca5 aa04880 --stat -- src tests scripts` is empty, so every cited line is current. Architect consultation reused: the reflection covered this plan revision and the audit folds changed tests, docs and procedure only, not a design decision (phase-audit "Architect recheck" does not trigger).
+
