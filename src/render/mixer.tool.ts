@@ -1,64 +1,26 @@
 import { createStereo, measureLoudness, peakLinear } from "../audio-io/index.ts";
 import type { StereoBuffer } from "../audio-io/index.ts";
-import { fnv1a32, Music2Error } from "../shared/index.ts";
+import { Music2Error } from "../shared/index.ts";
 import type { ResolvedSong, Timeline } from "../song/index.ts";
 import { applyDelay, applyReverb, duckEnvelope } from "./fx.tool.ts";
 import { applyInsertChain, renderDelayBus, renderReverbBus } from "./fx/index.ts";
 import { validateResolvedFx } from "./fx/fx-validate.tool.ts";
-import { loadKit, renderKit } from "./kit.tool.ts";
-import type { LoadedKit, RenderOptions, RenderResult, RenderStem, VoiceEvent } from "./render.schema.ts";
+import { renderKit } from "./kit.tool.ts";
+import { isSampleInstrument, loadSampleInstrument, renderSampleInstrument } from "./instrument.tool.ts";
+import type { LoadedSampleInstrument } from "./instrument.tool.ts";
+import { mixAudioTracks } from "./audio-tracks.tool.ts";
+import type { RenderOptions, RenderResult, RenderStem } from "./render.schema.ts";
 import { mergeParams, resolveVoice } from "./voices/registry.tool.ts";
-
+import { selectEvents } from "./select.tool.ts";
 const RIFF_LIMIT = 0xffffffff;
 const SOFT_DRIVE = 1.2;
 const SOFT_NORM = Math.tanh(SOFT_DRIVE);
 const PAN_SCALE = Math.SQRT2;
 const LOOKAHEAD_MS = 5;
 const RELEASE_MS = 50;
-
 function db(linear: number): number { return linear === 0 ? -Infinity : 20 * Math.log10(linear); }
 function renderError(message: string, frame?: number): Music2Error {
   return new Music2Error("E_RENDER", message, frame === undefined ? {} : { details: { frame } });
-}
-
-function selectEvents(song: ResolvedSong, timeline: Timeline, start: number, end: number, frames: number): VoiceEvent[][] {
-  const rate = song.sampleRate;
-  const offset = start * timeline.secondsPerBar;
-  const counters = new Uint32Array(song.tracks.length);
-  const selected: VoiceEvent[][] = song.tracks.map(() => []);
-  for (const event of timeline.events) {
-    const eventIndex = counters[event.trackIndex] ?? 0;
-    counters[event.trackIndex] = eventIndex + 1;
-    if (event.bar < start || event.bar >= end) continue;
-    const track = song.tracks[event.trackIndex]!;
-    const startFrame = Math.round((event.time - offset) * rate);
-    if (startFrame < 0 || startFrame >= frames) continue;
-    selected[event.trackIndex]!.push({
-      midi: event.midi, sample: event.sample, velocity: event.velocity,
-      startFrame, gateFrames: Math.max(0, Math.round(event.duration * rate)),
-      stopFrame: frames, eventIndex, seed: fnv1a32(song.seed, track.id, eventIndex),
-    });
-  }
-  for (let index = 0; index < selected.length; index++) {
-    const track = song.tracks[index]!;
-    const events = selected[index]!;
-    if (track.mono) {
-      for (let i = 0; i < events.length; i++) {
-        const next = events[i + 1];
-        if (next) events[i]!.stopFrame = Math.min(frames, next.startFrame);
-      }
-    } else if (track.kind === "notes" && !track.instrument.startsWith("kit:")) {
-      const voice = resolveVoice(track, index)!;
-      const params = mergeParams(voice, track.params);
-      const releaseMs = voice.id === "bell" ? 120 : voice.id === "pluck" ? 80 : params["releaseMs"];
-      if (releaseMs !== undefined) {
-        // Voice envelopes reach about -120 dB after twice their release time.
-        const tailFrames = Math.ceil(2 * releaseMs * rate / 1000);
-        for (const event of events) event.stopFrame = Math.min(frames, event.startFrame + event.gateFrames + tailFrames);
-      }
-    }
-  }
-  return selected;
 }
 
 function mixDry(master: StereoBuffer, reverb: StereoBuffer, delay: StereoBuffer,
@@ -269,8 +231,8 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
     throw renderError("render exceeds 24-bit RIFF size limit");
   }
   const preRollEvents = needsPreRoll ? selectEvents(song, timeline, 0, end, preRollFrames) : null;
-  const kits: (LoadedKit | null)[] = [];
-  for (const track of song.tracks) kits.push(track.instrument.startsWith("kit:") ? await loadKit(songPath, track.instrument, song.sampleRate) : null);
+  const kits: (LoadedSampleInstrument | null)[] = [];
+  for (const track of song.tracks) kits.push(isSampleInstrument(track.instrument) ? await loadSampleInstrument(songPath, track, song.sampleRate) : null);
   const audio = createStereo(song.sampleRate, frames);
   const reverbSend = createStereo(song.sampleRate, frames);
   const delaySend = createStereo(song.sampleRate, frames);
@@ -285,15 +247,17 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
     if (tapePreRoll) {
       const kit = kits[index];
       const voice = kit ? null : resolveVoice(track, index);
-      const preroll = kit ? renderKit({ sampleRate: song.sampleRate, frames: preRollFrames, track,
-        events: preRollEvents[index]! }, kit) : voice!.render({ sampleRate: song.sampleRate,
-        frames: preRollFrames, track, events: preRollEvents[index]! }, mergeParams(voice!, track.params));
-      if (preroll.length !== preRollFrames) throw renderError(`voice ${track.instrument} returned incorrect frame count`);
+      const preCtx = { sampleRate: song.sampleRate, frames: preRollFrames, track, events: preRollEvents[index]! };
+      const rendered = kit ? renderSampleInstrument(preCtx, kit) : voice!.render(preCtx, mergeParams(voice!, track.params));
       const processed = createStereo(song.sampleRate, preRollFrames);
-      for (let frame = 0; frame < preRollFrames; frame++) {
-        if (!Number.isFinite(preroll[frame])) throw renderError("nonfinite voice sample", frame);
+      if (rendered instanceof Float32Array) {
+        if (rendered.length !== preRollFrames) throw renderError(`voice ${track.instrument} returned incorrect frame count`);
+        for (let frame = 0; frame < preRollFrames; frame++) if (!Number.isFinite(rendered[frame])) throw renderError("nonfinite voice sample", frame);
+        processed.left.set(rendered); processed.right.set(rendered);
+      } else {
+        if (rendered.left.length !== preRollFrames || rendered.right.length !== preRollFrames) throw renderError(`instrument ${track.instrument} returned incorrect frame count`);
+        processed.left.set(rendered.left); processed.right.set(rendered.right);
       }
-      processed.left.set(preroll); processed.right.set(preroll);
       applyInsertChain(processed, track.fx!, { sampleRate: song.sampleRate, bpm: song.bpm,
         startSeconds: 0, secondsPerBar: timeline.secondsPerBar }, track.id);
       const offset = Math.round(start * timeline.secondsPerBar * song.sampleRate);
@@ -313,7 +277,21 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
     const ctx = { sampleRate: song.sampleRate, frames, track, events };
     const kit = kits[index];
     const voice = kit ? null : resolveVoice(track, index);
-    const mono = kit ? renderKit(ctx, kit) : voice!.render(ctx, mergeParams(voice!, track.params));
+    if (kit?.kind === "sfz") {
+      const stereo = renderSampleInstrument(ctx, kit);
+      if (track.fx?.length) applyInsertChain(stereo, track.fx, { sampleRate: song.sampleRate, bpm: song.bpm,
+        startSeconds: start * timeline.secondsPerBar, secondsPerBar: timeline.secondsPerBar }, track.id);
+      const sourceIndex = track.duck ? song.tracks.findIndex((candidate) => candidate.id === track.duck!.by) : -1;
+      const duck = track.duck && sourceIndex >= 0 ? duckEnvelope(frames,
+        selected[sourceIndex]!.map((event) => event.startFrame), song.sampleRate,
+        track.duck.amount, track.duck.releaseMs) : null;
+      const stem = options.stems ? createStereo(song.sampleRate, frames) : null;
+      mixStereo(audio, reverbSend, delaySend, stereo, 10 ** (track.gain / 20), track.pan,
+        duck, track.sends.reverb, track.sends.delay, stem, track.id);
+      if (stem) stems.push({ trackId: track.id, audio: stem });
+      continue;
+    }
+    const mono = kit ? renderKit(ctx, kit.resource) : voice!.render(ctx, mergeParams(voice!, track.params));
     if (mono.length !== frames) throw renderError(`voice ${track.instrument} returned incorrect frame count`);
     const sourceIndex = track.duck ? song.tracks.findIndex((candidate) => candidate.id === track.duck!.by) : -1;
     const duck = track.duck && sourceIndex >= 0 ? duckEnvelope(frames,
@@ -337,14 +315,26 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
     }
     if (stem) stems.push({ trackId: track.id, audio: stem });
   }
-  if (song.tracks.some((track) => track.sends.reverb > 0)) {
-    const wet = song.fx?.reverb ? renderReverbBus(reverbSend, song.fx.reverb,
+  const audioFlags = song.audioTracks?.length ? await mixAudioTracks(song, songPath,
+    { startFrame: Math.round(start * timeline.secondsPerBar * song.sampleRate), frames },
+    { master: audio, reverb: reverbSend, delay: delaySend }, stems, timeline, options.stems === true) : null;
+  const fullReturns = start > 0 && song.audioTracks?.length &&
+    (song.tracks.some((track) => track.sends.reverb > 0 || track.sends.delay > 0) || audioFlags?.reverbActive || audioFlags?.delayActive)
+    ? (await mixTracks(song, timeline, songPath, { bars: { start: 0, end }, returns: true, ...(options.mastering ? { mastering: options.mastering } : {}) })).returns : null;
+  const cropReturn = (wet: StereoBuffer): StereoBuffer => {
+    const crop = createStereo(song.sampleRate, frames);
+    const offset = Math.round(start * timeline.secondsPerBar * song.sampleRate);
+    crop.left.set(wet.left.subarray(offset, offset + frames)); crop.right.set(wet.right.subarray(offset, offset + frames));
+    return crop;
+  };
+  if (song.tracks.some((track) => track.sends.reverb > 0) || audioFlags?.reverbActive) {
+    const wet = fullReturns?.reverb ? cropReturn(fullReturns.reverb) : song.fx?.reverb ? renderReverbBus(reverbSend, song.fx.reverb,
       { sampleRate: song.sampleRate, bpm: song.bpm }) : applyReverb(reverbSend);
     if (returns) returns.reverb = wet;
     for (let i = 0; i < frames; i++) { audio.left[i]! += wet.left[i]!; audio.right[i]! += wet.right[i]!; }
   }
-  if (song.tracks.some((track) => track.sends.delay > 0)) {
-    const wet = song.fx?.delay ? renderDelayBus(delaySend, song.fx.delay,
+  if (song.tracks.some((track) => track.sends.delay > 0) || audioFlags?.delayActive) {
+    const wet = fullReturns?.delay ? cropReturn(fullReturns.delay) : song.fx?.delay ? renderDelayBus(delaySend, song.fx.delay,
       { sampleRate: song.sampleRate, bpm: song.bpm }) : applyDelay(delaySend, song.bpm);
     if (returns) returns.delay = wet;
     for (let i = 0; i < frames; i++) { audio.left[i]! += wet.left[i]!; audio.right[i]! += wet.right[i]!; }
@@ -404,5 +394,7 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
     bars, durationSeconds: output.left.length / song.sampleRate,
     peakDbfs: levels.peakDbfs, truePeakDbtp: levels.truePeakDbtp,
     ceilingDb: song.master.ceilingDb, events: selected.reduce((sum, group) => sum + group.length, 0),
-    loop: song.loop ? { startSample: 0, endSample: bodyFrames } : null };
+    loop: song.loop ? { startSample: 0, endSample: bodyFrames } : null,
+    ...(kits.some((kit) => kit?.warnings.length) ? { warnings: kits.flatMap((kit) => kit?.warnings.map((warning) =>
+      `${warning.file}:${warning.line}: ${warning.opcode ? `${warning.opcode}: ` : ""}${warning.message}`) ?? []) } : {}) };
 }

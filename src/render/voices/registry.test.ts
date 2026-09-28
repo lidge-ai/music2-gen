@@ -165,3 +165,18 @@ void test("twelve virtual instruments register as notes voices with validated se
   assert.throws(() => validateVoiceParams(song("choir", { vowel: 5 })));
   assert.throws(() => validateVoiceParams(song("organ", { d8: 9 })));
 });
+
+void test("SFZ bypasses built-in voices and rejects drum-kind tracks", () => {
+  const song = songWith([{ id: "sfz", kind: "notes", instrument: "sfz:keys.sfz" }]);
+  const notes = song.tracks[0]!;
+  assert.equal(resolveVoice(notes, 0), null);
+  assert.equal(declaredSampleNames(notes.instrument), null);
+  const drums = { ...notes, kind: "drums" as const };
+  assert.deepEqual(issuePaths(assert.throws(() => resolveVoice(drums, 0))), ["tracks[0].kind"]);
+  const parameter = { ...notes, params: { cutoffHz: 1000 } };
+  assert.deepEqual(issuePaths(assert.throws(() => validateVoiceParams({ ...song, tracks: [parameter] }))),
+    ["tracks[0].params.cutoffHz"]);
+  const lane = { ...notes, automation: [{ target: "param.cutoffHz", points: [{ tick: 0, value: 1000, curve: "hold" as const }] }] };
+  assert.deepEqual(issuePaths(assert.throws(() => validateDawVoiceLanes({ ...song, tracks: [lane] }))),
+    ["$.tracks[0].automation[0].target"]);
+});

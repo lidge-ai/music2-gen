@@ -10,7 +10,13 @@ src/render/
 ├── render.schema.ts            # render, voice, kit, and CLI result types
 ├── render.tool.ts              # validation and render entry point
 ├── render.test.ts              # end-to-end PCM and render validation
-├── mixer.tool.ts               # event selection, mixing, effects, mastering
+├── mixer.tool.ts               # instrument/audio summing, effects, mastering
+├── select.tool.ts              # legacy event-window selection
+├── select.test.ts              # seeded selection and mono stop vectors
+├── instrument.tool.ts          # kit/SFZ sample adapter
+├── instrument.test.ts          # adapter stereo and confinement vectors
+├── audio-tracks.tool.ts        # clip lanes, inserts, gain/pan/duck/sends/stems
+├── audio-tracks.test.ts        # stereo, crop, send and stem vectors
 ├── mixer.test.ts               # ranges, stems, levels, determinism
 ├── fx.tool.ts                  # wet effects and duck envelope
 ├── fx.test.ts                  # effect and envelope vectors
@@ -57,9 +63,7 @@ patterns, including unplaced sections. User `kit:` names remain manifest-owned.
 List-note tracks use Timeline events for PCM. Their invalid sample and MIDI
 issues identify the original `notes[k].sample` or `notes[k].pitch` field even
 after event sorting; pattern tracks keep their existing `.pattern` paths.
-Nonempty `audioTracks`, `sfz:` instruments, and nonempty automation lanes raise
-`E_CAPABILITY` before mixing until their playback phases. Audio and SFZ are
-gated before built-in voice lookup. `validateDawVoiceLanes` checks semantic
+`sfz:` notes load song-relative SFZ/WAV sources through the sampler and preserve stereo through inserts, pan, gain, ducking, sends and stems. `audioTracks` clip lanes enter after instrument tracks and before bus returns; insert chains and duck envelopes retain absolute song time for partial-bar crops. When clip songs have active sends, partial bus returns are cropped from a full-origin return render so stateful effects keep their history. Nonempty automation lanes still raise `E_CAPABILITY` pending wp6. `validateDawVoiceLanes` checks semantic
 `param.*` opt-ins and point ranges at render and IR entry.
 It also checks effective timeline samples, MIDI ranges, and the mastering capability.
 `mixTracks` selects events for a zero-based half-open bar range, allocates
@@ -68,8 +72,7 @@ track gain and pan, sends, ducking, wet effects, and selected mastering.
 
 Each built-in voice renders a track-length mono `Float32Array`. The mixer
 converts it to stereo and optionally retains a dry, post-gain/pan/duck stem.
-Stems exclude wet sends and master processing. Kits load relative to the song
-path; their decoded samples and cache live for one render invocation.
+Stems exclude wet sends and master processing. Kits keep their direct mono path in ordinary legacy mixing; SFZ uses the tagged stereo adapter, including tapestop pre-roll. Samples and clip sources load relative to the song path, with invocation-local caches. SFZ parser warnings appear only when present in `RenderResult.warnings` and CLI render data.
 
 This feature returns PCM and measurements. File output, WAV bit depth,
 ffmpeg encoding, optional two-pass loudnorm processing, and CLI envelopes belong to
@@ -90,12 +93,17 @@ re-exports only `renderSong`, `VOICES`, `RenderOptions`, `RenderResult`,
 | `export function duckEnvelope(frames: number, onsets: readonly number[], sampleRate: number, amount: number, releaseMs = 180): Float32Array` | `fx.tool.ts` | Build a per-frame gain envelope. |
 | `export async function loadKit(songPath: string, instrument: string, sampleRate: number): Promise<LoadedKit>` | `kit.tool.ts` | Read and decode a confined sample kit. |
 | `export function renderKit(ctx: VoiceContext, kit: LoadedKit): Float32Array` | `kit.tool.ts` | Sum selected kit samples into mono PCM. |
+| `export function selectEvents(song: ResolvedSong, timeline: Timeline, start: number, end: number, frames: number): VoiceEvent[][]` | `select.tool.ts` | Preserve legacy event selection and seeded order. |
+| `export function isSampleInstrument(instrument: string): boolean` | `instrument.tool.ts` | Identify kit/SFZ resource lanes. |
+| `export async function loadSampleInstrument(songPath: string, track: ResolvedTrack, rate: number): Promise<LoadedSampleInstrument \| null>` | `instrument.tool.ts` | Load tagged kit/SFZ resources. |
+| `export function renderSampleInstrument(ctx: VoiceContext, loaded: LoadedSampleInstrument): StereoBuffer` | `instrument.tool.ts` | Render sample lane in stereo. |
+| `export async function mixAudioTracks(song: ResolvedSong, songPath: string, window, buses, stems, timeline?, captureStems?): Promise<{reverbActive:boolean;delayActive:boolean}>` | `audio-tracks.tool.ts` | Render clip lanes after instruments and mark active returns. |
 | `export const VOICES: Readonly<Record<string, VoiceSpec>>` | `voices/registry.tool.ts` | Built-in voice map. |
-| `export function resolveVoice(track: ResolvedTrack, index: number): VoiceSpec \| null` | `voices/registry.tool.ts` | Resolve built-in instrument; return null for kit. |
+| `export function resolveVoice(track: ResolvedTrack, index: number): VoiceSpec \| null` | `voices/registry.tool.ts` | Resolve built-in instrument; return null for kit or SFZ. |
 | `export function mergeParams(spec: VoiceSpec, params: Readonly<Record<string, number>>): Record<string, number>` | `voices/registry.tool.ts` | Fill omitted parameters with defaults. |
 | `export function validateVoiceParams(song: ResolvedSong): void` | `voices/registry.tool.ts` | Reject unknown, mismatched, or invalid voices and parameters. |
 | `export function validateDawVoiceLanes(song: ResolvedSong): void` | `voices/registry.tool.ts` | Check built-in voice automation targets and point values. |
-| `export function declaredSampleNames(instrument: string): readonly string[] \| null` | `voices/registry.tool.ts` | Look up the built-in drum-kind voice vocabulary; return null for kits, notes, or unknown voices. |
+| `export function declaredSampleNames(instrument: string): readonly string[] \| null` | `voices/registry.tool.ts` | Look up the built-in drum-kind voice vocabulary; return null for kits, SFZ, notes, or unknown voices. |
 | `export const DRUM_NAMES: readonly string[]` | `voices/drums.tool.ts` | Valid synthetic drum sample names. |
 
 The voice declarations are `drumsVoice`, `eightOhEightVoice`,

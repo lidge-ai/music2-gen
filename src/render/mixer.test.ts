@@ -300,3 +300,50 @@ test("intersample impulse is limited below the true-peak ceiling", async () => {
     assert.ok(result.audio.left.some((sample) => sample !== 0));
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+test("audio clip stems and returns reconstruct pre-master with instrument tracks", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-mix-audio-"));
+  try {
+    const clip = createStereo(44100, 44100);
+    clip.left.fill(.1); clip.right.fill(.2);
+    await writeWav(join(dir, "clip.wav"), clip, { bits: 24, seed: 1 });
+    const song = validateSong(fixture({
+      tracks: [{ id: "lead", kind: "notes", instrument: "lead", pattern: "c4 ~ ~ ~" }],
+      audioTracks: [{ id: "clip", sends: { reverb: .2, delay: .2 },
+        clips: [{ file: "clip.wav", start: 0, length: 1, fadeIn: 0, fadeOut: 0 }] }],
+    }));
+    const mixed = await mixTracks(song, buildTimeline(song), join(dir, "song.json"),
+      { stems: true, returns: true, premaster: true });
+    assert.deepEqual(mixed.stems.map((stem) => stem.trackId), ["lead", "clip"]);
+    assert.ok(mixed.returns?.reverb && mixed.returns.delay && mixed.premaster);
+    for (const channel of ["left", "right"] as const) for (let i = 0; i < mixed.premaster[channel].length; i++) {
+      const sum = mixed.stems.reduce((value, stem) => value + stem.audio[channel][i]!, 0) +
+        mixed.returns.reverb[channel][i]! + mixed.returns.delay[channel][i]!;
+      assert.ok(Math.abs(sum - mixed.premaster[channel][i]!) <= 1e-6);
+    }
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test("clip pre-roll keeps stateful insert, stem and return aligned with full render", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-clip-preroll-"));
+  try {
+    const clip = createStereo(44100, 44100);
+    clip.left[0] = .75;
+    await writeWav(join(dir, "clip.wav"), clip, { bits: 24, seed: 1 });
+    const song = validateSong(fixture({ sections: [{ id: "one", bars: 2 }],
+      tracks: [{ id: "lead", kind: "notes", instrument: "lead", pattern: "~" }],
+      audioTracks: [{ id: "clip", fx: [{ type: "delay", time: "1/8", feedback: .5, mix: .5 }],
+        sends: { delay: .3 }, clips: [{ file: "clip.wav", start: 3, length: 2, fadeIn: 0, fadeOut: 0 }] }],
+    }));
+    const timeline = buildTimeline(song);
+    const full = await mixTracks(song, timeline, join(dir, "song.json"),
+      { stems: true, returns: true });
+    const crop = await mixTracks(song, timeline, join(dir, "song.json"),
+      { bars: { start: 1, end: 2 }, stems: true, returns: true });
+    const offset = 88200;
+    for (const side of ["left", "right"] as const) {
+      assert.deepEqual(crop.stems[1]!.audio[side], full.stems[1]!.audio[side].subarray(offset, offset + 88200));
+      assert.deepEqual(crop.returns!.delay![side], full.returns!.delay![side].subarray(offset, offset + 88200));
+    }
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});

@@ -34,7 +34,7 @@ The optional DAW fields keep version 1. A track note list is arrangement-absolut
 in beats and exclusive with its pattern. `song-daw.schema.ts` validates note,
 clip and automation boundaries, then resolves positions to 960-PPQ ticks.
 Absent `notes`, `automation` and `audioTracks` stay absent in resolved JSON.
-Audio clips and automation are retained as metadata for later render phases.
+Audio clips now feed the render sampler/clip mixer as absolute tick placements; automation remains metadata for wp6. An `sfz:` instrument is valid only for notes tracks and keeps a confined song-relative `.sfz` reference.
 `timeline-notes.tool.ts` appends list events only for tracks with a `notes`
 field; the legacy pattern loop and its sort comparator are unchanged.
 `song.schema.ts` publishes the JSON Schema, checks its structural constraints,

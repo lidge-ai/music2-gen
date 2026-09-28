@@ -61,7 +61,7 @@ export const render: CommandSpec = {
     if (song.loop && range) throw inputError("--bars cannot render part of a loop song");
     const mp3 = values["mp3"] === true ? wav.slice(0, -4) + ".mp3" : undefined;
     const ogg = values["ogg"] === true ? wav.slice(0, -4) + ".ogg" : undefined;
-    const stemPaths = stemDir ? song.tracks.map((track) => join(stemDir, `${track.id}.wav`)) : [];
+    const stemPaths = stemDir ? [...song.tracks, ...(song.audioTracks ?? [])].map((track) => join(stemDir, `${track.id}.wav`)) : [];
     const outputPaths = [wav, ...(mp3 ? [mp3] : []), ...(ogg ? [ogg] : []), ...stemPaths];
     await assertDistinct([songPath], outputPaths);
     const needsFfmpeg = mp3 !== undefined || ogg !== undefined || values["loudnorm"] === true;
@@ -98,7 +98,7 @@ export const render: CommandSpec = {
       }
       for (let i = 0; i < stemPaths.length; i++) {
         await writeWav(stageOutput(stemPaths[i]!), result.stems[i]!.audio,
-          { bits: bitDepth, seed: fnv1a32(song.seed, song.tracks[i]!.id, "wav") });
+          { bits: bitDepth, seed: fnv1a32(song.seed, [...song.tracks, ...(song.audioTracks ?? [])][i]!.id, "wav") });
       }
       if (mp3) await encodeAudio(wavSource, stageOutput(mp3), ffmpeg!, { format: "mp3" });
       if (ogg) await encodeAudio(wavSource, stageOutput(ogg), ffmpeg!, { format: "ogg" });
@@ -111,7 +111,7 @@ export const render: CommandSpec = {
     }
     const data: RenderData = {
       wav, ...(mp3 ? { mp3 } : {}), ...(ogg ? { ogg } : {}),
-      ...(stemDir ? { stems: stemPaths } : {}), bars: result.bars,
+      ...(stemDir ? { stems: stemPaths } : {}), ...(result.warnings?.length ? { warnings: result.warnings } : {}), bars: result.bars,
       sampleRate: result.audio.sampleRate, frames: result.audio.left.length,
       durationSeconds: result.durationSeconds,
       peakDbfs: Number.isFinite(result.peakDbfs) ? result.peakDbfs : null,

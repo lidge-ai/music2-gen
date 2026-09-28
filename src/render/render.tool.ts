@@ -46,9 +46,6 @@ function validateDeclaredSamples(song: ResolvedSong): void {
 /** Render a validated, resolved song to deterministic stereo PCM. */
 export async function renderSong(song: ResolvedSong, songPath: string,
   options: RenderOptions = {}): Promise<RenderResult> {
-  if (song.audioTracks?.length) throw new Music2Error("E_CAPABILITY", "audioTracks rendering is not available");
-  if (song.tracks.some((track) => track.instrument.startsWith("sfz:")))
-    throw new Music2Error("E_CAPABILITY", "SFZ rendering is not available");
   validateVoiceParams(song);
   validateDawVoiceLanes(song);
   validateDeclaredSamples(song);

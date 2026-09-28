@@ -1,3 +1,4 @@
+import { isSampleInstrument } from "../instrument.tool.ts";
 import { Music2Error } from "../../shared/index.ts";
 import type { ResolvedSong, ResolvedTrack } from "../../song/index.ts";
 import type { VoiceSpec } from "../render.schema.ts";
@@ -40,13 +41,16 @@ function voiceFor(instrument: string): VoiceSpec | undefined {
 
 /** Built-in drum-kind sample vocabulary; kit manifests own their own names. */
 export function declaredSampleNames(instrument: string): readonly string[] | null {
-  if (instrument.startsWith("kit:")) return null;
+  if (isSampleInstrument(instrument)) return null;
   const voice = voiceFor(instrument);
   return voice?.kind === "drums" ? voice.sampleNames ?? null : null;
 }
 
 export function resolveVoice(track: ResolvedTrack, index: number): VoiceSpec | null {
-  if (track.instrument.startsWith("kit:")) return null;
+  if (isSampleInstrument(track.instrument)) {
+    if (track.instrument.startsWith("sfz:") && track.kind !== "notes") throw new Music2Error("E_SCHEMA", "SFZ requires notes track", { details: { issues: [{ path: `tracks[${index}].kind`, message: "SFZ requires notes track" }] } });
+    return null;
+  }
   const spec = voiceFor(track.instrument);
   if (!spec) throw new Music2Error("E_SCHEMA", `unknown instrument ${track.instrument}`, {
     details: { issues: [{ path: `tracks[${index}].instrument`, message: `unknown instrument ${track.instrument}` }] },
@@ -66,7 +70,11 @@ export function mergeParams(spec: VoiceSpec, params: Readonly<Record<string, num
 export function validateVoiceParams(song: ResolvedSong): void {
   const issues: Issue[] = [];
   song.tracks.forEach((track, index) => {
-    if (track.instrument.startsWith("kit:")) return;
+    if (isSampleInstrument(track.instrument)) {
+      if (track.instrument.startsWith("sfz:") && track.kind !== "notes") issues.push({ path: `tracks[${index}].kind`, message: "SFZ requires notes track" });
+      if (track.instrument.startsWith("sfz:")) for (const name of Object.keys(track.params)) issues.push({ path: `tracks[${index}].params.${name}`, message: "unknown parameter" });
+      return;
+    }
     const spec = voiceFor(track.instrument);
     if (!spec) {
       issues.push({ path: `tracks[${index}].instrument`, message: `unknown instrument ${track.instrument}` });
@@ -101,7 +109,6 @@ export function validateVoiceParams(song: ResolvedSong): void {
 export function validateDawVoiceLanes(song: ResolvedSong): void {
   const issues: Issue[] = [];
   song.tracks.forEach((track, trackIndex) => {
-    if (track.instrument.startsWith("sfz:")) return;
     track.automation?.forEach((lane, laneIndex) => {
       if (!lane.target.startsWith("param.")) return;
       const name = lane.target.slice("param.".length);
