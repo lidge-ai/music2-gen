@@ -267,3 +267,7 @@ There are no runtime package dependencies. Tests use the Node test runner.
 - [ ] Recheck mixer vectors, dry stems, and true-peak ceiling after DSP changes.
 - [ ] Recheck `lufs` target behavior and `devlog/str_func/audio-io.md` when loudness measurement changes.
 - [ ] Update `devlog/str_func/AGENTS.md` index when adding or moving this document.
+
+## Built-in sampled instruments and voice policy
+
+`instrument.tool.ts` recognizes `lib:` as a sampled note instrument and confines loading to its packaged ID directory. `select.tool.ts` skips synth release lookup for sampled tracks. Bass and lead accept opt-in `wave:2` triangle in both legacy and enhanced synthesis paths; default parameters and legacy paths are unchanged.

@@ -249,3 +249,7 @@ hand.
 - [ ] Regenerate `skills/music2/references/genres.md` after card changes and run `npm run docs:genres:check`.
 - [ ] Update `devlog/str_func/cli.md` when command flags or exit policy change.
 - [ ] Update `devlog/str_func/AGENTS.md` index when adding or moving this document.
+
+## Built-in sampled instruments and voice policy
+
+Genre card palettes and starter tracks avoid saw-based voice configurations. Bass cards explicitly use triangle `wave:2`; techno melody uses `pluck`. `lint-layering-harmony.tool.ts` uses manifest roles so bundled piano and spiccato strings count as focal and sustained strings as a bed.

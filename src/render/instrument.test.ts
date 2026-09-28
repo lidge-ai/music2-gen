@@ -13,6 +13,18 @@ const track = (instrument: string) => validateSong({ version: 1, bpm: 120,
   tracks: [{ id: "voice", kind: "notes", instrument, pattern: "a4" }],
   sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] }).tracks[0]!;
 
+test("bundled piano loads from package root regardless of song location", async () => {
+  const resolved = track("lib:grand-piano");
+  assert.equal(isSampleInstrument(resolved.instrument), true);
+  const loaded = await loadSampleInstrument(join(tmpdir(), "music2-library-song.json"), resolved, 44100);
+  assert.equal(loaded?.kind, "sfz");
+  if (loaded?.kind !== "sfz") return;
+  const rendered = renderSampleInstrument({ sampleRate: 44100, frames: 22050, track: resolved,
+    events: [{ midi: 69, sample: null, velocity: 1, startFrame: 0, gateFrames: 16000,
+      stopFrame: 22050, eventIndex: 0, seed: 1 }] }, loaded);
+  assert.ok(rendered.left.some((value) => Math.abs(value) > 0.001));
+});
+
 test("sample adapter preserves SFZ stereo and rejects escaped sources", async () => {
   const dir = await mkdtemp(join(tmpdir(), "music2-instrument-"));
   const outside = await mkdtemp(join(tmpdir(), "music2-instrument-outside-"));

@@ -143,6 +143,15 @@ void test("sfz references, audio source paths and duck sources are validated wit
     "$.audioTracks[0].duck.by");
 });
 
+void test("library references accept notes and identify invalid ids and drum use", () => {
+  const raw = base();
+  assert.equal(validateSong({ ...raw, tracks: [{ ...raw.tracks[0], instrument: "lib:grand-piano" }] }).tracks[0]?.instrument,
+    "lib:grand-piano");
+  has({ ...raw, tracks: [{ ...raw.tracks[0], instrument: "lib:missing" }] }, "$.tracks[0].instrument", "valid ids");
+  has({ ...raw, tracks: [{ ...raw.tracks[0], kind: "drums", instrument: "lib:strings" }] },
+    "$.tracks[0].instrument", "requires notes");
+});
+
 void test("clip positions overlap after rounding and fit stretch uses resolved ticks", () => {
   const raw = base();
   has({ ...raw, audioTracks: [{ id: "vox", clips: [

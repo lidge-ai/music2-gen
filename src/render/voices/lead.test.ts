@@ -34,6 +34,17 @@ void test("saw and square waves differ; zero vibrato has stable cycles", () => {
   for (let i = 1; i < cycles.length; i++) assert.ok(cycles[i]! - cycles[i - 1]! >= 100 && cycles[i]! - cycles[i - 1]! <= 101);
 });
 
+void test("triangle lead is finite and distinct in legacy and enhanced paths", () => {
+  const triangle = render([note()], { wave: 2 });
+  assert.ok(triangle.every(Number.isFinite));
+  assert.notDeepEqual(triangle, render([note()], { wave: 1 }));
+  const ctx: VoiceContext = { sampleRate: rate, frames: rate,
+    track: { ...track(), params: { unison: 1, wave: 2 } }, events: [note()] };
+  const enhanced = leadVoice.render(ctx, { ...defaults, wave: 2 });
+  assert.ok(enhanced.every(Number.isFinite));
+  assert.notDeepEqual(enhanced, triangle);
+});
+
 void test("vibrato starts after 80 ms", () => {
   const stable = render([note()], { vibratoCents: 0 });
   const moving = render([note()], { vibratoCents: 80 });

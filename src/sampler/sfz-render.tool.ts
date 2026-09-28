@@ -89,13 +89,13 @@ async function decodedSize(path: string, display: string): Promise<number | null
 
 /** Load one SFZ and its WAVs, with decode cache scoped to this invocation. */
 export async function loadSfz(songPath: string, ref: string, sampleRate: number,
-  budget: DecodeBudget = createDecodeBudget()): Promise<LoadedSfz> {
+  budget: DecodeBudget = createDecodeBudget(), confinedRoot?: string): Promise<LoadedSfz> {
   if (!Number.isInteger(sampleRate) || sampleRate < 8000 || sampleRate > 192000) {
     throw new Music2Error("E_INPUT", "invalid SFZ output rate");
   }
-  const songDir = dirname(songPath);
+  const songDir = confinedRoot ?? dirname(songPath);
   const main = await confinedRealpath(songDir, ref);
-  const root = dirname(main);
+  const root = confinedRoot ?? dirname(main);
   const instrument = await parseSfz(relative(root, main), root);
   const warnings = [...instrument.warnings];
   const samples = new Map<string, StereoBuffer>();

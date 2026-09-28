@@ -42,6 +42,8 @@
     "dist",
     "schema",
     "skills",
+    "instruments",
+    "THIRD_PARTY_NOTICES.md",
     "scripts/music2-plugin-bridge.py",
     "README.md",
     "LICENSE",

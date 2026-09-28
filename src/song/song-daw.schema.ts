@@ -2,6 +2,7 @@ import { noteToMidi, parseSampleRef } from "../pattern/index.ts";
 import { AUTOMATABLE_INSERT_PARAMS, INSERT_SPECS } from "../render/fx/fx.schema.ts";
 import type { InsertInput, ParamSpec, ResolvedInsert } from "../render/fx/fx.schema.ts";
 import { beatsToTicks, Music2Error, PPQ } from "../shared/index.ts";
+import { libraryInstrument } from "../sampler/index.ts";
 import type { ResolvedTrack, Song, Track } from "./song.schema.ts";
 export interface PluginUse { id: string; params?: Readonly<Record<string, number | string | boolean>> }
 
@@ -250,6 +251,13 @@ export function validateDawFields(input: unknown, issues: Issue[]): void {
     if (typeof track["instrument"] === "string" && track["instrument"].startsWith("sfz:")) {
       if (track["kind"] !== "notes" || !sourcePathValid(track["instrument"].slice(4), ".sfz"))
         add(issues, `${path}.instrument`, "invalid sfz reference for notes track");
+    }
+    if (typeof track["instrument"] === "string" && track["instrument"].startsWith("lib:")) {
+      if (track["kind"] !== "notes") add(issues, `${path}.instrument`, "library instrument requires notes track");
+      else {
+        try { libraryInstrument(track["instrument"].slice(4)); }
+        catch (cause) { add(issues, `${path}.instrument`, cause instanceof Error ? cause.message : "invalid library instrument"); }
+      }
     }
     validateLanes(track["automation"], `${path}.automation`, body, track["fx"], false, issues);
   });

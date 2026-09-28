@@ -24,6 +24,9 @@ const DRUM_ENTRIES = Object.entries(DRUM_NOTES);
 const SFX_ENTRIES = Object.entries(SFX_NOTES);
 
 export function programForInstrument(instrument: string): number | undefined {
+  if (instrument === "lib:grand-piano") return 0;
+  if (instrument === "lib:strings") return 48;
+  if (instrument === "lib:strings-staccato") return 45;
   return Object.hasOwn(GM_PROGRAMS, instrument) ? GM_PROGRAMS[instrument as keyof typeof GM_PROGRAMS] : undefined;
 }
 

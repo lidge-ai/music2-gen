@@ -59,6 +59,9 @@ export function buildProjectXml(project: ProjectIR, view: DawView): ProjectXmlRe
     return made;
   };
   const warnings: string[] = [];
+  if (view.content !== "audio") for (const track of project.tracks)
+    if (track.type !== "audio" && track.instrument.kind === "lib")
+      warnings.push(`NOTE_SOUND_NOT_PORTABLE:${track.id}:lib:${track.instrument.id}`);
   const structure: Node[] = [];
   const lanes: Node[] = [];
   const mediaBySource = new Map(view.media.filter((entry) => entry.owner.kind === "source")

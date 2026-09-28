@@ -24,6 +24,15 @@ test("ProjectIR preserves only declared plugin fields and omits the key from leg
   assert.equal(Object.hasOwn(ir, "warnings"), false);
 });
 
+test("ProjectIR retains library identity without a song-relative sample path", () => {
+  const song = validateSong(basic([{ id: "piano", kind: "notes", instrument: "lib:grand-piano", pattern: "c4" }]));
+  const ir = buildProject(song, buildTimeline(song));
+  assert.equal(ir.tracks[0]?.type, "notes");
+  assert.deepEqual(ir.tracks[0]?.type === "notes" ? ir.tracks[0].instrument : null,
+    { kind: "lib", id: "grand-piano" });
+  assert.deepEqual(ir.samples, []);
+});
+
 test("ProjectIR replaces an absolute resolved plugin ref with its basename and records a warning", () => {
   const song = validateSong(basic([{ id: "lead", kind: "notes", instrument: "piano", pattern: "c4" }]));
   const plugin = { id: "softclip", format: "vst3", ref: "/private/tmp/SoftClip.vst3",

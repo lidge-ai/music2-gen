@@ -37,7 +37,7 @@ function renderMono(ctx: VoiceContext, wave: number, cutoffHz: number,
         targetHz + (fromHz - targetHz) * Math.exp(-offset / glideFrames) : targetHz;
       phase += hz / rate;
       if (phase >= 1) phase %= 1;
-      const oscillator = wave === 0 ? 2 * phase - 1 : phase < .5 ? 1 : -1;
+      const oscillator = wave === 2 ? 1 - 4 * Math.abs(phase - .5) : wave === 0 ? 2 * phase - 1 : phase < .5 ? 1 : -1;
       // The bounded feedback cannot drive the one-pole state outside a finite range.
       const feedback = Math.max(-.9, Math.min(.9, filtered * resonance));
       filtered += eventAlpha * (oscillator - feedback - filtered);
@@ -72,7 +72,7 @@ function renderEnhancedBass(ctx: VoiceContext, params: Readonly<Record<string, n
     for (let frame = Math.max(0, event.startFrame); frame < end; frame++) {
       const age = frame - event.startFrame;
       const hz = glideFrames > 0 ? targetHz + (fromHz - targetHz) * Math.exp(-age / glideFrames) : targetHz;
-      const raw = oscillator.sample(hz, rate, params["wave"] === 1);
+      const raw = params["wave"] === 2 ? oscillator.sampleTriangle(hz, rate) : oscillator.sample(hz, rate, params["wave"] === 1);
       const g = filterEnvelope.value(age);
       const attack = Math.min(1, (age + 1) / (rate * .003));
       const release = age < event.gateFrames ? 1 : Math.exp(-6.907755 * (age - event.gateFrames) / releaseFrames);
@@ -87,7 +87,7 @@ export const bassVoice: VoiceSpec = {
   id: "bass", kind: "notes", monoDefault: true,
   automatable: ["cutoffHz"],
   params: {
-    wave: { default: 0, min: 0, max: 1, integer: true },
+    wave: { default: 0, min: 0, max: 2, integer: true },
     cutoffHz: { default: 600, min: 40, max: 8000 },
     resonance: { default: .15, min: 0, max: .9 },
     releaseMs: { default: 80, min: 5, max: 1000 },

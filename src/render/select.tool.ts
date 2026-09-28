@@ -3,6 +3,7 @@ import { valueAt } from "../automation/index.ts";
 import type { ResolvedSong, Timeline } from "../song/index.ts";
 import type { VoiceEvent } from "./render.schema.ts";
 import { mergeParams, resolveVoice } from "./voices/registry.tool.ts";
+import { isSampleInstrument } from "./instrument.tool.ts";
 
 export function selectEvents(song: ResolvedSong, timeline: Timeline, start: number, end: number, frames: number): VoiceEvent[][] {
   const rate = song.sampleRate;
@@ -34,7 +35,7 @@ export function selectEvents(song: ResolvedSong, timeline: Timeline, start: numb
         const next = events[i + 1];
         if (next) events[i]!.stopFrame = Math.min(frames, next.startFrame);
       }
-    } else if (track.kind === "notes" && !track.instrument.startsWith("kit:") && !track.instrument.startsWith("sfz:")) {
+    } else if (track.kind === "notes" && !isSampleInstrument(track.instrument)) {
       const voice = resolveVoice(track, index)!;
       const params = mergeParams(voice, track.params);
       const releaseMs = voice.id === "bell" ? 120 : voice.id === "pluck" ? 80 : params["releaseMs"];

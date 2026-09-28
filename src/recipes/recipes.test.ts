@@ -46,6 +46,19 @@ test("list and get return isolated deep clones", () => {
   assert.equal(fresh.arrangements[0]!.basis.includes("changed"), false);
 });
 
+test("recipe palettes and starter tracks avoid saw-based configurations", () => {
+  const alwaysSaw = new Set(["strings", "brass", "choir", "supersaw", "pad"]);
+  for (const card of listRecipes()) {
+    const entries = [...card.palette, ...card.starterSong.tracks];
+    for (const entry of entries) {
+      assert.equal(alwaysSaw.has(entry.instrument), false, `${card.id}: ${entry.instrument}`);
+      if (entry.instrument === "bass" || entry.instrument === "lead")
+        assert.notEqual(entry.params?.["wave"] ?? (entry.instrument === "bass" ? 0 : 1), 0,
+          `${card.id}: ${entry.instrument} uses saw`);
+    }
+  }
+});
+
 test("unknown recipe has input-class not-found error", () => {
   assert.throws(() => getRecipe("unknown"),
     (error: unknown) => error instanceof Music2Error && error.code === "E_NOT_FOUND" && error.exit === 2);

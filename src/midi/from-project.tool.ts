@@ -31,7 +31,9 @@ function ordered(events: SmfEvent[]): SmfEvent[] {
     .map(({ event }) => event);
 }
 function instrumentId(track: ProjectNoteTrack): string {
-  return track.instrument.kind === "voice" ? track.instrument.id : `${track.instrument.kind}:${track.instrument.ref}`;
+  if (track.instrument.kind === "voice") return track.instrument.id;
+  if (track.instrument.kind === "lib") return `lib:${track.instrument.id}`;
+  return `${track.instrument.kind}:${track.instrument.ref}`;
 }
 function noteKey(track: ProjectNoteTrack, note: ProjectNote, kit: Record<string, number> | undefined): number | undefined {
   if (track.type === "notes") return note.pitch ?? undefined;
@@ -135,6 +137,7 @@ export function projectToSmf(project: ProjectIR, options: { kitMaps?: Readonly<R
       warnings.push(midiAutomationOmittedWarning(track.id, lane));
     if (track.type === "audio") { count(dropped, "audioTracksDropped"); warnings.push(`AUDIO_TRACK_DROPPED:${track.id}`); continue; }
     const id = instrumentId(track);
+    if (track.instrument.kind === "lib") warnings.push(`MIDI_SOUND_NOT_PORTABLE:${track.id}:${id}`);
     if (track.instrument.kind === "voice" && Object.keys(track.instrument.params).length > 0) {
       count(dropped, "voiceParamsDropped"); warnings.push(`VOICE_PARAMS_DROPPED:${track.id}`);
     }

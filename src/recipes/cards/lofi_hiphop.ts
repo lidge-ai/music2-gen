@@ -73,6 +73,7 @@ export const lofiHiphop: RecipeCard = {
       "role": "bass",
       "instrument": "bass",
       "params": {
+        "wave": 2,
         "cutoffHz": 260,
         "releaseMs": 110
       }
@@ -219,6 +220,7 @@ export const lofiHiphop: RecipeCard = {
           "delay": 0
         },
         "params": {
+          "wave": 2,
           "cutoffHz": 260,
           "releaseMs": 110
         }

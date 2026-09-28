@@ -6,7 +6,7 @@ const TAU = 2 * Math.PI;
 export const leadVoice: VoiceSpec = {
   id: "lead", kind: "notes", monoDefault: false,
   params: {
-    wave: { default: 1, min: 0, max: 1, integer: true },
+    wave: { default: 1, min: 0, max: 2, integer: true },
     vibratoHz: { default: 5, min: 0, max: 12 },
     vibratoCents: { default: 12, min: 0, max: 100 },
     releaseMs: { default: 120, min: 5, max: 2000 },
@@ -39,7 +39,7 @@ export const leadVoice: VoiceSpec = {
         if (frame < start) continue;
         const attack = Math.min(1, (age + 1) / attackFrames);
         const release = age < event.gateFrames ? 1 : Math.exp(-6.9 * (age - event.gateFrames) / releaseFrames);
-        const wave = params["wave"] === 0 ? 2 * phase - 1 : (phase < 0.5 ? 1 : -1);
+        const wave = params["wave"] === 2 ? 1 - 4 * Math.abs(phase - .5) : params["wave"] === 0 ? 2 * phase - 1 : (phase < 0.5 ? 1 : -1);
         output[frame]! += 0.42 * event.velocity * attack * release * wave;
       }
     }
@@ -67,7 +67,8 @@ function renderEnhancedLead(ctx: Parameters<VoiceSpec["render"]>[0], params: Rea
       const age = frame - event.startFrame;
       const vibratoAge = Math.max(0, age - onsetFrames) / rate;
       const vibrato = age < onsetFrames ? 0 : vibratoCents * Math.sin(TAU * params["vibratoHz"]! * vibratoAge);
-      const raw = oscillator.sample(frequency * 2 ** (vibrato / 1200), rate, params["wave"] === 1);
+      const hz = frequency * 2 ** (vibrato / 1200);
+      const raw = params["wave"] === 2 ? oscillator.sampleTriangle(hz, rate) : oscillator.sample(hz, rate, params["wave"] === 1);
       if (frame < 0) continue;
       const g = filterEnvelope.value(age);
       const attack = Math.min(1, (age + 1) / (0.005 * rate));

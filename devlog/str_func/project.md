@@ -41,3 +41,7 @@ The public library API (`src/index.ts`) and `music2 export ir` use `src/project/
 - [ ] Keep `project.schema.ts`, builder output key order and export consumers aligned.
 - [ ] Recheck fraction/swing quantization, occurrence names, mono clipping and sample indices when Song or Timeline changes.
 - [ ] Verify deterministic serialization and legacy render byte identity after projection changes.
+
+## Built-in sampled instruments and voice policy
+
+`ProjectInstrument` now includes `{kind:"lib",id}`. `buildProject` retains that ID in IR without resolving package paths or changing existing voice/SFZ bytes.

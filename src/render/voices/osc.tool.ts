@@ -54,6 +54,17 @@ export class UnisonOscillator {
     }
     return sum / weights;
   }
+
+  sampleTriangle(frequency: number, rate: number): number {
+    let sum = 0;
+    for (let i = 0; i < this.phases.length; i++) {
+      const phase = this.phases[i]!;
+      sum += 1 - 4 * Math.abs(phase - 0.5);
+      const next = phase + Math.min(0.45, frequency * this.ratios[i]! / rate);
+      this.phases[i] = next >= 1 ? next - 1 : next;
+    }
+    return sum / this.phases.length;
+  }
 }
 
 /** TPT state-variable low-pass; retain double-precision state per note. */

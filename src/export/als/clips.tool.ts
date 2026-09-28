@@ -32,6 +32,7 @@ export function buildMidiClips(track: ProjectNoteTrack, markers: readonly Projec
     note.sample ? [note.sample.name] : []))], kitExplicit) : null;
   if (kit) warnings.push(...kit.warnings.map((message) => `${message}:${track.id}`));
   if (track.instrument.kind === "voice" && track.instrument.id === "sfx") warnings.push(`ALS_SFX_PRIVATE_NOTES:${track.id}`);
+  if (track.instrument.kind === "lib") warnings.push(`ALS_SOUND_NOT_PORTABLE:${track.id}:lib:${track.instrument.id}`);
   const placements = [...markers].sort((a, b) => a.tick - b.tick || a.ordinal - b.ordinal);
   const clips: XmlNode[] = [];
   for (const placement of placements) {

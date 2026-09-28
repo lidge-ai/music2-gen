@@ -70,17 +70,15 @@ export const techno: RecipeCard = {
       "role": "bass",
       "instrument": "bass",
       "params": {
+        "wave": 2,
         "cutoffHz": 430,
         "releaseMs": 65
       }
     },
     {
       "role": "melody",
-      "instrument": "lead",
-      "params": {
-        "vibratoCents": 4,
-        "releaseMs": 100
-      }
+      "instrument": "pluck",
+      "params": {}
     }
   ],
   "arrangement": [
@@ -240,6 +238,7 @@ export const techno: RecipeCard = {
           "releaseMs": 90
         },
         "params": {
+          "wave": 2,
           "cutoffHz": 430,
           "releaseMs": 65
         }
@@ -247,7 +246,7 @@ export const techno: RecipeCard = {
       {
         "id": "melody",
         "kind": "notes",
-        "instrument": "lead",
+        "instrument": "pluck",
         "pattern": "e4 ~ ~ ~ g4 ~ ~ ~ e4 ~ ~ ~ b4 ~ ~ ~",
         "velocity": 0.65,
         "gain": -9,
@@ -260,10 +259,7 @@ export const techno: RecipeCard = {
           "reverb": 0.25,
           "delay": 0
         },
-        "params": {
-          "vibratoCents": 4,
-          "releaseMs": 100
-        }
+        "params": {}
       }
     ],
     "sections": [

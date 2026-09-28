@@ -48,7 +48,19 @@ test("npm package includes the skill and shipped runtime has no forbidden import
   assert.equal([...files].filter((file) => file === "scripts/music2-plugin-bridge.py").length, 1,
     "optional plugin bridge must be packaged once");
   assert.ok([...files].every((file) => !file.startsWith("scripts/") || file === "scripts/music2-plugin-bridge.py"));
-  assert.ok([...files].every((file) => !file.startsWith("tests/fixtures/dawproject/") && !/\.(?:wav|mp3|ogg)$/.test(file)));
+  assert.ok([...files].every((file) => !file.startsWith("tests/fixtures/dawproject/") &&
+    (!/\.(?:wav|mp3|ogg)$/i.test(file) || /^instruments\/.+\.wav$/i.test(file))));
+  assert.ok(files.has("instruments/index.json"));
+  assert.ok(files.has("THIRD_PARTY_NOTICES.md"));
+  const library = JSON.parse(readFileSync(join(root, "instruments/index.json"), "utf8")) as {
+    instruments: { sfz: string }[];
+  };
+  for (const instrument of library.instruments) {
+    assert.ok(files.has(`instruments/${instrument.sfz}`), instrument.sfz);
+    const folder = instrument.sfz.split("/")[0];
+    assert.ok([...files].some((file) => file.startsWith(`instruments/${folder}/`) && /\.wav$/i.test(file)),
+      `${folder} samples missing`);
+  }
   assert.ok(files.has("LICENSE"), "MIT license missing from npm package");
 
   const tracked = spawnSync("git", ["ls-files", "-z", "--", "src"], {

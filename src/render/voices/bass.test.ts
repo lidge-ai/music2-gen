@@ -36,6 +36,17 @@ void test("saw and square produce distinct finite waveforms", () => {
   assert.deepEqual(bassVoice.render(ctx, defaults), saw);
 });
 
+void test("triangle bass is finite and distinct in legacy and enhanced paths", () => {
+  const ctx = context([event(48, 0, rate)]);
+  const triangle = bassVoice.render(ctx, { ...defaults, wave: 2 });
+  assert.ok(triangle.every(Number.isFinite));
+  assert.notDeepEqual(triangle, bassVoice.render(ctx, defaults));
+  const enhanced = bassVoice.render({ ...ctx, track: { ...ctx.track, params: { unison: 1, wave: 2 } } },
+    { ...defaults, wave: 2, unison: 1, detuneCents: 0, filterEnvAmount: 0, filterEnvDecayMs: 500 });
+  assert.ok(enhanced.every(Number.isFinite));
+  assert.notDeepEqual(enhanced, triangle);
+});
+
 void test("200 Hz lowpass attenuates 4 kHz note relative to 4 kHz cutoff", () => {
   const ctx = context([event(108, 0, rate / 2)]);
   const low = bassVoice.render(ctx, { ...defaults, cutoffHz: 200 });

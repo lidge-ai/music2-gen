@@ -2,34 +2,48 @@
 
 Each track needs a unique `id`, a `kind`, an `instrument`, and usually a one-bar `pattern`. Built-in drum atoms are exactly `bd`, `sd`, `cp`, `hh`, `oh`, `rim`, `perc`, `tom`: kick, snare, clap, closed hat, open hat, rim, percussion, tom. A suffix such as `bd:3` selects a zero-based timbre variant; built-in drums wrap indices across four variants. For note voices, use explicit-octave notes (`c4`, `eb3`, `f#2`) or integer MIDI 0–127. The built-in voice IDs and accepted parameters come from the voice registry. Unknown parameters and out-of-range values fail voice validation. All ranges below are inclusive.
 
-| Voice ID | `kind` | Accepted atoms | Numeric `params`: default [minimum, maximum] |
-| --- | --- | --- | --- |
-| `drums` | `drums` | `bd sd cp hh oh rim perc tom`, optional `:index` | `tone`: 0.5 [0, 1]; `decayMs`: 180 [20, 1000]; `noise`: 0.5 [0, 1]; `kit`: 0 [0, 4] **integer** |
-| `808` | `notes` | notes or integer MIDI | `drive`: 2.2 [1, 8]; `decayMs`: 1100 [100, 5000]; `attackMs`: 3 [0, 50] |
-| `bass` | `notes` | notes or integer MIDI | `wave`: 0 [0, 1] **integer**; `cutoffHz`: 600 [40, 8000]; `resonance`: 0.15 [0, 0.9]; `releaseMs`: 80 [5, 1000]; `unison`: 1 [1, 9] **integer**; `detuneCents`: 0 [0, 50]; `filterEnvAmount`: 0 [0, 1]; `filterEnvDecayMs`: 500 [20, 5000] |
-| `bell` | `notes` | notes or integer MIDI | `ratio`: 3.5 [1, 12]; `index`: 2.2 [0, 10]; `decayMs`: 450 [50, 5000] |
-| `keys` | `notes` | notes or integer MIDI | `ratio`: 2 [1, 8]; `index`: 1.4 [0, 8]; `attackMs`: 8 [0, 200]; `releaseMs`: 220 [20, 2000] |
-| `pluck` | `notes` | notes or integer MIDI | `damping`: 0.992 [0.8, 0.9999]; `decayMs`: 900 [50, 5000]; `brightness`: 0.7 [0, 1] |
-| `pad` | `notes` | notes or integer MIDI | `detuneCents`: 11 [0, 50]; `cutoffHz`: 1800 [80, 12000]; `attackMs`: 400 [10, 5000]; `releaseMs`: 700 [20, 5000]; `unison`: 3 [1, 9] **integer**; `filterEnvAmount`: 0 [0, 1]; `filterEnvDecayMs`: 500 [20, 5000] |
-| `lead` | `notes` | notes or integer MIDI | `wave`: 1 [0, 1] **integer**; `vibratoHz`: 5 [0, 12]; `vibratoCents`: 12 [0, 100]; `releaseMs`: 120 [5, 2000]; `unison`: 1 [1, 9] **integer**; `detuneCents`: 0 [0, 50]; `filterEnvAmount`: 0 [0, 1]; `filterEnvDecayMs`: 500 [20, 5000] |
-| `supersaw` | `notes` | notes or integer MIDI | `unison`: 7 [1, 9] **integer**; `detuneCents`: 18 [0, 50]; `mix`: 0.75 [0, 1]; `cutoffHz`: 3500 [80, 12000]; `resonance`: 0.2 [0, 0.9]; `filterEnvAmount`: 0.5 [0, 1]; `filterEnvDecayMs`: 500 [20, 5000]; `attackMs`: 20 [0, 5000]; `releaseMs`: 250 [5, 5000] |
-| `sfx` | `drums` | `riser pitchriser downlifter impact whoosh revcymbal noisebuild subdrop zap crackle`, optional `:index` | `riserSemitones`: 19 [0, 36]; `sweepFromHz`: 250 [100, 2000]; `sweepToHz`: 8000 [1000, 16000]; `pitchHz`: 220 [55, 880]; `impactDecay`: 0.8 [0.2, 3]; `crackleRate`: 8 [1, 30]; `noiseColor`: 0 [0, 1] **integer** |
-| `piano` | `notes` | notes or integer MIDI | `inharmonicity`: 0.0002 [0.0001, 0.0004]; `hammer`: 0.5 [0, 1]; `releaseMs`: 200 [80, 400] |
-| `epiano` | `notes` | notes or integer MIDI | `bodyIndex`: 2 [1, 4]; `tineIndex`: 0.5 [0.1, 1.2]; `releaseMs`: 180 [80, 400] |
-| `organ` | `notes` | notes or integer MIDI | `d16`: 8 [0, 8] **integer**; `d513`: 8 [0, 8] **integer**; `d8`: 8 [0, 8] **integer**; `d4`: 0 [0, 8] **integer**; `d223`: 0 [0, 8] **integer**; `d2`: 0 [0, 8] **integer**; `d135`: 0 [0, 8] **integer**; `d113`: 0 [0, 8] **integer**; `d1`: 0 [0, 8] **integer**; `releaseMs`: 80 [30, 150] |
-| `strings` | `notes` | notes or integer MIDI | `detuneCents`: 7 [3, 12]; `attackMs`: 300 [120, 800]; `releaseMs`: 700 [200, 1500]; `chorusMix`: 0.2 [0, 0.35] |
-| `brass` | `notes` | notes or integer MIDI | `cutoffHz`: 600 [350, 1000]; `peakHz`: 4000 [2000, 8000]; `q`: 1 [0.6, 2]; `scoopCents`: 35 [10, 70]; `releaseMs`: 250 [100, 400] |
-| `flute` | `notes` | notes or integer MIDI | `breath`: 0.1 [0.03, 0.15]; `attackMs`: 80 [40, 200]; `releaseMs`: 180 [80, 300]; `vibratoCents`: 16 [8, 25] |
-| `choir` | `notes` | notes or integer MIDI | `vowel`: 0 [0, 4] **integer**; `attackMs`: 300 [100, 500]; `releaseMs`: 600 [200, 1000]; `detuneCents`: 8 [4, 12] |
-| `marimba` | `notes` | notes or integer MIDI | `decayScale`: 1 [0.5, 2]; `strike`: 0.5 [0, 1] |
-| `vibraphone` | `notes` | notes or integer MIDI | `decayScale`: 1 [0.5, 2]; `tremoloHz`: 4 [0, 7] |
-| `glockenspiel` | `notes` | notes or integer MIDI | `decayScale`: 1 [0.5, 2]; `strike`: 0.5 [0, 1] |
-| `kalimba` | `notes` | notes or integer MIDI | `decayScale`: 1 [0.5, 2]; `overtoneRatio`: 6.3 [5.9, 6.8] |
-| `guitar` | `notes` | notes or integer MIDI | `type`: 0 [0, 1] **integer**; `pickPosition`: 0.22 [0.12, 0.35]; `releaseMs`: 150 [50, 300] |
+| Voice ID | `kind` | Accepted atoms | Numeric `params`: default [minimum, maximum] | Source |
+| --- | --- | --- | --- | --- |
+| `drums` | `drums` | `bd sd cp hh oh rim perc tom`, optional `:index` | `tone`: 0.5 [0, 1]; `decayMs`: 180 [20, 1000]; `noise`: 0.5 [0, 1]; `kit`: 0 [0, 4] **integer** | `noise` |
+| `808` | `notes` | notes or integer MIDI | `drive`: 2.2 [1, 8]; `decayMs`: 1100 [100, 5000]; `attackMs`: 3 [0, 50] | `sine` |
+| `bass` | `notes` | notes or integer MIDI | `wave`: 0 [0, 2] **integer**; `cutoffHz`: 600 [40, 8000]; `resonance`: 0.15 [0, 0.9]; `releaseMs`: 80 [5, 1000]; `unison`: 1 [1, 9] **integer**; `detuneCents`: 0 [0, 50]; `filterEnvAmount`: 0 [0, 1]; `filterEnvDecayMs`: 500 [20, 5000] | `saw` |
+| `bell` | `notes` | notes or integer MIDI | `ratio`: 3.5 [1, 12]; `index`: 2.2 [0, 10]; `decayMs`: 450 [50, 5000] | `fm` |
+| `keys` | `notes` | notes or integer MIDI | `ratio`: 2 [1, 8]; `index`: 1.4 [0, 8]; `attackMs`: 8 [0, 200]; `releaseMs`: 220 [20, 2000] | `fm` |
+| `pluck` | `notes` | notes or integer MIDI | `damping`: 0.992 [0.8, 0.9999]; `decayMs`: 900 [50, 5000]; `brightness`: 0.7 [0, 1] | `physical` |
+| `pad` | `notes` | notes or integer MIDI | `detuneCents`: 11 [0, 50]; `cutoffHz`: 1800 [80, 12000]; `attackMs`: 400 [10, 5000]; `releaseMs`: 700 [20, 5000]; `unison`: 3 [1, 9] **integer**; `filterEnvAmount`: 0 [0, 1]; `filterEnvDecayMs`: 500 [20, 5000] | `saw` |
+| `lead` | `notes` | notes or integer MIDI | `wave`: 1 [0, 2] **integer**; `vibratoHz`: 5 [0, 12]; `vibratoCents`: 12 [0, 100]; `releaseMs`: 120 [5, 2000]; `unison`: 1 [1, 9] **integer**; `detuneCents`: 0 [0, 50]; `filterEnvAmount`: 0 [0, 1]; `filterEnvDecayMs`: 500 [20, 5000] | `square` |
+| `supersaw` | `notes` | notes or integer MIDI | `unison`: 7 [1, 9] **integer**; `detuneCents`: 18 [0, 50]; `mix`: 0.75 [0, 1]; `cutoffHz`: 3500 [80, 12000]; `resonance`: 0.2 [0, 0.9]; `filterEnvAmount`: 0.5 [0, 1]; `filterEnvDecayMs`: 500 [20, 5000]; `attackMs`: 20 [0, 5000]; `releaseMs`: 250 [5, 5000] | `saw` |
+| `sfx` | `drums` | `riser pitchriser downlifter impact whoosh revcymbal noisebuild subdrop zap crackle`, optional `:index` | `riserSemitones`: 19 [0, 36]; `sweepFromHz`: 250 [100, 2000]; `sweepToHz`: 8000 [1000, 16000]; `pitchHz`: 220 [55, 880]; `impactDecay`: 0.8 [0.2, 3]; `crackleRate`: 8 [1, 30]; `noiseColor`: 0 [0, 1] **integer** | `noise` |
+| `piano` | `notes` | notes or integer MIDI | `inharmonicity`: 0.0002 [0.0001, 0.0004]; `hammer`: 0.5 [0, 1]; `releaseMs`: 200 [80, 400] | `sine` |
+| `epiano` | `notes` | notes or integer MIDI | `bodyIndex`: 2 [1, 4]; `tineIndex`: 0.5 [0.1, 1.2]; `releaseMs`: 180 [80, 400] | `fm` |
+| `organ` | `notes` | notes or integer MIDI | `d16`: 8 [0, 8] **integer**; `d513`: 8 [0, 8] **integer**; `d8`: 8 [0, 8] **integer**; `d4`: 0 [0, 8] **integer**; `d223`: 0 [0, 8] **integer**; `d2`: 0 [0, 8] **integer**; `d135`: 0 [0, 8] **integer**; `d113`: 0 [0, 8] **integer**; `d1`: 0 [0, 8] **integer**; `releaseMs`: 80 [30, 150] | `sine` |
+| `strings` | `notes` | notes or integer MIDI | `detuneCents`: 7 [3, 12]; `attackMs`: 300 [120, 800]; `releaseMs`: 700 [200, 1500]; `chorusMix`: 0.2 [0, 0.35] | `saw` |
+| `brass` | `notes` | notes or integer MIDI | `cutoffHz`: 600 [350, 1000]; `peakHz`: 4000 [2000, 8000]; `q`: 1 [0.6, 2]; `scoopCents`: 35 [10, 70]; `releaseMs`: 250 [100, 400] | `saw` |
+| `flute` | `notes` | notes or integer MIDI | `breath`: 0.1 [0.03, 0.15]; `attackMs`: 80 [40, 200]; `releaseMs`: 180 [80, 300]; `vibratoCents`: 16 [8, 25] | `sine` |
+| `choir` | `notes` | notes or integer MIDI | `vowel`: 0 [0, 4] **integer**; `attackMs`: 300 [100, 500]; `releaseMs`: 600 [200, 1000]; `detuneCents`: 8 [4, 12] | `saw` |
+| `marimba` | `notes` | notes or integer MIDI | `decayScale`: 1 [0.5, 2]; `strike`: 0.5 [0, 1] | `sine` |
+| `vibraphone` | `notes` | notes or integer MIDI | `decayScale`: 1 [0.5, 2]; `tremoloHz`: 4 [0, 7] | `sine` |
+| `glockenspiel` | `notes` | notes or integer MIDI | `decayScale`: 1 [0.5, 2]; `strike`: 0.5 [0, 1] | `sine` |
+| `kalimba` | `notes` | notes or integer MIDI | `decayScale`: 1 [0.5, 2]; `overtoneRatio`: 6.3 [5.9, 6.8] | `sine` |
+| `guitar` | `notes` | notes or integer MIDI | `type`: 0 [0, 1] **integer**; `pickPosition`: 0.22 [0.12, 0.35]; `releaseMs`: 150 [50, 300] | `physical` |
+
+For `bass` and `lead`, `wave: 0` is saw, `wave: 1` is square, and `wave: 2` is triangle. The Source column describes the default oscillator basis; `bass` can use triangle with `wave: 2`.
 
 `808` and `bass` require `mono: true` (also their default). Other voices default to polyphonic. All voices use the track controls below; omitted controls take the stated defaults.
 Explicit `unison` or filter envelope controls select the PolyBLEP path for lead, bass, and pad; lead/bass also select it when `detuneCents` is supplied. Omitted controls retain the original sound. `filterEnvAmount` opens the low-pass cutoff by up to four octaves before decay to its base value.
 For supersaw, `mix` sets the relative level of side oscillators: 0 keeps the center oscillator (or center pair for even counts), and 1 gives equal weight to all oscillators. The sum is normalized by its total weight.
+
+## Sampled library
+
+Run `music2 instruments [--json]` for the current voice parameters and bundled instrument list. A notes track may use `lib:<id>`; the SFZ and samples ship with music2-gen and resolve independently of the song directory. MIDI, ALS and DAWproject export editable notes but cannot embed the instrument sound; use rendered stems when sound portability matters. These instruments accept no voice `params`.
+
+| Instrument | Role | MIDI range | Source | License |
+| --- | --- | --- | --- | --- |
+| `lib:grand-piano` | focal | 21–108 | Salamander Grand Piano V3 by Alexander Holm | CC BY 3.0 (attribution required) |
+| `lib:strings` | bed | 32–90 | VSCO 2 Community Edition by Versilian Studios | CC0 1.0 |
+| `lib:strings-staccato` | focal | 32–90 | VSCO 2 Community Edition by Versilian Studios | CC0 1.0 |
+
+See `THIRD_PARTY_NOTICES.md` in the package for source and license links. Use `lib:grand-piano` for acoustic piano focus and `lib:strings` for sustained beds; `lib:strings-staccato` provides short attacks.
 
 | Track control | Default | Accepted value and use |
 | --- | --- | --- |
@@ -194,4 +208,4 @@ Manifest `samples` must be a nonempty object of names mapped to nonempty arrays 
 }
 ```
 
-`gainDb` defaults to 0 and accepts -60 to +12; `rootMidi` defaults to 60 and accepts 0–127. `bd:3` wraps across the number of `bd` variants. Input files may be mono or stereo PCM 16/24/32-bit or float32 WAV at 8–192 kHz; music2 folds stereo to mono and resamples when needed. Manifest sample paths must stay inside the kit directory, including after symlink resolution. No samples ship with music2: provide WAVs you own or are licensed to use, and keep proof of that license outside the song JSON.
+`gainDb` defaults to 0 and accepts -60 to +12; `rootMidi` defaults to 60 and accepts 0–127. `bd:3` wraps across the number of `bd` variants. Input files may be mono or stereo PCM 16/24/32-bit or float32 WAV at 8–192 kHz; music2 folds stereo to mono and resamples when needed. Manifest sample paths must stay inside the kit directory, including after symlink resolution. Custom `kit:` samples are user supplied; the bundled `lib:` samples are listed above.

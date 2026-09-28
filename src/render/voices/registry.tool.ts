@@ -48,7 +48,7 @@ export function declaredSampleNames(instrument: string): readonly string[] | nul
 
 export function resolveVoice(track: ResolvedTrack, index: number): VoiceSpec | null {
   if (isSampleInstrument(track.instrument)) {
-    if (track.instrument.startsWith("sfz:") && track.kind !== "notes") throw new Music2Error("E_SCHEMA", "SFZ requires notes track", { details: { issues: [{ path: `tracks[${index}].kind`, message: "SFZ requires notes track" }] } });
+    if ((track.instrument.startsWith("sfz:") || track.instrument.startsWith("lib:")) && track.kind !== "notes") throw new Music2Error("E_SCHEMA", "sampled instrument requires notes track", { details: { issues: [{ path: `tracks[${index}].kind`, message: "sampled instrument requires notes track" }] } });
     return null;
   }
   const spec = voiceFor(track.instrument);
@@ -71,8 +71,8 @@ export function validateVoiceParams(song: ResolvedSong): void {
   const issues: Issue[] = [];
   song.tracks.forEach((track, index) => {
     if (isSampleInstrument(track.instrument)) {
-      if (track.instrument.startsWith("sfz:") && track.kind !== "notes") issues.push({ path: `tracks[${index}].kind`, message: "SFZ requires notes track" });
-      if (track.instrument.startsWith("sfz:")) for (const name of Object.keys(track.params)) issues.push({ path: `tracks[${index}].params.${name}`, message: "unknown parameter" });
+      if ((track.instrument.startsWith("sfz:") || track.instrument.startsWith("lib:")) && track.kind !== "notes") issues.push({ path: `tracks[${index}].kind`, message: "sampled instrument requires notes track" });
+      if (track.instrument.startsWith("sfz:") || track.instrument.startsWith("lib:")) for (const name of Object.keys(track.params)) issues.push({ path: `tracks[${index}].params.${name}`, message: "unknown parameter" });
       return;
     }
     const spec = voiceFor(track.instrument);

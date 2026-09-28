@@ -2,12 +2,15 @@ import { median, pitchedIntervals, placementOrdinalByBar, placementSpan } from "
 import type { LintGeometry, PitchedInterval } from "./lint-geometry.tool.ts";
 import type { LintResult } from "./lint.tool.ts";
 import type { Placement, TimedEvent } from "../song/index.ts";
+import { libraryInstrument } from "../sampler/index.ts";
 
 const LOW_INTERVAL_FLOORS = [0, 52, 51, 48, 46, 46, 47, 34, 43, 41, 41, 41];
 const FOCAL = new Set(["lead", "bell", "pluck", "keys", "piano", "epiano", "guitar", "flute",
   "brass", "marimba", "vibraphone", "glockenspiel", "kalimba"]);
 const REGISTER_DISTANCE = 7;
 const SLOT_SHARE = 0.75;
+const focal = (instrument: string): boolean => instrument.startsWith("lib:")
+  ? libraryInstrument(instrument.slice(4)).role === "focal" : FOCAL.has(instrument);
 
 function warning(id: string, path: string, observed: string, expected: string, fix: string): LintResult {
   return { id: `generic/${id}`, severity: "warning", path, observed, expected, fix };
@@ -57,7 +60,7 @@ function registerCollision(g: LintGeometry): LintResult[] {
     const occurrenceEvents = Array.from({ length: placement.bars }, (_, offset) => g.events.get(placement.startBar + offset) ?? []).flat();
     const candidates = g.song.tracks.map((track, index) => ({ track, index,
       notes: occurrenceEvents.filter((event) => event.trackIndex === index && event.midi !== null && event.time >= start && event.time < end),
-    })).filter(({ track, notes }) => track.kind === "notes" && FOCAL.has(track.instrument) && notes.length);
+    })).filter(({ track, notes }) => track.kind === "notes" && focal(track.instrument) && notes.length);
     for (let i = 0; i < candidates.length; i++) for (let j = i + 1; j < candidates.length; j++) {
       const a = candidates[i]!, b = candidates[j]!;
       const distance = Math.abs(median(a.notes.map((note) => note.midi!)) - median(b.notes.map((note) => note.midi!)));

@@ -1,4 +1,6 @@
 export { parseSfz } from "./sfz-parse.tool.ts";
+export { libraryManifest, libraryInstrument } from "./library.tool.ts";
+export type { LibraryManifest, LibraryInstrument } from "./library.schema.ts";
 export { loadSfz, renderSfz } from "./sfz-render.tool.ts";
 export { createDecodeBudget } from "./decode-budget.tool.ts";
 export type { DecodeBudget } from "./decode-budget.tool.ts";

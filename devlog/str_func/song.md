@@ -226,3 +226,7 @@ consumers in other feature folders use the public barrel.
 - [ ] Update timeline tests when timing, swing, velocity, or ordering changes.
 - [ ] Review `schema`, `validate`, and `events` CLI output after public shape changes.
 - [ ] Keep `devlog/str_func/AGENTS.md` index aligned with this document.
+
+## Built-in sampled instruments and voice policy
+
+`song-daw.schema.ts` accepts `lib:<id>` only for notes tracks. It checks the packaged manifest during validation and returns `E_SCHEMA` with valid IDs for unknown references. Song v1 and legacy resolution fields remain unchanged.

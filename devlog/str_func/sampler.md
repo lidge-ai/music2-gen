@@ -52,3 +52,7 @@ Render's sample-instrument and audio-track adapters consume SFZ and clip outputs
 - [ ] Recheck clip duration, source offset, fade endpoints and full-versus-crop equality when Song fields change.
 - [ ] Preserve 120/150 BPM, pitch, onset, sample-boundary and byte-determinism oracles.
 - [ ] Keep sampler free of render/analyze/project/export/midi/CLI imports and nondeterministic APIs.
+
+## Built-in sampled instruments and voice policy
+
+`library.schema.ts` and `library.tool.ts` validate and cache the packaged `instruments/index.json` manifest, exposing `libraryManifest` and `libraryInstrument`. `loadSfz` accepts an optional explicit confined root for built-in instruments; omitted root retains song-relative SFZ behavior. The caller shares one `DecodeBudget` across all tracks.
