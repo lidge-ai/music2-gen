@@ -29,6 +29,7 @@ All ranges are inclusive. Unlisted keys and unknown effect types fail with `E_SC
 | `width` | `amount`: 1 (0..2); `monoBelowHz`: 120 (80..250). | Widen upper pad/keys; keep 808/bass centered. The Linkwitz-Riley high-pass removes low side content; retained side is -6 dB at the crossover and approaches unity above it. The matching low/high filters sum to a flat-magnitude allpass. Mid is unchanged. |
 | `crush` | `bits`: 8 (integer 4..16); `downsample`: 2 (integer 1..32); `mix`: 1 (0..1). | Quiet lo-fi texture, usually with partial wet mix. |
 | `tremolo` | `rateHz`: 4 (0.05..20); `depth`: 0.5 (0..1); `phaseDegrees`: 0 (0..180); `mix`: 1 (0..1). | Rhythmic pad/keys pulse. |
+| `tapestop` | `startBar`: 1 (1..1024, integer, absolute 1-based song bar); `beats`: 2 (0.25..16 quarter notes). Track only. | Slow a track to a stop into a drop or break; see [sound effects](sfx.md). |
 | `delay` | `time`: `1/8d` (note division); `feedback`: 0.35 (0..0.95); `pingPong`: false; `lowCutHz`: 20 (20..1000); `highCutHz`: 18000 (1000..18000); `mix`: 0.35 (0..1). Low cut must stay below high cut. | Dotted eighth pluck/lead echo. |
 
 Delay note divisions are `1/16`, `1/8`, `1/4`, or `1/2`, each optionally suffixed `d` (dotted) or `t` (triplet). Tempo follows song `bpm`. An insert delay processes the full allocated track buffer, so its tail can appear in dry stems.

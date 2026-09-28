@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "title": "Spark Grove",
+  "bpm": 112,
+  "meter": {
+    "numerator": 4,
+    "denominator": 4
+  },
+  "key": "G major",
+  "seed": 11208,
+  "sampleRate": 44100,
+  "tailSeconds": 2,
+  "loop": true,
+  "master": {
+    "ceilingDb": -1,
+    "targetLufs": -16
+  },
+  "tracks": [
+    {
+      "id": "kick",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "bd ~ ~ ~ ~ ~ bd ~ bd ~ ~ ~ ~ ~ ~ ~",
+      "gain": -21,
+      "velocity": 0.8,
+      "params": {
+        "kit": 1,
+        "decayMs": 220
+      }
+    },
+    {
+      "id": "snare",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~",
+      "gain": -18,
+      "velocity": 0.7,
+      "params": {
+        "kit": 1
+      }
+    },
+    {
+      "id": "hats",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "hh hh oh hh",
+      "gain": -18,
+      "velocity": "0.6 0.45",
+      "params": {
+        "kit": 1,
+        "noise": 0.6,
+        "tone": 0.7
+      }
+    },
+    {
+      "id": "bass",
+      "kind": "notes",
+      "instrument": "bass",
+      "mono": true,
+      "pattern": "<[g2 ~ ~ g2 ~ ~ d2 ~] [e2 ~ ~ e2 ~ ~ b2 ~] [c3 ~ ~ c3 ~ ~ g2 ~] [d2 ~ ~ d2 ~ ~ a2 ~]>",
+      "gain": -23,
+      "duck": {
+        "by": "kick",
+        "amount": 0.3,
+        "releaseMs": 120
+      },
+      "params": {
+        "cutoffHz": 500,
+        "releaseMs": 80
+      }
+    },
+    {
+      "id": "marimba",
+      "kind": "notes",
+      "instrument": "marimba",
+      "pattern": "<[g4 b4 d5 b4 g4 b4 d5 g5] [e4 g4 b4 g4 e4 g4 b4 e5] [c5 e5 g5 e5 c5 e5 g5 c6] [d5 f#5 a5 f#5 d5 a4 f#4 a4]>",
+      "gain": -16,
+      "velocity": "0.75 0.6",
+      "sends": {
+        "reverb": 0.12
+      }
+    },
+    {
+      "id": "kalimba",
+      "kind": "notes",
+      "instrument": "kalimba",
+      "pattern": "<[~ ~ d6 ~ ~ ~ b5 ~] [~ ~ b5 ~ ~ ~ g5 ~] [~ ~ e6 ~ ~ ~ c6 ~] [~ ~ f#5 ~ a5 ~ ~ ~]>",
+      "gain": -20,
+      "sends": {
+        "reverb": 0.2,
+        "delay": 0.15
+      }
+    },
+    {
+      "id": "organ",
+      "kind": "notes",
+      "instrument": "organ",
+      "pattern": "<[g4,b4,d5] [e4,g4,b4] [c5,e5,g5] [d5,f#5,a5]>",
+      "gain": -27,
+      "gate": 1,
+      "sends": {
+        "reverb": 0.15
+      },
+      "params": {
+        "d16": 0,
+        "d513": 0,
+        "d8": 6,
+        "d4": 4,
+        "d223": 0,
+        "d2": 2,
+        "d135": 0,
+        "d113": 0,
+        "d1": 0,
+        "releaseMs": 80
+      }
+    },
+    {
+      "id": "fx",
+      "kind": "drums",
+      "instrument": "sfx",
+      "gain": -20,
+      "sends": {
+        "reverb": 0.2
+      }
+    }
+  ],
+  "sections": [
+    {
+      "id": "pickup",
+      "bars": 1,
+      "role": "groove",
+      "patterns": {
+        "kick": null,
+        "bass": null,
+        "snare": null,
+        "hats": "~ hh oh hh",
+        "marimba": "~ b4 d5 b4 g4 b4 d5 g5",
+        "kalimba": "~ ~ d6 ~ ~ ~ b5 ~"
+      }
+    },
+    {
+      "id": "loop_a",
+      "bars": 3,
+      "role": "groove",
+      "patterns": {
+        "fx": "<~ ~ [~ ~ ~ zap]>"
+      }
+    },
+    {
+      "id": "loop_b",
+      "bars": 4,
+      "role": "groove",
+      "patterns": {
+        "fx": "<~ ~ [~ ~ whoosh@2] ~>"
+      }
+    }
+  ],
+  "arrangement": [
+    {
+      "section": "pickup"
+    },
+    {
+      "section": "loop_a"
+    },
+    {
+      "section": "loop_b"
+    }
+  ]
+}

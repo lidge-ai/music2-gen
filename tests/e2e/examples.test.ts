@@ -12,12 +12,13 @@ const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const CLI = "src/cli/index.ts";
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const NEW_EXAMPLES = new Set(["trap-hook-first-142", "drill-uk-moving-snare-144", "boom-bap-verse-led-90",
-  "game-loop-16bar", "short-30-bed", "type-beat-trap-140"]);
+  "game-loop-16bar", "short-30-bed", "type-beat-trap-140", "pop-transition", "lofi-textures", "cinematic-cue", "game-spark-loop"]);
 const BALANCE_WARNINGS = new Set(["LOW_END_DOMINANCE", "LOW_MID_BUILDUP", "SUB_WITHOUT_BODY", "HIGH_END_THIN"]);
 
 interface ExampleCase {
   file: string;
-  genre: "drill_uk" | "trap" | "boom_bap" | "lofi_hiphop" | "house";
+  // null: no genre recipe fits, so only generic lint rules apply.
+  genre: "drill_uk" | "trap" | "boom_bap" | "lofi_hiphop" | "house" | null;
   bpm: number;
   key: string;
 }
@@ -35,6 +36,10 @@ const examples: ExampleCase[] = [
   { file: "game-loop-16bar", genre: "house", bpm: 120, key: "A minor" },
   { file: "short-30-bed", genre: "drill_uk", bpm: 144, key: "C minor" },
   { file: "type-beat-trap-140", genre: "trap", bpm: 140, key: "A minor" },
+  { file: "pop-transition", genre: null, bpm: 100, key: "C major" },
+  { file: "lofi-textures", genre: "lofi_hiphop", bpm: 78, key: "D minor" },
+  { file: "cinematic-cue", genre: null, bpm: 84, key: "D minor" },
+  { file: "game-spark-loop", genre: null, bpm: 112, key: "G major" },
 ];
 
 interface CliResult {
@@ -90,8 +95,8 @@ for (const example of examples) {
     const directory = mkdtempSync(join(tmpdir(), "music2-example-"));
     const song = join(ROOT, "examples", `${example.file}.song.json`);
     try {
-      const source = JSON.parse(readFileSync(song, "utf8")) as { genre: string; bpm: number; key: string; useCase?: string; loop?: boolean };
-      assert.equal(source.genre, example.genre);
+      const source = JSON.parse(readFileSync(song, "utf8")) as { genre?: string; bpm: number; key: string; useCase?: string; loop?: boolean };
+      assert.equal(source.genre ?? null, example.genre);
       assert.equal(source.bpm, example.bpm);
       assert.equal(source.key, example.key);
       const validated = data(cli("validate", [song]));
@@ -143,6 +148,18 @@ for (const example of examples) {
         assert.ok(seam.metrics.jumpFs <= 0.1);
         assert.ok(seam.metrics.rmsStepDb !== null && seam.metrics.rmsStepDb <= 3);
         assert.ok(Object.values(seam.metrics.bandStepDb).every((value) => value !== null && value <= 6));
+      }
+      if (example.file === "pop-transition") {
+        // riser@3 impact@1 lands the first hit on beat 4; the hook override adds a separate downbeat hit.
+        const events = (data(cli("events", [song, "--track", "riser"]))["events"] as { time: number; sample: { name: string } | null }[])
+          .map((event) => [Math.round(event.time * 1000) / 1000, event.sample?.name]);
+        assert.deepEqual(events, [[36, "riser"], [37.8, "impact"], [38.4, "impact"]]);
+      }
+      if (example.file === "game-spark-loop") {
+        assert.equal(source.loop, true);
+        assert.equal(rendered["frames"], rendered["loopEndSample"]);
+        const seam = loopSeam(await readWav(wav));
+        assert.equal(seam.threshold, null, JSON.stringify(seam.metrics));
       }
       if (example.file === "type-beat-trap-140") {
         assert.equal(source.useCase, "type_beat");

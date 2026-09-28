@@ -32,6 +32,7 @@ Use `node bin/music2.js <command>`; add `--json` to get one machine-readable obj
 | `validate song.json`, `events song.json`, `lint song.json` | Check schema and timing, inspect timed events, or apply genre/static rules. |
 | `render song.json`, `analyze audio.wav` | Produce WAV and optional encoded copies; measure audio and write reports, an overview, and PNG views. |
 | `doctor`, `critique audio.wav` | Check ffmpeg; optionally request an audio-model review. |
+| `sfx --preset name -o out.wav` | Generate a standalone sound effect (transition or game/UI) with a reproducible JSON sidecar. |
 | `skill path` | Print the packaged composition skill directory. |
 
 See [CLI reference](docs/cli.md) for flags, outputs, errors, and environment variables.
@@ -40,7 +41,7 @@ See [CLI reference](docs/cli.md) for flags, outputs, errors, and environment var
 
 Song v1 has a BPM, tracks with one-bar mini-notation patterns, sections that may override or mute tracks, and an arrangement that orders and repeats sections. A numeric seed controls generated choices. See the [field reference](docs/song-format.md) and [JSON Schema](schema/song.v1.json).
 
-Start with [drill at 140 BPM](examples/drill-140.song.json), or generate a starter with `new`. The example set also includes `trap-150.song.json`, `boom-bap-90.song.json`, `lofi-75.song.json`, and `house-124.song.json` under `examples/`.
+Start with [drill at 140 BPM](examples/drill-140.song.json), or generate a starter with `new`. The example set also includes `trap-150.song.json`, `boom-bap-90.song.json`, `lofi-75.song.json`, and `house-124.song.json` under `examples/`, plus `pop-transition`, `lofi-textures`, `cinematic-cue`, and `game-spark-loop`, which show the virtual instruments (piano, electric piano, strings, brass, choir, mallets), drum-kit characters, and transition effects.
 
 Given the same song, seed, Node major version, and platform, music2 promises byte-identical WAV output. Keep those conditions fixed when comparing renders. Audio key estimation is advisory, especially when `KEY_UNCERTAIN` appears: the declared key and `generic/out_of_key` lint result are the reliable pitch checks. Tempo analysis reports half-time and double-time alternatives. `generic/clipping_risk` is a static onset proxy and does not account for master normalization; verify clipping on the rendered WAV.
 
@@ -50,4 +51,4 @@ Layering checks flag source arrangement risks in strict lint and genre-aware ban
 
 Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, and `npm run audit:structure` after source changes. Contributions should follow [repository agent rules](AGENTS.md) and the existing `devlog/` plans.
 
-music2 is MIT licensed. Its mini-notation parser is a clean-room subset implemented from public documentation and conformance work; no AGPL source is copied. Voices are synthesized; the package includes no audio samples. User-supplied kits remain the user's licensing responsibility.
+music2 is MIT licensed. Its mini-notation parser is a clean-room subset implemented from public documentation and conformance work; no AGPL source is copied. Voices, drum kits and sound effects are synthesized approximations; the package includes no audio samples. User-supplied kits remain the user's licensing responsibility.

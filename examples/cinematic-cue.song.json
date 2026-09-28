@@ -1,0 +1,231 @@
+{
+  "version": 1,
+  "title": "Harbor at Dawn",
+  "bpm": 84,
+  "meter": {
+    "numerator": 4,
+    "denominator": 4
+  },
+  "key": "D minor",
+  "seed": 8404,
+  "sampleRate": 44100,
+  "tailSeconds": 3,
+  "master": {
+    "ceilingDb": -1,
+    "targetLufs": -16
+  },
+  "fx": {
+    "reverb": {
+      "type": "hall",
+      "decaySeconds": 3.2,
+      "preDelayMs": 30,
+      "lowCutHz": 200,
+      "mix": 1
+    }
+  },
+  "tracks": [
+    {
+      "id": "strings",
+      "kind": "notes",
+      "instrument": "strings",
+      "pattern": "<[d4,f4,a4] [bb3,d4,f4] [c4,e4,g4] [a3,c4,e4]>",
+      "gain": -20,
+      "sends": {
+        "reverb": 0.35
+      },
+      "fx": [
+        {
+          "type": "eq",
+          "lowGainDb": -8,
+          "lowHz": 350,
+          "midGainDb": -3,
+          "midHz": 400
+        }
+      ],
+      "params": {
+        "attackMs": 500,
+        "releaseMs": 900,
+        "chorusMix": 0.25
+      }
+    },
+    {
+      "id": "cello",
+      "kind": "notes",
+      "instrument": "strings",
+      "pattern": "<d3 bb2 c3 a2>",
+      "gain": -21,
+      "sends": {
+        "reverb": 0.2
+      },
+      "params": {
+        "attackMs": 300,
+        "releaseMs": 800,
+        "detuneCents": 5
+      },
+      "fx": [
+        {
+          "type": "eq",
+          "midGainDb": -4,
+          "midHz": 350,
+          "midQ": 0.9
+        }
+      ]
+    },
+    {
+      "id": "choir",
+      "kind": "notes",
+      "instrument": "choir",
+      "pattern": "<[a4,d5] [f4,bb4] [g4,c5] [e4,a4]>",
+      "gain": -25,
+      "sends": {
+        "reverb": 0.45
+      },
+      "fx": [
+        {
+          "type": "eq",
+          "lowGainDb": -6,
+          "lowHz": 350
+        }
+      ],
+      "params": {
+        "vowel": 4,
+        "attackMs": 450,
+        "releaseMs": 900
+      }
+    },
+    {
+      "id": "brass",
+      "kind": "notes",
+      "instrument": "brass",
+      "pattern": "<[d4,a4 ~ ~ d4,a4 ~ ~ f4,a4 ~] [d4,f4 ~ ~ d4,f4 ~ ~ bb4 ~] [e4,g4 ~ ~ e4,g4 ~ ~ c5 ~] [e4,a4 ~ ~ ~ c5 ~ e5 ~]>",
+      "gain": -21,
+      "velocity": 0.8,
+      "sends": {
+        "reverb": 0.3
+      },
+      "params": {
+        "cutoffHz": 650,
+        "peakHz": 4500,
+        "scoopCents": 30
+      },
+      "fx": [
+        {
+          "type": "eq",
+          "lowGainDb": -5,
+          "lowHz": 300
+        }
+      ]
+    },
+    {
+      "id": "timpani",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "tom ~ ~ ~ ~ ~ tom:2 tom",
+      "gain": -17,
+      "velocity": 0.8,
+      "sends": {
+        "reverb": 0.3
+      },
+      "params": {
+        "kit": 3,
+        "tone": 0.35,
+        "decayMs": 600,
+        "noise": 0.2
+      }
+    },
+    {
+      "id": "perc",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "bd ~ ~ ~ sd ~ ~ ~ bd ~ bd ~ sd ~ ~ hh",
+      "gain": -19,
+      "velocity": 0.75,
+      "sends": {
+        "reverb": 0.25
+      },
+      "params": {
+        "kit": 3,
+        "decayMs": 300
+      }
+    },
+    {
+      "id": "glock",
+      "kind": "notes",
+      "instrument": "glockenspiel",
+      "pattern": "<[a5 ~ ~ ~ f5 ~ ~ ~] [f5 ~ ~ ~ d5 ~ ~ ~] [g5 ~ ~ ~ e5 ~ ~ ~] [e5 ~ ~ ~ d6 ~ ~ ~]>",
+      "gain": -26,
+      "sends": {
+        "reverb": 0.4
+      }
+    },
+    {
+      "id": "fx",
+      "kind": "drums",
+      "instrument": "sfx",
+      "gain": -15,
+      "sends": {
+        "reverb": 0.3
+      },
+      "params": {
+        "impactDecay": 1.8
+      }
+    }
+  ],
+  "sections": [
+    {
+      "id": "open",
+      "bars": 4,
+      "role": "intro",
+      "patterns": {
+        "brass": null,
+        "perc": null,
+        "timpani": null,
+        "glock": null,
+        "cello": null
+      }
+    },
+    {
+      "id": "rise",
+      "bars": 4,
+      "role": "build",
+      "patterns": {
+        "perc": null,
+        "brass": null,
+        "fx": "<~ ~ ~ revcymbal>"
+      }
+    },
+    {
+      "id": "theme",
+      "bars": 8,
+      "role": "hook",
+      "patterns": {
+        "fx": "<impact ~ ~ ~ ~ ~ ~ ~>"
+      }
+    },
+    {
+      "id": "fade",
+      "bars": 4,
+      "role": "outro",
+      "patterns": {
+        "perc": null,
+        "timpani": null,
+        "brass": null,
+        "fx": "<~ ~ ~ downlifter>"
+      }
+    }
+  ],
+  "arrangement": [
+    {
+      "section": "open"
+    },
+    {
+      "section": "rise"
+    },
+    {
+      "section": "theme"
+    },
+    {
+      "section": "fade"
+    }
+  ]
+}

@@ -1,0 +1,212 @@
+{
+  "version": 1,
+  "title": "Dust on the Needle",
+  "genre": "lofi_hiphop",
+  "bpm": 78,
+  "meter": {
+    "numerator": 4,
+    "denominator": 4
+  },
+  "key": "D minor",
+  "seed": 7802,
+  "swing": 0.6,
+  "sampleRate": 44100,
+  "tailSeconds": 2,
+  "master": {
+    "ceilingDb": -1,
+    "targetLufs": -14
+  },
+  "tracks": [
+    {
+      "id": "kick",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "bd ~ ~ ~ ~ ~ ~ bd ~ ~ bd ~ ~ ~ ~ ~",
+      "gain": -13,
+      "velocity": 0.66,
+      "params": {
+        "kit": 4,
+        "tone": 0.4,
+        "decayMs": 160,
+        "noise": 0.2
+      }
+    },
+    {
+      "id": "snare",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~",
+      "gain": -13,
+      "velocity": 0.62,
+      "sends": {
+        "reverb": 0.12
+      },
+      "params": {
+        "kit": 4,
+        "noise": 0.45
+      }
+    },
+    {
+      "id": "hats",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "~ ~ hh ~ ~ ~ hh ~ ~ ~ hh ~ ~ ~ hh hh",
+      "gain": -18,
+      "velocity": "0.55 0.4",
+      "swing": true,
+      "params": {
+        "kit": 0,
+        "noise": 0.45,
+        "tone": 0.5
+      },
+      "fx": []
+    },
+    {
+      "id": "bass",
+      "kind": "notes",
+      "instrument": "bass",
+      "mono": true,
+      "pattern": "<[d2 ~ ~ ~ ~ ~ a2 ~ d2 ~ ~ ~ c3 ~ ~ ~] [bb1 ~ ~ ~ ~ ~ f2 ~ bb1 ~ ~ ~ a2 ~ ~ ~] [g2 ~ ~ ~ ~ ~ d3 ~ g2 ~ ~ ~ f2 ~ ~ ~] [a2 ~ ~ ~ ~ ~ e2 ~ a2 ~ ~ ~ c3 ~ ~ ~]>",
+      "gain": -17,
+      "duck": {
+        "by": "kick",
+        "amount": 0.25,
+        "releaseMs": 150
+      },
+      "params": {
+        "cutoffHz": 340,
+        "releaseMs": 110
+      }
+    },
+    {
+      "id": "rhodes",
+      "kind": "notes",
+      "instrument": "epiano",
+      "pattern": "<[d4,f4,a4,c5 ~ ~ ~ ~ ~ f4,a4,c5 ~ ~ ~ d4,f4,a4 ~ ~ ~ ~ ~] [d4,f4,bb4 ~ ~ ~ ~ ~ f4,bb4,d5 ~ ~ ~ d4,f4,bb4 ~ ~ ~ ~ ~] [d4,g4,bb4 ~ ~ ~ ~ ~ f4,g4,bb4 ~ ~ ~ d4,g4,bb4 ~ ~ ~ ~ ~] [a3,c4,e4,g4 ~ ~ ~ ~ ~ e4,g4,a4 ~ ~ ~ a3,c4,e4 ~ ~ ~ ~ ~]>",
+      "gain": -19,
+      "velocity": 0.62,
+      "gate": 0.8,
+      "sends": {
+        "reverb": 0.2
+      },
+      "fx": [
+        {
+          "type": "eq",
+          "lowGainDb": -8,
+          "lowHz": 300,
+          "midGainDb": -4,
+          "midHz": 400,
+          "midQ": 0.8,
+          "highGainDb": 1,
+          "highHz": 6000
+        },
+        {
+          "type": "chorus",
+          "rateHz": 0.3,
+          "depthMs": 4,
+          "mix": 0.3
+        }
+      ],
+      "params": {
+        "bodyIndex": 2,
+        "tineIndex": 0.45,
+        "releaseMs": 220
+      }
+    },
+    {
+      "id": "vibes",
+      "kind": "notes",
+      "instrument": "vibraphone",
+      "pattern": "<[~ ~ a5 ~ ~ ~ f5 ~ ~ ~ ~ ~ e5 ~ ~ ~] [~ ~ f5 ~ ~ ~ d5 ~ ~ ~ ~ ~ c5 ~ ~ ~] [~ ~ g5 ~ ~ ~ d5 ~ ~ ~ ~ ~ bb4 ~ ~ ~] [~ ~ e5 ~ ~ ~ c5 ~ ~ ~ ~ ~ a4 ~ ~ ~]>",
+      "gain": -20,
+      "velocity": 0.58,
+      "sends": {
+        "reverb": 0.25,
+        "delay": 0.15
+      },
+      "params": {
+        "decayScale": 0.8,
+        "tremoloHz": 4
+      }
+    },
+    {
+      "id": "vinyl",
+      "kind": "drums",
+      "instrument": "sfx",
+      "pattern": "crackle",
+      "gain": -18,
+      "params": {
+        "crackleRate": 8,
+        "noiseColor": 0
+      },
+      "fx": [
+        {
+          "type": "eq",
+          "lowGainDb": -14,
+          "lowHz": 400,
+          "highGainDb": 4,
+          "highHz": 9000
+        }
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "intro",
+      "bars": 4,
+      "role": "intro",
+      "patterns": {
+        "kick": null,
+        "snare": null,
+        "bass": null,
+        "hats": null,
+        "vibes": null
+      }
+    },
+    {
+      "id": "main",
+      "bars": 8,
+      "role": "groove",
+      "patterns": {}
+    },
+    {
+      "id": "breakdown",
+      "bars": 4,
+      "role": "breakdown",
+      "patterns": {
+        "kick": null,
+        "snare": null,
+        "bass": null,
+        "hats": null
+      }
+    },
+    {
+      "id": "outro",
+      "bars": 4,
+      "role": "outro",
+      "patterns": {
+        "kick": null,
+        "snare": null,
+        "bass": null,
+        "vibes": null
+      }
+    }
+  ],
+  "arrangement": [
+    {
+      "section": "intro"
+    },
+    {
+      "section": "main"
+    },
+    {
+      "section": "breakdown"
+    },
+    {
+      "section": "main"
+    },
+    {
+      "section": "outro"
+    }
+  ]
+}

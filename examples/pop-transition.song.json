@@ -1,0 +1,207 @@
+{
+  "version": 1,
+  "title": "Paper Lanterns",
+  "bpm": 100,
+  "meter": {
+    "numerator": 4,
+    "denominator": 4
+  },
+  "key": "C major",
+  "seed": 10021,
+  "sampleRate": 44100,
+  "tailSeconds": 2,
+  "master": {
+    "ceilingDb": -1,
+    "targetLufs": -14
+  },
+  "tracks": [
+    {
+      "id": "kick",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "bd ~ ~ ~ ~ ~ ~ ~ bd ~ bd ~ ~ ~ ~ ~",
+      "gain": -18,
+      "velocity": 0.8,
+      "params": {
+        "tone": 0.45,
+        "decayMs": 200,
+        "noise": 0.25
+      }
+    },
+    {
+      "id": "snare",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~",
+      "gain": -15,
+      "velocity": 0.72,
+      "sends": {
+        "reverb": 0.15
+      },
+      "params": {
+        "noise": 0.5
+      }
+    },
+    {
+      "id": "hats",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "hh*8",
+      "gain": -20,
+      "velocity": "0.55 0.4",
+      "params": {
+        "noise": 0.4
+      }
+    },
+    {
+      "id": "bass",
+      "kind": "notes",
+      "instrument": "bass",
+      "mono": true,
+      "pattern": "<[c2 ~ ~ c2 ~ ~ c2 ~] [g2 ~ ~ g2 ~ ~ g2 ~] [a2 ~ ~ a2 ~ ~ a2 ~] [f2 ~ ~ f2 ~ ~ f2 ~]>",
+      "gain": -21,
+      "duck": {
+        "by": "kick",
+        "amount": 0.3,
+        "releaseMs": 140
+      },
+      "params": {
+        "cutoffHz": 420,
+        "releaseMs": 90
+      }
+    },
+    {
+      "id": "piano",
+      "kind": "notes",
+      "instrument": "piano",
+      "pattern": "<[c4,e4,g4 ~ c4,e4,g4 ~ ~ c4,e4,g4 ~ ~] [b3,d4,g4 ~ b3,d4,g4 ~ ~ b3,d4,g4 ~ ~] [a3,c4,e4 ~ a3,c4,e4 ~ ~ a3,c4,e4 ~ ~] [a3,c4,f4 ~ a3,c4,f4 ~ ~ a3,c4,f4 ~ ~]>",
+      "gain": -18,
+      "velocity": 0.7,
+      "sends": {
+        "reverb": 0.2
+      },
+      "fx": [
+        {
+          "type": "eq",
+          "lowGainDb": -6,
+          "lowHz": 250,
+          "midGainDb": -3,
+          "midHz": 380,
+          "midQ": 0.8,
+          "highGainDb": 3,
+          "highHz": 4000
+        }
+      ]
+    },
+    {
+      "id": "strings",
+      "kind": "notes",
+      "instrument": "strings",
+      "pattern": "<[e4,g4,c5] [d4,g4,b4] [e4,a4,c5] [f4,a4,c5]>",
+      "gain": -19,
+      "sends": {
+        "reverb": 0.3
+      },
+      "fx": [
+        {
+          "type": "eq",
+          "lowGainDb": -8,
+          "lowHz": 400,
+          "highGainDb": 2,
+          "highHz": 5000
+        }
+      ]
+    },
+    {
+      "id": "riser",
+      "kind": "drums",
+      "instrument": "sfx",
+      "gain": -15,
+      "sends": {
+        "reverb": 0.25
+      },
+      "params": {
+        "sweepFromHz": 300,
+        "sweepToHz": 9000
+      }
+    },
+    {
+      "id": "lift",
+      "kind": "drums",
+      "instrument": "sfx",
+      "gain": -19,
+      "params": {
+        "pitchHz": 262,
+        "riserSemitones": 12
+      }
+    }
+  ],
+  "sections": [
+    {
+      "id": "intro",
+      "bars": 4,
+      "role": "intro",
+      "patterns": {
+        "kick": null,
+        "snare": null,
+        "bass": null,
+        "hats": null
+      }
+    },
+    {
+      "id": "verse",
+      "bars": 8,
+      "role": "verse",
+      "patterns": {
+        "strings": null
+      }
+    },
+    {
+      "id": "build",
+      "bars": 4,
+      "role": "build",
+      "patterns": {
+        "kick": "bd ~ ~ ~ bd ~ ~ ~",
+        "hats": "hh*16",
+        "riser": "<~ ~ ~ [riser@3 impact@1]>",
+        "lift": "<~ ~ ~ pitchriser>"
+      }
+    },
+    {
+      "id": "hook",
+      "bars": 8,
+      "role": "hook",
+      "patterns": {
+        "riser": "<impact ~ ~ ~ ~ ~ ~ ~>",
+        "piano": "<[c4,e4,g4 c5 g4 e4 c4,e4,g4 d5 e5 ~] [b3,d4,g4 d5 b4 g4 b3,d4,g4 d5 g5 ~] [a3,c4,e4 c5 a4 e4 a3,c4,e4 e5 c5 ~] [a3,c4,f4 c5 a4 f4 a3,c4,f4 c5 a4 ~]>"
+      }
+    },
+    {
+      "id": "outro",
+      "bars": 4,
+      "role": "outro",
+      "patterns": {
+        "kick": null,
+        "hats": null,
+        "snare": null
+      }
+    }
+  ],
+  "arrangement": [
+    {
+      "section": "intro"
+    },
+    {
+      "section": "verse"
+    },
+    {
+      "section": "build"
+    },
+    {
+      "section": "hook"
+    },
+    {
+      "section": "outro"
+    }
+  ]
+}

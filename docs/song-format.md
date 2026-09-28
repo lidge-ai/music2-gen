@@ -61,22 +61,22 @@ This produces five bars: the two-bar verse repeats twice, followed by one breakd
 | --- | --- | --- |
 | `id` | Required unique ID: lowercase initial, then up to 31 lowercase letters, digits, `_`, or `-`. | — |
 | `kind` | Required `"drums"` or `"notes"`. | — |
-| `instrument` | Required nonempty string. Built-in drums use `"drums"`; note voices are `"808"`, `"bass"`, `"bell"`, `"keys"`, `"pluck"`, `"pad"`, `"lead"`; `kit:<relative kit.json>` uses a supplied kit. | — |
+| `instrument` | Required nonempty string. Built-in drums use `"drums"` and synthesized transition effects use `"sfx"` (both `kind: "drums"`); note voices are listed in the [instrument reference](../skills/music2/references/instruments.md); `kit:<relative kit.json>` uses a supplied kit. | — |
 | `pattern` | One-bar mini-notation string, repeated through each section unless overridden. | Silent (`null` resolved) |
 | `velocity` | Number 0–1 or mini-notation string containing numeric atoms. | `0.8` |
 | `gain` | Number -60–12 dB. | `0` |
 | `pan` | Number -1–1, left to right. | `0` |
-| `gate` | Number 0.05–1, event length fraction for non-mono tracks. | `0.9` |
+| `gate` | Number 0.05–1, event length fraction for non-mono tracks. Ignored by `sfx`, whose atoms always fill their slot. | `0.9` |
 | `mono` | Boolean; bass and 808 require true. | True for bass/808; false otherwise |
 | `glide` | Number 0–500 ms. | `0` |
 | `transpose` | Integer -24–24 semitones. | `0` |
 | `swing` | Boolean; shifts qualifying offbeat sixteenth onsets according to song swing. | `false` |
 | `sends` | Object with `reverb` and/or `delay`, each 0–1. | Both `0` |
-| `fx` | Ordered array of up to 12 insert effects, applied before pan/gain/duck/sends. | `[]` |
+| `fx` | Ordered array of up to 12 insert effects, applied before pan/gain/duck/sends. Includes the track-only `tapestop` (`startBar` absolute 1-based bar, `beats`). | `[]` |
 | `duck` | Object with required `by` (another track ID) and `amount` 0–1; optional `releaseMs` >=0. Cannot duck itself. | `null`; release 180 ms when set |
 | `params` | Voice-specific finite numeric parameters, within the voice registry's ranges. | Voice defaults |
 
-The JSON Schema accepts numeric `params` keys, then the voice registry checks supported names and bounds during rendering. `validate` checks the song and pattern syntax; `render` resolves the voice and its parameters. A built-in drum pattern uses sample atoms such as `bd`, `sd`, and `hh`; a note pattern uses pitches such as `d2`, `f4`, `bb3`, or MIDI numbers 0–127. Drum `name:index` selects a timbre variant. A `kit:` manifest points to user-owned PCM WAV files and is resolved relative to the song; sample paths must stay within the kit directory. No sample files are bundled.
+The JSON Schema accepts numeric `params` keys, then the voice registry checks supported names and bounds during rendering. `validate` checks the song and pattern syntax; `render` resolves the voice and its parameters. A built-in drum pattern uses sample atoms such as `bd`, `sd`, and `hh`; an `sfx` pattern uses the transition atoms `riser`, `pitchriser`, `downlifter`, `impact`, `whoosh`, `revcymbal`, `noisebuild`, `subdrop`, `zap`, `crackle` (see [sound effects](../skills/music2/references/sfx.md)). `render` rejects unknown atoms in a track's base pattern and in every section override for that track, even sections that are never placed, with `E_SCHEMA` and the exact pattern path; a note pattern uses pitches such as `d2`, `f4`, `bb3`, or MIDI numbers 0–127. Drum `name:index` selects a timbre variant. A `kit:` manifest points to user-owned PCM WAV files and is resolved relative to the song; sample paths must stay within the kit directory. No sample files are bundled.
 
 ## Sections and arrangement
 
