@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { gunzipSync } from "node:zlib";
-import type { ProjectIR } from "../project/index.ts";
+import type { ProjectIR, ProjectNoteTrack } from "../project/index.ts";
 import { planAls } from "./als.tool.ts";
 import { readOwnXml } from "./als/xml-reader.test.ts";
 
@@ -54,4 +54,33 @@ test("future tempo map and missing rendered stem fail explicitly", () => {
     { content: "midi", bits: 24 }), { code: "E_CAPABILITY" });
   assert.throws(() => planAls(project, { stems: [], returns: { reverb: null, delay: null } },
     { content: "audio", bits: 24 }), { code: "E_RENDER" });
+});
+test("600 hold points reserve local event IDs below the global range", () => {
+  const points = Array.from({ length: 600 }, (_, index) =>
+    ({ tick: index * 960, value: index % 2 ? -3 : 0, curve: "hold" as const }));
+  const automated = { ...project, tracks: [{ ...project.tracks[0]!, automation: [
+    { target: "gain", points },
+  ] }] } as ProjectIR;
+  const result = planAls(automated, null, { content: "midi", bits: 24 });
+  const xml = gunzipSync((result.files[0] as { bytes: Uint8Array }).bytes).toString("utf8");
+  const parsed = readOwnXml(xml);
+  const nodes: typeof parsed[] = [];
+  const walk = (node: typeof parsed): void => { nodes.push(node); node.children.forEach(walk); };
+  walk(parsed);
+  const next = Number(nodes.find((node) => node.tag === "NextPointeeId")?.attrs.Value);
+  const localTags = new Set(["Locator", "KeyTrack", "FloatEvent", "EnumEvent", "AutomationEnvelope"]);
+  const locals = nodes.filter((node) => localTags.has(node.tag) && node.attrs.Id !== undefined)
+    .map((node) => Number(node.attrs.Id));
+  const globals = nodes.filter((node) => !localTags.has(node.tag) && node.attrs.Id !== undefined)
+    .map((node) => Number(node.attrs.Id));
+  assert.equal(Math.max(...locals), 1199);
+  assert.ok(Math.min(...globals) > Math.max(...locals));
+  assert.ok(Math.max(...globals) < next);
+  assert.equal(new Set(globals).size, globals.length);
+});
+test("ALS rejects oversized XML before building the set", () => {
+  const repeated = Array(20_000).fill((project.tracks[0] as ProjectNoteTrack).notes[0]);
+  const huge = { ...project, tracks: Array.from({ length: 16 }, (_, index) =>
+    ({ ...project.tracks[0]!, id: `lead${index}`, notes: repeated })) } as ProjectIR;
+  assert.throws(() => planAls(huge, null, { content: "midi", bits: 24 }), { code: "E_CAPABILITY" });
 });

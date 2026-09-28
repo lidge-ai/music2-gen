@@ -45,16 +45,13 @@ export function buildMidiClips(track: ProjectNoteTrack, markers: readonly Projec
     const endTick = Math.max(placement.tick + placement.lengthTicks,
       ...retained.map(({ note }) => note.tick + note.lengthTicks));
     const sorted = retained.sort((a, b) => a.note.tick - b.note.tick || a.key - b.key || a.index - b.index);
-    const nextId = new Map<typeof sorted[number], number>();
-    sorted.forEach((item, index) => nextId.set(item, index + 1));
-    const keys = [...new Set(sorted.map((item) => item.key))].sort((a, b) => a - b);
+    const numbered = sorted.map((item, index) => ({ ...item, noteId: index + 1 }));
+    const keys = [...new Set(numbered.map((item) => item.key))].sort((a, b) => a - b);
     const keyTracks = keys.map((key, index) => x("KeyTrack", { Id: index }, [
-      x("Notes", [], sorted.filter((item) => item.key === key).map(({ note }, noteIndex) => {
-        const item = sorted.find((candidate) => candidate.note === note)!;
-        return x("MidiNoteEvent", [["Time", (note.tick - placement.tick) / 960],
+      x("Notes", [], numbered.filter((item) => item.key === key).map(({ note, noteId }) =>
+        x("MidiNoteEvent", [["Time", (note.tick - placement.tick) / 960],
           ["Duration", note.lengthTicks / 960], ["Velocity", Math.max(1, Math.min(127, Math.round(note.velocity * 127)))],
-          ["OffVelocity", 64], ["NoteId", nextId.get(item) ?? noteIndex + 1]]);
-      })), v("MidiKey", key)]));
+          ["OffVelocity", 64], ["NoteId", noteId]]))), v("MidiKey", key)]));
     const noteStore = x("Notes", [], [x("KeyTracks", [], keyTracks), x("PerNoteEventStore", [], [x("EventLists")]),
       x("NoteProbabilityGroups"), x("ProbabilityGroupIdGenerator", [], [v("NextId", 1)]),
       x("NoteIdGenerator", [], [v("NextId", sorted.length + 1)])]);

@@ -16,8 +16,20 @@ function busPresence(project: ProjectIR, bus: "reverb" | "delay"): boolean {
     track.automation.some((lane) => lane.target === `send.${bus}` && lane.points.some((point) => point.value > 0)));
 }
 function sequencer(type: "midi" | "audio", clips: XmlNode[]): XmlNode {
-  return x("MainSequencer", [], [type === "midi" ? x("ClipTimeable", [], [arranger(clips)]) :
-    x("Sample", [], [arranger(clips)])]);
+  // R3 raw observation, Live 12.1d1 MainSequencer child order (lines 4749, 4762).
+  return x("MainSequencer", [], [
+    ...["LomId", "LomIdView", "IsExpanded", "BreakoutIsExpanded", "On", "ModulationSourceCount",
+      "ParametersListWrapper", "Pointee", "LastSelectedTimeableIndex", "LastSelectedClipEnvelopeIndex",
+      "LastPresetRef", "LockedScripts", "IsFolded", "ShouldShowPresetName", "UserName", "Annotation",
+      "SourceContext", "ClipSlotList", "MonitoringEnum", "KeepRecordMonitoringLatency"].map((tag) => x(tag)),
+    type === "midi" ? x("ClipTimeable", [], [arranger(clips)]) : x("Sample", [], [arranger(clips)]),
+    ...(type === "midi" ? [x("Recorder"), x("MidiControllers")] : [
+      ...["VolumeModulationTarget", "TranspositionModulationTarget", "TransientEnvelopeModulationTarget",
+        "GrainSizeModulationTarget", "FluxModulationTarget", "SampleOffsetModulationTarget",
+        "ComplexProFormantsModulationTarget", "ComplexProEnvelopeModulationTarget",
+        "PitchViewScrollPosition", "SampleOffsetModulationScrollPosition", "Recorder"].map((tag) => x(tag)),
+    ]),
+  ]);
 }
 export function buildAlsTracks(project: ProjectIR, content: AlsContent, rendered: AlsRendered | null,
   bits: 16 | 24, ids: AlsIdAllocator, kitMaps: Readonly<Record<string, Readonly<Record<string, number>>>> = {}): AlsTracks {

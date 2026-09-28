@@ -33,15 +33,32 @@ export function trackShell(tag: "MidiTrack" | "AudioTrack" | "ReturnTrack", name
     x("MidiInputRouting"), x("AudioOutputRouting"), x("MidiOutputRouting"), mix,
     ...(sequencer ? [sequencer, x("FreezeSequencer")] : []),
     x("DeviceChain", [], [x("Devices")]),
+    ...(!sequencer ? [x("FreezeSequencer")] : []),
   ]);
-  return x(tag, { Id: ids.next() }, [v("LomId", 0), v("LomIdView", 0), trackName(name), v("Color", 0),
+  // R3 §1.3 lines 80-82 and raw R3 lines 4747-4774 record these Live 12.1 child lists.
+  return x(tag, { Id: ids.next(), SelectedToolPanel: 7,
+    SelectedTransformationName: "", SelectedGeneratorName: "" }, [
+    v("LomId", 0), v("LomIdView", 0), x("IsContentSelectedInDocument"),
+    x("PreferredContentViewMode"), x("TrackDelay"), trackName(name), v("Color", 0),
     x("AutomationEnvelopes", [], [x("Envelopes", [], envelopes)]), v("TrackGroupId", -1),
-    x("TakeLanes", [], [x("TakeLanes")]), chain]);
+    x("TrackUnfolded"), x("DevicesListWrapper"), x("ClipSlotsListWrapper"), x("ViewData"),
+    x("TakeLanes", [], [x("TakeLanes")]), x("LinkedTrackGroupId"),
+    ...(tag === "ReturnTrack" ? [] : [x("SavedPlayingSlot"), x("SavedPlayingOffset"),
+      x("Freeze"), x("NeedArrangerRefreeze"), x("PostProcessFreezeClips")]),
+    chain,
+    ...(tag === "MidiTrack" ? ["ReWireDeviceMidiTargetId", "PitchbendRange", "IsTuned",
+      "ControllerLayoutRemoteable", "ControllerLayoutCustomization"].map((child) => x(child)) : []),
+  ]);
 }
 export function buildAlsSkeleton(project: ProjectIR, tracks: readonly XmlNode[], ids: AlsIdAllocator): XmlNode {
   const tempoId = ids.next(); const tempoModId = ids.next(); const meterId = ids.next();
-  const main = x("MainTrack", [], [v("LomId", 0), v("LomIdView", 0), trackName("Main"),
-    buildMainEnvelopes(project, tempoId, meterId), x("DeviceChain", [], [x("Mixer", [], [
+  const main = x("MainTrack", [], [v("LomId", 0), v("LomIdView", 0),
+    x("IsContentSelectedInDocument"), x("PreferredContentViewMode"), x("TrackDelay"), trackName("Main"),
+    v("Color", 0), buildMainEnvelopes(project, tempoId, meterId), v("TrackGroupId", -1),
+    x("TrackUnfolded"), x("DevicesListWrapper"), x("ClipSlotsListWrapper"),
+    x("ArrangementClipsListWrapper"), x("TakeLanesListWrapper"), x("ViewData"),
+    x("TakeLanes", [], [x("TakeLanes")]), x("LinkedTrackGroupId"),
+    x("DeviceChain", [], [x("Mixer", [], [
       x("Tempo", [], [v("LomId", 0), v("Manual", project.tempo[0]!.bpm),
         x("MidiControllerRange", [], [v("Min", 20), v("Max", 999)]), automationTarget(tempoId),
         x("ModulationTarget", { Id: tempoModId }, [v("LockEnvelope", 0)])]),
