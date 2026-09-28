@@ -36,6 +36,6 @@ src/automation/
 - Keep Song range validation and the CC inverse floors aligned: gain −60..12 dB, pan −1..1.
 - Preserve raw tick lanes for ALS/DAWproject; only audio DSP uses the smoother.
 - When wiring MIDI, emit one `MIDI_CC_CLAMPED:<trackId>.<controller>@<tick>=<value>` for each affected retained event, including a sole tick-zero value; emit `gainCcClipped:<trackId>` when source gain exceeds 0 dB. Other targets retain their named `MIDI_AUTOMATION_OMITTED` warning.
-- Keep the 120-tick writer grid, point-tick endpoints, and equal-tick last-value-wins behavior in sync with `devlog/_plan/260928_music2_daw_bridge/050_automation.md` §4.
+- Keep the 120-tick writer grid, point-tick endpoints, and equal-tick last-value-wins behavior in sync with `devlog/_fin/260928_music2_daw_bridge/050_automation.md` §4.
 
 The render integration prepares smoothed controls from song frame zero, routes `fx.<index>.<param>` arrays to that insert, and samples `param.*` raw values at each note onset. MIDI imports group CC7/CC10 by channel and controller with same-tick last-value-wins; changed values become hold points in Song v1.

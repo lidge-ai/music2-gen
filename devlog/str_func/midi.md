@@ -34,6 +34,6 @@ Every tool and schema has a colocated test file. All feature files import only l
 
 ## Dependents and Sync Checklist
 
-`src/cli/commands/export.ts` consumes `projectToSmf` and `writeSmf`; `src/cli/commands/import.ts` consumes `readSmf` and `smfToSong`. `src/index.ts` exposes the feature boundary. When changing byte layouts or warning IDs, update `devlog/_plan/260928_music2_daw_bridge/020_midi.md` and the colocated fixtures. When changing kit mapping, keep `src/render/kit.tool.ts`'s optional manifest validation and both CLI directions synchronized. Legacy rendering must remain independent of MIDI and ProjectIR.
+`src/cli/commands/export.ts` consumes `projectToSmf` and `writeSmf`; `src/cli/commands/import.ts` consumes `readSmf` and `smfToSong`. `src/index.ts` exposes the feature boundary. When changing byte layouts or warning IDs, update `devlog/_fin/260928_music2_daw_bridge/020_midi.md` and the colocated fixtures. When changing kit mapping, keep `src/render/kit.tool.ts`'s optional manifest validation and both CLI directions synchronized. Legacy rendering must remain independent of MIDI and ProjectIR.
 
 CC7 uses `round(127×10^(dB/40))`; CC10 uses `round(64+63×pan)`. Incoming CC7 0..3 and CC10 0 clamp to Song bounds with `MIDI_CC_CLAMPED`. Positive gain saturates CC7 and emits `gainCcClipped`. Send, insert and voice lanes retain named MIDI omission warnings. Only the first shared channel-10 drum track emits independent CCs.

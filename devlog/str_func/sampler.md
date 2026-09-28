@@ -1,6 +1,6 @@
 # Sampler — Structure & Functions
 
-Sampler owns WAV-backed SFZ playback, clip source rendering, deterministic rate and time conversion, onset detection and slice materialization. The contract is specified in `devlog/_plan/260928_music2_daw_bridge/040_sampler.md`.
+Sampler owns WAV-backed SFZ playback, clip source rendering, deterministic rate and time conversion, onset detection and slice materialization. The contract is specified in `devlog/_fin/260928_music2_daw_bridge/040_sampler.md`.
 
 ## File Tree
 

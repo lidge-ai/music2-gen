@@ -1,6 +1,6 @@
 # Project — Structure & Functions
 
-ProjectIR is a deterministic 960-PPQ projection of a validated song and its full Timeline. The contract is specified in `devlog/_plan/260928_music2_daw_bridge/010_project_ir.md` §3.
+ProjectIR is a deterministic 960-PPQ projection of a validated song and its full Timeline. The contract is specified in `devlog/_fin/260928_music2_daw_bridge/010_project_ir.md` §3.
 
 ## File Tree
 

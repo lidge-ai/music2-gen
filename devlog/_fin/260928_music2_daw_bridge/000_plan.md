@@ -65,3 +65,20 @@ Architect F1–F29 are accepted as recorded in evidence/main-decisions.md D1. Th
 
 | Edge | Work-phase | Evidence |
 |---|---|---|
+| Build | wp2–wp4 | 0a640d8 ProjectIR and `export ir`; 594fe95 SMF writer/reader with `export midi`/`import midi`; 4f2cfc8 stem bundle (pop sum error 3.85e-8, loop example 3.02e-8). |
+| Build | wp5 | aca8077 sampler core and `slice`; 0f55ea5 render integration; review → 470f3a4 (16-click onset error 0 ms, WSOLA/PV transient error ≤4.96 ms at every listed alpha, note-on round robin, shared 512 MiB decode budget). Legacy lofi-75, short-30-bed, game-loop-16bar WAV SHA-256 unchanged. |
+| Build | wp6 | b7d0386 core, ed92d46 render and CC7/CC10 (fade smoke bar RMS 0.203→0.086→0.036→0.014; CC7 73 and CC10 127 events round-trip); review → 8970626 and the duck/send fixes in 0ea7d4c. |
+| Build | wp7 | afc5f91; review → f1a3c3d (pointee ID budget, linear note IDs, observed Live 12 track children). Output is well-formed gzip XML; opening in Ableton Live 12 is unverified (NEEDS_HUMAN). |
+| Build | wp8 | f09973f, f0b6b20, b32f2e4; smoke project.xml and metadata.xml validate against the pinned XSDs with xmllint; `unzip -t` clean. |
+| Build | wp9 | 2f35c6d, 0ea7d4c, 4f30c6d, b968458; stub host halves RMS as expected, missing opt-in exits 3 on render, stems, als and dawproject; doctor reports the stub. Real pedalboard not run. |
+| Build | wp10 | 8515ffa examples, docs, skill references and e2e tests. |
+| Check | all | Local suites not run by user order; static gates (typecheck, lint, build, audit:structure, docs:genres:check, schema freshness, privacy scan) exit 0 at HEAD. Hosted CI on b968458 found 12 Linux/macOS and 5 extra Windows test mismatches → 2717c17. |
+
+## Delivery status
+
+| Criterion | Status |
+|---|---|
+| c-1, c-11 | Hosted CI on the final pushed SHA is the test evidence (see goalplan ledger). |
+| c-2 | Legacy WAV digests unchanged at every render-touching commit on darwin/Node 24. |
+| c-3–c-6, c-8–c-10 | Implemented with colocated oracle tests; smoke evidence above. |
+| c-7 | Structure only. A human must open an exported set in Live 12 before the experimental label is removed. |
