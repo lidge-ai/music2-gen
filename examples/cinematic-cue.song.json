@@ -27,9 +27,9 @@
     {
       "id": "strings",
       "kind": "notes",
-      "instrument": "strings",
+      "instrument": "lib:strings",
       "pattern": "<[d4,f4,a4] [bb3,d4,f4] [c4,e4,g4] [a3,c4,e4]>",
-      "gain": -20,
+      "gain": -14,
       "sends": {
         "reverb": 0.35
       },
@@ -41,26 +41,16 @@
           "midGainDb": -3,
           "midHz": 400
         }
-      ],
-      "params": {
-        "attackMs": 500,
-        "releaseMs": 900,
-        "chorusMix": 0.25
-      }
+      ]
     },
     {
       "id": "cello",
       "kind": "notes",
-      "instrument": "strings",
+      "instrument": "lib:strings",
       "pattern": "<d3 bb2 c3 a2>",
-      "gain": -21,
+      "gain": -27,
       "sends": {
         "reverb": 0.2
-      },
-      "params": {
-        "attackMs": 300,
-        "releaseMs": 800,
-        "detuneCents": 5
       },
       "fx": [
         {
@@ -76,7 +66,7 @@
       "kind": "notes",
       "instrument": "choir",
       "pattern": "<[a4,d5] [f4,bb4] [g4,c5] [e4,a4]>",
-      "gain": -25,
+      "gain": -31,
       "sends": {
         "reverb": 0.45
       },
@@ -96,17 +86,12 @@
     {
       "id": "brass",
       "kind": "notes",
-      "instrument": "brass",
+      "instrument": "lib:brass-staccato",
       "pattern": "<[d4,a4 ~ ~ d4,a4 ~ ~ f4,a4 ~] [d4,f4 ~ ~ d4,f4 ~ ~ bb4 ~] [e4,g4 ~ ~ e4,g4 ~ ~ c5 ~] [e4,a4 ~ ~ ~ c5 ~ e5 ~]>",
-      "gain": -21,
+      "gain": -14,
       "velocity": 0.8,
       "sends": {
         "reverb": 0.3
-      },
-      "params": {
-        "cutoffHz": 650,
-        "peakHz": 4500,
-        "scoopCents": 30
       },
       "fx": [
         {
@@ -121,7 +106,7 @@
       "kind": "drums",
       "instrument": "drums",
       "pattern": "tom ~ ~ ~ ~ ~ tom:2 tom",
-      "gain": -17,
+      "gain": -23,
       "velocity": 0.8,
       "sends": {
         "reverb": 0.3
@@ -138,7 +123,7 @@
       "kind": "drums",
       "instrument": "drums",
       "pattern": "bd ~ ~ ~ sd ~ ~ ~ bd ~ bd ~ sd ~ ~ hh",
-      "gain": -19,
+      "gain": -25,
       "velocity": 0.75,
       "sends": {
         "reverb": 0.25
@@ -153,7 +138,7 @@
       "kind": "notes",
       "instrument": "glockenspiel",
       "pattern": "<[a5 ~ ~ ~ f5 ~ ~ ~] [f5 ~ ~ ~ d5 ~ ~ ~] [g5 ~ ~ ~ e5 ~ ~ ~] [e5 ~ ~ ~ d6 ~ ~ ~]>",
-      "gain": -26,
+      "gain": -32,
       "sends": {
         "reverb": 0.4
       }
@@ -162,7 +147,7 @@
       "id": "fx",
       "kind": "drums",
       "instrument": "sfx",
-      "gain": -15,
+      "gain": -21,
       "sends": {
         "reverb": 0.3
       },

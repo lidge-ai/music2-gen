@@ -14,7 +14,7 @@ Cards provide starting points; a user's tempo, key and artistic constraints take
 - Roles: kick, snare, hats, bass, melody.
 - Drum grid: 16 steps/bar; snares on 5 and 13, syncopated kick, swung eighth hats.
 - Bass: Rounded bass around E1-E3; short root notes and pickups converse with kick.
-- Palette: kick `drums`; snare `drums`; hats `drums`; bass `bass` `cutoffHz`=600 `wave`=2; melody `keys`.
+- Palette: kick `drums`; snare `drums`; hats `drums`; bass `bass`; melody `keys`.
 - Arrangement: intro 4 bars → verse 24 bars → hook 4 bars → verse 24 bars → hook 4 bars → verse 16 bars → hook 8 bars → outro 4 bars.
 - Mix target: -14 LUFS, -1 dBTP; Foreground kick/snare; leave bass space.
 
@@ -127,7 +127,7 @@ Sources:
 - Roles: kick, snare, hats, bass, melody.
 - Drum grid: 16 steps/bar; kicks on 1,5,9,13, claps on 5,13, offbeat hats on 3,7,11,15.
 - Bass: Rounded bass around E1-E3; syncopate or duck under each kick.
-- Palette: kick `drums` `decayMs`=150 `noise`=0.3 `tone`=0.55; snare `drums` `noise`=0.6; hats `drums` `noise`=0.55; bass `bass` `cutoffHz`=520 `releaseMs`=90 `wave`=2; melody `keys` `index`=1.2.
+- Palette: kick `drums` `decayMs`=150 `noise`=0.3 `tone`=0.55; snare `drums` `noise`=0.6; hats `drums` `noise`=0.55; bass `bass` `cutoffHz`=520 `releaseMs`=90; melody `keys` `index`=1.2.
 - Arrangement: intro 8 bars → groove 16 bars → breakdown 8 bars → build 8 bars → hook 32 bars → breakdown 8 bars → build 8 bars → hook 32 bars → outro 8 bars.
 - Mix target: -14 LUFS, -1 dBTP; Duck or separate bass from four-on-floor kick.
 
@@ -164,7 +164,7 @@ Sources:
 - Roles: kick, snare, hats, bass, melody.
 - Drum grid: 16 steps/bar; snares on 5 and 13, soft kick and sparse swung offbeat hats.
 - Bass: Soft bass around C2-C4; follow roots without long distorted glides.
-- Palette: kick `drums` `decayMs`=140 `noise`=0.22 `tone`=0.35; snare `drums` `noise`=0.42; hats `drums` `noise`=0.35; bass `bass` `cutoffHz`=260 `releaseMs`=110 `wave`=2; melody `keys` `index`=0.8 `releaseMs`=280.
+- Palette: kick `drums` `decayMs`=140 `noise`=0.22 `tone`=0.35; snare `drums` `noise`=0.42; hats `drums` `noise`=0.35; bass `bass` `cutoffHz`=260 `releaseMs`=110; melody `keys` `index`=0.8 `releaseMs`=280.
 - Arrangement: intro 4 bars → groove 16 bars → breakdown 8 bars → groove 16 bars → outro 4 bars.
 - Mix target: -14 LUFS, -1 dBTP; Preserve dynamics and keep texture quiet.
 
@@ -201,7 +201,7 @@ Sources:
 - Roles: kick, snare, hats, bass, melody.
 - Drum grid: 16 steps/bar; kicks on 1,5,9,13 and offbeat hats; layers change by section.
 - Bass: Short repeating bass around E1-E3; separate the pulse from kick.
-- Palette: kick `drums` `decayMs`=185 `tone`=0.65; snare `drums` `noise`=0.6; hats `drums` `noise`=0.7; bass `bass` `cutoffHz`=430 `releaseMs`=65 `wave`=2; melody `pluck`.
+- Palette: kick `drums` `decayMs`=185 `tone`=0.65; snare `drums` `noise`=0.6; hats `drums` `noise`=0.7; bass `bass` `cutoffHz`=430 `releaseMs`=65; melody `lead` `releaseMs`=100 `vibratoCents`=4.
 - Arrangement: intro 8 bars → build 8 bars → groove 16 bars → breakdown 2 bars → groove 32 bars → bridge 4 bars → groove 32 bars → breakdown 4 bars → groove 32 bars → outro 16 bars.
 - Mix target: -14 LUFS, -1 dBTP; Protect kick low end from cumulative bass.
 
@@ -220,7 +220,7 @@ Starter song, one-bar track patterns:
 - `snare` (`drums`): `~ ~ ~ ~ cp ~ ~ ~ ~ ~ ~ ~ cp ~ ~ ~`
 - `hats` (`drums`): `~ ~ oh ~ ~ ~ oh ~ ~ ~ oh ~ ~ ~ oh ~`
 - `bass` (`bass`): `e2 ~ ~ ~ ~ ~ ~ ~ e2 ~ ~ ~ ~ ~ ~ ~`
-- `melody` (`pluck`): `e4 ~ ~ ~ g4 ~ ~ ~ e4 ~ ~ ~ b4 ~ ~ ~`
+- `melody` (`lead`): `e4 ~ ~ ~ g4 ~ ~ ~ e4 ~ ~ ~ b4 ~ ~ ~`
 
 Sources:
 

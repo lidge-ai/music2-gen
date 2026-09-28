@@ -62,7 +62,7 @@ export const boomBap: RecipeCard = {
     {
       role: "bass",
       instrument: "bass",
-      params: { wave: 2, cutoffHz: 600 }
+      params: {}
     },
     {
       role: "melody",
@@ -207,7 +207,7 @@ export const boomBap: RecipeCard = {
           reverb: 0,
           delay: 0
         },
-        params: { wave: 2, cutoffHz: 600 }
+        params: {}
       },
       {
         id: "melody",

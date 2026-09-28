@@ -27,7 +27,7 @@ Each track needs a unique `id`, a `kind`, an `instrument`, and usually a one-bar
 | `kalimba` | `notes` | notes or integer MIDI | `decayScale`: 1 [0.5, 2]; `overtoneRatio`: 6.3 [5.9, 6.8] | `sine` |
 | `guitar` | `notes` | notes or integer MIDI | `type`: 0 [0, 1] **integer**; `pickPosition`: 0.22 [0.12, 0.35]; `releaseMs`: 150 [50, 300] | `physical` |
 
-For `bass` and `lead`, `wave: 0` is saw, `wave: 1` is square, and `wave: 2` is triangle. The Source column describes the default oscillator basis; `bass` can use triangle with `wave: 2`.
+For `bass` and `lead`, `wave: 0` is saw, `wave: 1` is square, and `wave: 2` is triangle. The Source column describes the default oscillator basis; `bass` can use triangle with `wave: 2`. Saw-based `lead`/`bass` at `wave: 0`, `supersaw`, and `pad` are normal when a synth sound is wanted. The saw-based `strings` and `brass` voices emulate acoustic instruments; for acoustic parts use `lib:strings`, `lib:strings-staccato`, `lib:brass`, or `lib:brass-staccato`. Keep synthesized `strings`/`brass` only when a synth-strings or synth-brass sound is explicitly wanted. `choir` is also saw-based; no sampled choir is bundled, so use it sparingly.
 
 `808` and `bass` require `mono: true` (also their default). Other voices default to polyphonic. All voices use the track controls below; omitted controls take the stated defaults.
 Explicit `unison` or filter envelope controls select the PolyBLEP path for lead, bass, and pad; lead/bass also select it when `detuneCents` is supplied. Omitted controls retain the original sound. `filterEnvAmount` opens the low-pass cutoff by up to four octaves before decay to its base value.
@@ -42,8 +42,10 @@ Run `music2 instruments [--json]` for the current voice parameters and bundled i
 | `lib:grand-piano` | focal | 21–108 | Salamander Grand Piano V3 by Alexander Holm | CC BY 3.0 (attribution required) |
 | `lib:strings` | bed | 32–90 | VSCO 2 Community Edition by Versilian Studios | CC0 1.0 |
 | `lib:strings-staccato` | focal | 32–90 | VSCO 2 Community Edition by Versilian Studios | CC0 1.0 |
+| `lib:brass` | bed | 30–88 | VSCO 2 Community Edition by Versilian Studios | CC0 1.0 |
+| `lib:brass-staccato` | focal | 30–88 | VSCO 2 Community Edition by Versilian Studios | CC0 1.0 |
 
-See `THIRD_PARTY_NOTICES.md` in the package for source and license links. Use `lib:grand-piano` for acoustic piano focus and `lib:strings` for sustained beds; `lib:strings-staccato` provides short attacks.
+See `THIRD_PARTY_NOTICES.md` in the package for source and license links. Use `lib:grand-piano` for acoustic piano focus and `lib:strings` for sustained beds; `lib:strings-staccato` provides short attacks. Use `lib:brass` for sustained brass and `lib:brass-staccato` for short stabs.
 
 | Track control | Default | Accepted value and use |
 | --- | --- | --- |
@@ -123,10 +125,10 @@ These twelve voices are synthesized approximations of acoustic and electric inst
 | `piano` | Hammered stiff string: slightly sharp upper partials (`inharmonicity`), brighter at higher velocity, a short hammer thump (`hammer`). Chords, ballads, pop verses. |
 | `epiano` | Two-operator FM tine piano: a warm body (`bodyIndex`) and a bell-like tine attack (`tineIndex`) that fades faster. Lo-fi, neo-soul, R&B chords. |
 | `organ` | Nine drawbars (`d16` 16', `d513` 5⅓', `d8` 8', `d4` 4', `d223` 2⅔', `d2` 2', `d135` 1⅗', `d113` 1⅓', `d1` 1'), each 0–8, with a short key click and no decay. `8,8,8,0,...` is the classic full-bodied registration; add `d4`/`d2` for brightness. |
-| `strings` | Detuned saw ensemble with a slow bow attack (`attackMs`) and optional chorus (`chorusMix`). Pads, swells, cinematic beds; voice chords in the middle register. |
-| `brass` | Saw through a resonant low-pass that opens with each note; a small pitch scoop (`scoopCents`) at the start; velocity makes it brighter. Stabs and fanfares. |
+| `strings` | Detuned saw ensemble with a slow bow attack (`attackMs`) and optional chorus (`chorusMix`). Use for an explicitly synthetic string pad; use `lib:strings` for acoustic beds. |
+| `brass` | Saw through a resonant low-pass that opens with each note; a small pitch scoop (`scoopCents`) at the start. Use for an explicitly synthetic brass sound; use `lib:brass` or `lib:brass-staccato` for acoustic parts. |
 | `flute` | Near-sine tone with breath noise (`breath`) on the attack and a delayed vibrato (`vibratoCents`). Airy leads and counter-melodies above the vocal range. |
-| `choir` | Voiced source through three parallel vowel formants (`vowel`: 0 "a", 1 "e", 2 "i", 3 "o", 4 "u"; approximate English vowel labels), several detuned voices. "Ooh/aah" beds. |
+| `choir` | Saw-based voiced source through three parallel vowel formants (`vowel`: 0 "a", 1 "e", 2 "i", 3 "o", 4 "u"; approximate English vowel labels), several detuned voices. "Ooh/aah" beds. |
 | `marimba` | Wooden bar: fundamental plus overtones near 3.9x and 9.2x that die quickly (`decayScale`, `strike` hardness). Short, dry; good for game loops and afrobeats-style riffs. |
 | `vibraphone` | Metal bar with a long ring and motor tremolo (`tremoloHz`: 0 off, or 2–7 Hz). Jazz and lo-fi colour. |
 | `glockenspiel` | Small bright steel bars with inharmonic overtones and a long shimmer. Sparkle on top; keep it sparse and high. |
@@ -145,12 +147,24 @@ These twelve voices are synthesized approximations of acoustic and electric inst
 { "id": "organ", "kind": "notes", "instrument": "organ", "pattern": "c4,e4,g4", "gain": -6, "params": { "d16": 8, "d513": 8, "d8": 8, "d4": 4, "d223": 0, "d2": 0, "d135": 0, "d113": 0, "d1": 0 } }
 ```
 
+Recorded strings and brass (use these for acoustic parts):
+
 ```json
-{ "id": "strings", "kind": "notes", "instrument": "strings", "pattern": "c4,eb4,g4", "gain": -6, "params": { "detuneCents": 7, "attackMs": 300, "releaseMs": 700, "chorusMix": 0.2 } }
+{ "id": "strings", "kind": "notes", "instrument": "lib:strings", "pattern": "c4,eb4,g4", "gain": -6 }
 ```
 
 ```json
-{ "id": "brass", "kind": "notes", "instrument": "brass", "pattern": "~ c4,e4,g4 ~ ~", "params": { "cutoffHz": 600, "peakHz": 4000, "q": 1, "scoopCents": 35 } }
+{ "id": "brass", "kind": "notes", "instrument": "lib:brass-staccato", "pattern": "~ c4,e4,g4 ~ ~" }
+```
+
+Synthesized `strings` and `brass` voices (saw-based; only when a synth-strings or synth-brass sound is wanted):
+
+```json
+{ "id": "synth-strings", "kind": "notes", "instrument": "strings", "pattern": "c4,eb4,g4", "gain": -6, "params": { "detuneCents": 7, "attackMs": 300, "releaseMs": 700, "chorusMix": 0.2 } }
+```
+
+```json
+{ "id": "synth-brass", "kind": "notes", "instrument": "brass", "pattern": "~ c4,e4,g4 ~ ~", "params": { "cutoffHz": 600, "peakHz": 4000, "q": 1, "scoopCents": 35 } }
 ```
 
 ```json

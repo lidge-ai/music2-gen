@@ -68,7 +68,8 @@ test("documented CLI examples use current CommandSpec flags", async () => {
 
 test("each documented built-in voice has a validating track and exact parameter rules", async () => {
   const source = await readFile(resolve(skillDir, "references/instruments.md"), "utf8");
-  const rows = [...source.matchAll(/^\| `([^`]+)` \| `([^`]+)` \| ([^|]*) \| ([^|]*) \|$/gm)];
+  // Voice rows: id | kind | atoms | params | trailing columns such as source (optional).
+  const rows = [...source.matchAll(/^\| `([^`]+)` \| `([^`]+)` \| ([^|]*) \| ([^|]*) \|(?: [^|]* \|)*$/gm)];
   assert.deepEqual(rows.map((row) => row[1]).sort(), Object.keys(VOICES).sort());
   for (const row of rows) {
     const voice = row[1]!;
@@ -88,7 +89,8 @@ test("each documented built-in voice has a validating track and exact parameter 
   const tracks = [...source.matchAll(/```json\n(\{[\s\S]*?\})\n```/g)]
     .map((match) => JSON.parse(match[1]!) as unknown)
     .filter((value): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value) && "instrument" in value);
-  assert.deepEqual(tracks.map((track) => track["instrument"]).sort(), Object.keys(VOICES).sort());
+  // Every built-in voice has an example; bundled lib: examples are validated too but are not voices.
+  assert.deepEqual(tracks.map((track) => track["instrument"]).filter((id) => !String(id).startsWith("lib:")).sort(), Object.keys(VOICES).sort());
   for (const track of tracks) {
     const song = validateSong({ version: 1, bpm: 120, tracks: [track],
       sections: [{ id: "main", bars: 1 }], arrangement: [{ section: "main" }] });

@@ -73,7 +73,6 @@ export const house: RecipeCard = {
       "role": "bass",
       "instrument": "bass",
       "params": {
-        "wave": 2,
         "cutoffHz": 520,
         "releaseMs": 90
       }
@@ -241,7 +240,6 @@ export const house: RecipeCard = {
           "releaseMs": 110
         },
         "params": {
-          "wave": 2,
           "cutoffHz": 520,
           "releaseMs": 90
         }

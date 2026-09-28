@@ -10,6 +10,7 @@ export const VOICE_SOURCES = {
   choir: "saw", marimba: "sine", vibraphone: "sine", glockenspiel: "sine",
   kalimba: "sine", guitar: "physical",
 } as const;
+const VOICE_EMULATES = { strings: "strings", brass: "brass", choir: "choir" } as const;
 
 export const instruments: CommandSpec = {
   name: "instruments",
@@ -21,13 +22,14 @@ export const instruments: CommandSpec = {
     const voices = Object.values(VOICES).map((voice) => {
       const source = VOICE_SOURCES[voice.id as keyof typeof VOICE_SOURCES];
       if (!source) throw new Music2Error("E_INTERNAL", `unclassified voice source: ${voice.id}`);
-      return { id: voice.id, kind: voice.kind, params: voice.params, source };
+      const emulates = VOICE_EMULATES[voice.id as keyof typeof VOICE_EMULATES] ?? null;
+      return { id: voice.id, kind: voice.kind, params: voice.params, source, emulates };
     });
     const library = libraryManifest().instruments.map(({ id, title, family, range, role, license }) =>
       ({ id, instrument: `lib:${id}`, title, family, range, role, license, source: "sampled" as const }));
     const text = ["SYNTH VOICES", ...voices.map((voice) =>
-      `${voice.id.padEnd(16)} ${voice.kind.padEnd(6)} ${voice.source}`), "", "SAMPLED LIBRARY",
-    ...library.map((item) => `${item.instrument.padEnd(24)} ${item.role.padEnd(5)} ${item.title} (${item.range.join("–")})`)].join("\n");
+      `${voice.id.padEnd(16)} ${voice.kind.padEnd(6)} ${voice.source.padEnd(8)} emulates:${voice.emulates ?? "-"}`), "", "SAMPLED LIBRARY",
+    ...library.map((item) => `${item.instrument.padEnd(24)} ${item.role.padEnd(5)} ${item.family.padEnd(8)} ${item.title} (${item.range.join("–")})`)].join("\n");
     return { command: "instruments", data: { voices, library }, text };
   },
 };

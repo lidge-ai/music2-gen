@@ -123,6 +123,8 @@ test("baseline manifest has complete, pinned example categories", () => {
 
 const replay = hostFixture ?? fixture;
 const matchingPlatform = hostFixture !== null && process.platform === hostFixture.platform && nodeMajor === hostFixture.nodeMajor;
+// cinematic-cue and pop-transition moved from synthesized strings/brass to bundled samples; their entries
+// were recaptured on darwin/Node 24 with the same procedure as this replay. All other entries are pre-wp2 bytes.
 for (const [song, expected] of Object.entries(replay.examples)) {
   test(`legacy bytes and JSON: ${song}`, {
     skip: !matchingPlatform && `no legacy baseline captured for ${process.platform}/Node ${nodeMajor}; D10 unverified on this host`,
@@ -144,4 +146,3 @@ for (const [song, expected] of Object.entries(replay.examples)) {
     }
   });
 }
-

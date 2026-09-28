@@ -20,7 +20,7 @@
       "kind": "drums",
       "instrument": "drums",
       "pattern": "bd ~ ~ ~ ~ ~ ~ ~ bd ~ bd ~ ~ ~ ~ ~",
-      "gain": -18,
+      "gain": -22,
       "velocity": 0.8,
       "params": {
         "tone": 0.45,
@@ -33,7 +33,7 @@
       "kind": "drums",
       "instrument": "drums",
       "pattern": "~ ~ ~ ~ sd ~ ~ ~ ~ ~ ~ ~ sd ~ ~ ~",
-      "gain": -15,
+      "gain": -17,
       "velocity": 0.72,
       "sends": {
         "reverb": 0.15
@@ -47,7 +47,7 @@
       "kind": "drums",
       "instrument": "drums",
       "pattern": "hh*8",
-      "gain": -20,
+      "gain": -22,
       "velocity": "0.55 0.4",
       "params": {
         "noise": 0.4
@@ -59,7 +59,7 @@
       "instrument": "bass",
       "mono": true,
       "pattern": "<[c2 ~ ~ c2 ~ ~ c2 ~] [g2 ~ ~ g2 ~ ~ g2 ~] [a2 ~ ~ a2 ~ ~ a2 ~] [f2 ~ ~ f2 ~ ~ f2 ~]>",
-      "gain": -21,
+      "gain": -27,
       "duck": {
         "by": "kick",
         "amount": 0.3,
@@ -75,7 +75,7 @@
       "kind": "notes",
       "instrument": "piano",
       "pattern": "<[c4,e4,g4 ~ c4,e4,g4 ~ ~ c4,e4,g4 ~ ~] [b3,d4,g4 ~ b3,d4,g4 ~ ~ b3,d4,g4 ~ ~] [a3,c4,e4 ~ a3,c4,e4 ~ ~ a3,c4,e4 ~ ~] [a3,c4,f4 ~ a3,c4,f4 ~ ~ a3,c4,f4 ~ ~]>",
-      "gain": -18,
+      "gain": -20,
       "velocity": 0.7,
       "sends": {
         "reverb": 0.2
@@ -96,9 +96,9 @@
     {
       "id": "strings",
       "kind": "notes",
-      "instrument": "strings",
+      "instrument": "lib:strings",
       "pattern": "<[e4,g4,c5] [d4,g4,b4] [e4,a4,c5] [f4,a4,c5]>",
-      "gain": -19,
+      "gain": -13,
       "sends": {
         "reverb": 0.3
       },
@@ -116,7 +116,7 @@
       "id": "riser",
       "kind": "drums",
       "instrument": "sfx",
-      "gain": -15,
+      "gain": -17,
       "sends": {
         "reverb": 0.25
       },
@@ -129,7 +129,7 @@
       "id": "lift",
       "kind": "drums",
       "instrument": "sfx",
-      "gain": -19,
+      "gain": -21,
       "params": {
         "pitchHz": 262,
         "riserSemitones": 12

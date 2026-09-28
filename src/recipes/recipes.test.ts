@@ -46,15 +46,12 @@ test("list and get return isolated deep clones", () => {
   assert.equal(fresh.arrangements[0]!.basis.includes("changed"), false);
 });
 
-test("recipe palettes and starter tracks avoid saw-based configurations", () => {
-  const alwaysSaw = new Set(["strings", "brass", "choir", "supersaw", "pad"]);
+test("recipe palettes and starter tracks avoid synthetic strings and brass", () => {
+  const acousticEmulations = new Set(["strings", "brass"]);
   for (const card of listRecipes()) {
     const entries = [...card.palette, ...card.starterSong.tracks];
     for (const entry of entries) {
-      assert.equal(alwaysSaw.has(entry.instrument), false, `${card.id}: ${entry.instrument}`);
-      if (entry.instrument === "bass" || entry.instrument === "lead")
-        assert.notEqual(entry.params?.["wave"] ?? (entry.instrument === "bass" ? 0 : 1), 0,
-          `${card.id}: ${entry.instrument} uses saw`);
+      assert.equal(acousticEmulations.has(entry.instrument), false, `${card.id}: ${entry.instrument}`);
     }
   }
 });

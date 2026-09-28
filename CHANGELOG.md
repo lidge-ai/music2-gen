@@ -2,8 +2,8 @@
 
 ## Unreleased
 
-- Bundle three sampled SFZ instruments (`lib:grand-piano`, `lib:strings`, `lib:strings-staccato`) with per-instrument confinement, manifest validation, license notices, and a new `music2 instruments` inventory. MIDI/ALS/DAWproject keep notes editable and warn when sampled sound is not portable.
-- Add opt-in triangle waves to bass and lead without changing their defaults. Genre recipe palettes and starters now avoid saw-based voices by default; existing songs retain their previous rendering.
+- Bundle five sampled SFZ instruments (`lib:grand-piano`, `lib:strings`, `lib:strings-staccato`, `lib:brass`, `lib:brass-staccato`) with per-instrument confinement, manifest validation, license notices, and a new `music2 instruments` inventory. MIDI/ALS/DAWproject keep notes editable and warn when sampled sound is not portable.
+- Add opt-in triangle waves to bass and lead without changing their defaults. Saw-based lead, bass, supersaw, and pad remain normal synth choices. Recipes avoid synthesized acoustic `strings` and `brass`; lint warns on those voices, while sampled strings/brass serve acoustic parts. The saw-based `choir` has no bundled sampled replacement and should be used sparingly.
 
 - Extend Song v1 with optional absolute note lists, SFZ instruments, audio clips and automation while retaining legacy render behavior for songs that omit them.
 - Add ProjectIR, MIDI import/export, aligned track and bus-return stems, sample slicing, and experimental Ableton Live 12 and DAWproject exports. MIDI and frozen-audio routes have documented loss boundaries; generated ALS files still require a manual Live-open check.

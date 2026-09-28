@@ -49,16 +49,16 @@
       }
     },
     "examples/cinematic-cue.song.json": {
-      "render": "645598d75280fb41ec54719dfc27f4d1bf018161f35fd3d42558d0f88c64e756",
+      "render": "e48f59a0cdc1ed2f4121683f1b1f35e068225ba76de95602c78ccf65ca50855f",
       "stems": {
-        "brass.wav": "85e26fb29d0f5df9ba1731d708fb206e86519e65255e54fdb8eabfa997607963",
-        "cello.wav": "0106b6c868291bb460e45f8ab94aeda0999fb848a898171a6b1b297917b4478a",
-        "choir.wav": "6379cc5d97f3b54230d5730fd13cd61c7e6001d92749e294fd5cea61eb9c4107",
-        "fx.wav": "d5ff4432454ab63b313b48a2d35b9d677eea25e3d96432de22652dc29822ff81",
-        "glock.wav": "d9c550909a26dc9cba418d534398991c60f1d4aa397b15446fe62c76de580a42",
-        "perc.wav": "dc74bd32ce2118d9ef0b476a22d336f7ec7ed9f5d710a8159da2cc56ef01d552",
-        "strings.wav": "0a51b07245a9c9110c0c8c7c6f2b13b8fd6ff5782aeea5c4409f1f8b4f64d863",
-        "timpani.wav": "3d38a7c61f090dadefd3602a5bf580c91c9ceb658830eea19c1517b0fb3ed8e5"
+        "brass.wav": "7cadcebc28939b11d806dd6830e2bf831beee358f4bcd790759cac383dd2d5bd",
+        "cello.wav": "6d8f1c2ddf610885dc43a0090d0e9a38cff0d21517f50da12e3b241bf9bb51ef",
+        "choir.wav": "01db34bccbd7c48880682277169c43f95b0c4751c4c9026804e61c0b93004c22",
+        "fx.wav": "a58e130287488598faf6aaf950a3166202286c1d21f88074df1198129f9c2f8b",
+        "glock.wav": "21932502a914daeb858164f9f720cac9dec7e9939d0e39f1d6e9a0110e5104b2",
+        "perc.wav": "cf92e300833ea903ffca8a4d914a78b2fc67119e069b526d8e1c28d553b833c2",
+        "strings.wav": "b15f07bfcf84f39d3f5b3b770cae625b5ed5dac965fea28abda86f18aa0ad863",
+        "timpani.wav": "c4360b10970532684a8c6b4d18154dfbecf271e1d54d15e49b4ef46e784f9099"
       },
       "validate": {
         "exit": 0,
@@ -278,16 +278,16 @@
       }
     },
     "examples/pop-transition.song.json": {
-      "render": "446f78e2efb5e67117696c3f8de7928c9b16b3acfdd853dc150dee482f63fc8c",
+      "render": "fdaafc6164631346ef528a7e57e083df6a8eaa29f21bc177bd677ee1905f3068",
       "stems": {
-        "bass.wav": "4b18b25d114f17e65d2c87432d2d5082b9d090090d74accaba554385c5a12402",
-        "hats.wav": "efd74b7b3d78eadc644ed52305a8e07a78a307fbcfef664033b8c1b57f445cca",
-        "kick.wav": "5240ea92cc9e7587b7edd9971eb6e939c962ec8562498b8bb2e8b707fa2bf086",
-        "lift.wav": "04583cfc7f1d33499da2f65bff49ed4fae2afec7aa6721e8868bb7fa9ca0aeb4",
-        "piano.wav": "fb058738960506f055f2bb1c5cb2b380efc36e676bbd67bb7005fa62c487dd53",
-        "riser.wav": "e749f103dd69da9d9245c9403b4457cc3128e98bd8f26f7d48bdaff0c059038c",
-        "snare.wav": "2fedac51fd1645e2c1d79573b50d0781d0d9edb3aa128c58f13c82316ac65a8c",
-        "strings.wav": "9aa42783b152f11a1d93d013bf7ab030b305bee547f5c2c78f944feaa21480a2"
+        "bass.wav": "93079578ba7bd9ab3d1600cf3a26daddb002d8e370645364ec8dfd9a44766e6a",
+        "hats.wav": "e4bbdb2bb352fd6fe685469cee81dfd1f217830faea1c9030596d47617d143bf",
+        "kick.wav": "089722f576f7f131f8c149bab44a827ac68b1c52e4919d497305081adf7d8dc7",
+        "lift.wav": "9ac33fa914fec60b03971cfc6b8d33b58596820c2ef1645ae2711472e3331f84",
+        "piano.wav": "11f68024e8749f08ed2f26b712255948d1b265ce33004c67f79e500e06dba5fb",
+        "riser.wav": "3804bd55a582353e32947cc4ddc44fab37c30fd445ee917ec91e475b91c09867",
+        "snare.wav": "864fae71a21cb6c324af8f4184c55637fc7ef77cb555b847e39ea5facefd39f5",
+        "strings.wav": "f34da78bd4f43787ff25a1b9a607b482238d36102e97e09eec6f6bb8c86714ed"
       },
       "validate": {
         "exit": 0,

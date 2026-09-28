@@ -27,6 +27,23 @@ test("generic rules identify empty, chromatic, polyphonic and high onset sum", (
   assert.deepEqual(ids.sort(), ["generic/808_polyphony", "generic/clipping_risk", "generic/empty_track", "generic/out_of_key"]);
 });
 
+test("generic lint warns only for synthetic strings and brass acoustic emulations", () => {
+  const song = validateSong({ version: 1, bpm: 120, tracks: [
+    { id: "syntheticStrings", kind: "notes", instrument: "strings", pattern: "c4" },
+    { id: "syntheticBrass", kind: "notes", instrument: "brass", pattern: "c4" },
+    { id: "synthLead", kind: "notes", instrument: "lead", pattern: "c4", params: { wave: 0 } },
+    { id: "sampleStrings", kind: "notes", instrument: "lib:strings", pattern: "c4" },
+    { id: "sampleBrass", kind: "notes", instrument: "lib:brass", pattern: "c4" },
+    { id: "choir", kind: "notes", instrument: "choir", pattern: "c4" },
+  ], sections: [{ id: "main", bars: 1 }], arrangement: [{ section: "main" }] });
+  const findings = genericRules(createGeometry(song, buildTimeline(song)), false)
+    .filter((result) => result.id === "generic/synthetic_acoustic");
+  assert.deepEqual(findings.map(({ path }) => path),
+    ["tracks.syntheticStrings.instrument", "tracks.syntheticBrass.instrument"]);
+  assert.match(findings[0]!.fix, /lib:strings-staccato/);
+  assert.match(findings[1]!.fix, /lib:brass-staccato/);
+});
+
 test("hook placement uses inclusive genre and short limits with house drop fallback", () => {
   for (const [genre, limit] of [["trap", 9], ["drill_ny", 9], ["drill_uk", 13], ["boom_bap", 41], ["house", 65]] as const) {
     assert.equal(check(genre, [{ role: "verse", bars: limit - 1, layers: 4 }, { role: "hook", bars: 1, layers: 5 }]).has("generic/hook_too_late"), false);

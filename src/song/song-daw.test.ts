@@ -147,9 +147,12 @@ void test("library references accept notes and identify invalid ids and drum use
   const raw = base();
   assert.equal(validateSong({ ...raw, tracks: [{ ...raw.tracks[0], instrument: "lib:grand-piano" }] }).tracks[0]?.instrument,
     "lib:grand-piano");
-  has({ ...raw, tracks: [{ ...raw.tracks[0], instrument: "lib:missing" }] }, "$.tracks[0].instrument", "valid ids");
-  has({ ...raw, tracks: [{ ...raw.tracks[0], kind: "drums", instrument: "lib:strings" }] },
-    "$.tracks[0].instrument", "requires notes");
+  const unknown = issues({ ...raw, tracks: [{ ...raw.tracks[0], instrument: "lib:missing" }] });
+  assert.ok(unknown.some((issue) => issue.path === "$.tracks[0].instrument" && issue.message.includes("valid ids: grand-piano")),
+    JSON.stringify(unknown));
+  const drums = issues({ ...raw, tracks: [{ ...raw.tracks[0], kind: "drums", instrument: "lib:strings" }] });
+  assert.ok(drums.some((issue) => issue.path === "$.tracks[0].instrument" && issue.message.includes("requires notes")),
+    JSON.stringify(drums));
 });
 
 void test("clip positions overlap after rounding and fit stretch uses resolved ticks", () => {

@@ -55,6 +55,13 @@ export function genericRules(g: LintGeometry, unknownGenre: boolean): LintResult
   const empty = g.song.tracks.filter((track) => !g.timeline.events.some((event) => event.track === track.id));
   if (empty.length) add("empty_track", "tracks", empty.map((track) => track.id).join(", "), "at least one onset per track", "Add onsets or remove the track.");
   if (unknownGenre) add("unknown_genre", "genre", g.song.genre ?? "", "music2 recipes id", "Choose `music2 recipes` id or pass `--genre`.");
+  for (const track of g.song.tracks) {
+    if (track.kind !== "notes" || (track.instrument !== "strings" && track.instrument !== "brass")) continue;
+    const family = track.instrument;
+    add("synthetic_acoustic", `tracks.${track.id}.instrument`, family,
+      `sampled ${family} for acoustic parts`,
+      `Use lib:${family} or lib:${family}-staccato for acoustic ${family}; keep ${family} only when a synth-${family} sound is explicitly wanted.`);
+  }
   const notes = g.timeline.events.filter((event) => event.midi !== null);
   const outside = outsideKey(g, () => true);
   if (outside.length) add("out_of_key", `tracks.${outside[0]!.track}`, `${outside.length}/${notes.length}; first bar ${outside[0]!.bar}`, "all notes in declared key", "Change notes/key; document intentional chromatic notes in arrangement metadata later.");
