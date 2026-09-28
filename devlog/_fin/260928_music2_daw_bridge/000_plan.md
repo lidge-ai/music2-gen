@@ -73,12 +73,14 @@ Architect F1–F29 are accepted as recorded in evidence/main-decisions.md D1. Th
 | Build | wp9 | 2f35c6d, 0ea7d4c, 4f30c6d, b968458; stub host halves RMS as expected, missing opt-in exits 3 on render, stems, als and dawproject; doctor reports the stub. Real pedalboard not run. |
 | Build | wp10 | 8515ffa examples, docs, skill references and e2e tests. |
 | Check | all | Local suites not run by user order; static gates (typecheck, lint, build, audit:structure, docs:genres:check, schema freshness, privacy scan) exit 0 at HEAD. Hosted CI on b968458 found 12 Linux/macOS and 5 extra Windows test mismatches → 2717c17. |
+| Check | close-out | Independent gpt-6-sol audit at b73f692 (read-only, no local tests): static gates exit 0; legacy lofi-75, short-30-bed, game-loop-16bar SHA-256 match `tests/fixtures/daw-legacy/darwin-node24.json` on darwin/Node 24.17.0; MIDI, stems, SFZ/clip/slice, ALS, DAWproject (xmllint against both pinned XSDs, `unzip -t`), stub plugin host and exit-3 paths smoke-tested; docs and flags consistent. One MAJOR: c-4 wording says "master mix" while the proof targets the pre-master buffer. Resolved as the designed contract (see c-4 below) and documented in `docs/cli.md`. Record: `devlog/_fin/260928_music2_daw_closeout/`. |
 
 ## Delivery status
 
 | Criterion | Status |
 |---|---|
-| c-1, c-11 | Hosted CI on the final pushed SHA is the test evidence (see goalplan ledger). |
+| c-1, c-11 | Hosted CI is the only test evidence. 2717c17 (last code-changing commit before close-out): run 36411227810, all 8 jobs success. The close-out commit's own run is recorded in the close-out unit's goalplan ledger. |
 | c-2 | Legacy WAV digests unchanged at every render-touching commit on darwin/Node 24. |
-| c-3–c-6, c-8–c-10 | Implemented with colocated oracle tests; smoke evidence above. |
-| c-7 | Structure only. A human must open an exported set in Live 12 before the experimental label is removed. |
+| c-3, c-5, c-6, c-8–c-10 | Implemented with colocated oracle tests; smoke evidence above. |
+| c-4 | Met as designed in 030 §4: tracks plus returns reconstruct the pre-master buffer (audit: max error 2.38e-7 against `premaster.wav`, bound 1e-6). `master.wav` differs by up to 0.47 because master inserts and the limiter are nonlinear; "master mix" in c-4 means the pre-master bus. |
+| c-7 | NEEDS_HUMAN. Structure verified (gzip, well-formed XML, `ALS_EXPERIMENTAL` warning). No Ableton Live install exists on the build machine (re-checked 2026-09-28), so a person must open an exported set in Live 12 before the experimental label is removed. |
