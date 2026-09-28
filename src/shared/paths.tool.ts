@@ -1,7 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
+import { realpath } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Music2Error } from "./errors.tool.ts";
 
 /** Root of music2's user storage: `MUSIC2_HOME` when set and nonempty, otherwise `~/.music2`. Not created here. */
 export function music2Home(): string {
@@ -37,4 +39,20 @@ export function packageRoot(): string {
 export function packageVersion(): string {
   const pj = JSON.parse(readFileSync(join(packageRoot(), "package.json"), "utf8")) as { version: string };
   return pj.version;
+}
+
+/** Resolve an existing file beneath a canonical root, including symlink targets. */
+export async function confinedRealpath(rootDir: string, candidate: string): Promise<string> {
+  try {
+    const rootPath = await realpath(rootDir);
+    const target = await realpath(isAbsolute(candidate) ? candidate : resolve(rootPath, candidate));
+    const fromRoot = relative(rootPath, target);
+    if (fromRoot === ".." || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot)) {
+      throw new Music2Error("E_ACCESS", "path escapes confined root", { details: { file: candidate } });
+    }
+    return target;
+  } catch (cause) {
+    if (cause instanceof Music2Error) throw cause;
+    throw new Music2Error("E_ACCESS", "cannot access confined path", { details: { file: candidate }, cause });
+  }
 }

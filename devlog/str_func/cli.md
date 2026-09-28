@@ -171,6 +171,7 @@ they have no separately exported `run` function.
 | `critique` | `commands/critique.ts` | One WAV/song path; optional model, base URL, and excerpt seconds. |
 | `skill` | `commands/skill-path.ts` | Sole positional argument `path`; returns `{ path }` and prints the directory in human mode. |
 | `sfx` | `commands/sfx.ts` | No positionals; returns `{ wav, sidecar, generatorVersion, preset, seed, seconds, frames, sampleRate, params }` and both paths as artifacts. Invalid flags/params exit 2, existing outputs exit 4, synthesis failure exit 5. |
+| `slice` | `commands/slice.ts` | One WAV and required `-o dir`; writes slice WAVs, `kit.json`, and a playable `slice.song.json`. `--sensitivity`, `--min-gap-ms`, `--max-slices`, `--bpm`, and `--force` control detection, snippet grid, and replacement. |
 
 ### Skill path command
 
@@ -331,6 +332,7 @@ typed code. JSON mode still emits exactly one object.
 | Song boundary | `../../song/index.ts` | Schema, loading, and timeline in command handlers. |
 | Render boundary | `../../render/index.ts`, `../../render/render.schema.ts` | Render song PCM and type render response. |
 | Audio I/O | `../../audio-io/index.ts` | Write master and stem WAV files. |
+| Sampler boundary | `../../sampler/index.ts` | Detect and materialize slice WAVs for `music2 slice`. |
 | Probe boundary | `../../probe/index.ts` | Discover ffmpeg, encode copies, loudnorm, and type doctor response. |
 | Recipes boundary | `../../recipes/index.ts`, `../../recipes/lint.tool.ts` | Card lookup, starter construction, and lint. |
 | Critic boundary | `../../critic/index.ts` | Audible review and measured DSP. |
@@ -375,4 +377,5 @@ process entry point. The source-bin test exercises it through `bin/music2.js`.
 - [ ] Update analyze command tests when input, artifact, or human text behavior changes.
 - [ ] Keep `devlog/str_func/recipes.md` and `critic.md` aligned with their CLI commands.
 - [ ] Update the four new command tests when flags, results, or exit policy change.
+- [ ] Keep slice flags, kit/song bytes, one-bar section mapping and directory transaction checks aligned with `src/cli/commands/slice.test.ts`.
 - [ ] Update `devlog/str_func/AGENTS.md` index when adding or moving this document.

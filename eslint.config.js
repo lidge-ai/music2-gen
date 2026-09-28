@@ -21,12 +21,13 @@ export default [
     "@typescript-eslint/require-await": "off",
   } },
   { files: ["**/*.test.ts"], rules: { "@typescript-eslint/no-floating-promises": "off" } },
-  { files: ["src/project/**/*.ts"], ignores: ["src/project/**/*.test.ts"], rules: {
+  { files: ["src/project/**/*.ts", "src/sampler/**/*.ts", "src/automation/**/*.ts"],
+    ignores: ["**/*.test.ts"], rules: {
     "no-restricted-properties": ["error",
-      { object: "Math", property: "random", message: "ProjectIR must be deterministic" },
-      { object: "performance", property: "now", message: "ProjectIR must be deterministic" },
-      { object: "crypto", property: "randomUUID", message: "ProjectIR must be deterministic" },
+      { object: "Math", property: "random", message: "Audio and project logic must be deterministic" },
+      { object: "performance", property: "now", message: "Audio and project logic must be deterministic" },
+      { object: "crypto", property: "randomUUID", message: "Audio and project logic must be deterministic" },
     ],
-    "no-restricted-globals": ["error", { name: "Date", message: "ProjectIR must be deterministic" }],
+    "no-restricted-globals": ["error", { name: "Date", message: "Audio and project logic must be deterministic" }],
   } },
 ];

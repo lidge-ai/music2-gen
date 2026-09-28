@@ -14,6 +14,7 @@ import { skillPath } from "./commands/skill-path.ts";
 import { sfx } from "./commands/sfx.ts";
 import { exportCommand } from "./commands/export.ts";
 import { importCommand } from "./commands/import.ts";
+import { slice } from "./commands/slice.ts";
 
 export interface CommandOption {
   type: "string" | "boolean";
@@ -54,4 +55,4 @@ export function register(spec: CommandSpec): void {
   commands.set(spec.name, spec);
 }
 
-for (const spec of [version, help, schema, validate, events, render, doctor, analyze, recipes, newCommand, lint, critiqueCommand, skillPath, sfx, exportCommand, importCommand]) register(spec);
+for (const spec of [version, help, schema, validate, events, render, doctor, analyze, recipes, newCommand, lint, critiqueCommand, skillPath, sfx, exportCommand, importCommand, slice]) register(spec);
