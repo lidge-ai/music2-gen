@@ -20,7 +20,7 @@ function confined(root: string, candidate: string): boolean {
 function parseManifest(input: unknown, kitPath: string): KitManifest {
   if (input === null || typeof input !== "object" || Array.isArray(input)) throw schemaError(kitPath, "manifest must be an object");
   const manifest = input as Record<string, unknown>;
-  const allowed = new Set(["version", "samples", "gainDb", "rootMidi"]);
+  const allowed = new Set(["version", "samples", "gainDb", "rootMidi", "midi"]);
   for (const key of Object.keys(manifest)) if (!allowed.has(key)) throw schemaError(kitPath, `unknown field ${key}`);
   if (manifest["version"] !== 1) throw schemaError(kitPath, "version must be 1");
   const samples = manifest["samples"];
@@ -33,6 +33,22 @@ function parseManifest(input: unknown, kitPath: string): KitManifest {
       throw schemaError(kitPath, `invalid variants for ${name}`, name);
     }
   }
+  const midi = manifest["midi"];
+  if (midi !== undefined) {
+    if (midi === null || typeof midi !== "object" || Array.isArray(midi))
+      throw new Music2Error("E_SCHEMA", `kit ${kitPath}: $.midi must be an object`,
+        { details: { kitPath, path: "$.midi", issues: [{ path: "$.midi", message: "must be an object" }] } });
+    const used = new Set<number>();
+    for (const [name, value] of Object.entries(midi)) {
+      if (!Object.hasOwn(samples, name) || !Number.isInteger(value) || (value as number) < 0 ||
+          (value as number) > 127 || used.has(value as number))
+        throw new Music2Error("E_SCHEMA", `kit ${kitPath}: invalid $.midi.${name}`, { details: {
+          kitPath, sampleName: name, path: `$.midi.${name}`,
+          issues: [{ path: `$.midi.${name}`, message: "unknown sample, invalid note, or duplicate assignment" }],
+        } });
+      used.add(value as number);
+    }
+  }
   const gainDb = manifest["gainDb"];
   if (gainDb !== undefined && (typeof gainDb !== "number" || !Number.isFinite(gainDb) || gainDb < -60 || gainDb > 12)) {
     throw schemaError(kitPath, "gainDb must be finite in [-60,12]");
@@ -42,6 +58,30 @@ function parseManifest(input: unknown, kitPath: string): KitManifest {
     throw schemaError(kitPath, "rootMidi must be finite in [0,127]");
   }
   return input as KitManifest;
+}
+
+/** Read mapping metadata only; never decode samples for MIDI interchange. */
+export async function loadKitMidiMap(songPath: string, instrument: string): Promise<{ names: string[]; explicit: Record<string, number> }> {
+  if (!instrument.startsWith("kit:") || instrument.length === 4) throw schemaError(instrument, "expected kit:<path>");
+  const ref = instrument.slice(4);
+  if (isAbsolute(ref) || /^[A-Za-z]:[\\/]/.test(ref) || ref.startsWith("\\") ||
+      ref.split(/[\\/]/).includes("..") || ref.includes("\0"))
+    throw accessError(ref, "kit path escapes song directory");
+  const root = await realpath(dirname(songPath)).catch((cause: unknown) => { throw accessError(songPath, "cannot access song directory", undefined, cause); });
+  const path = resolve(root, ref.endsWith("kit.json") ? ref : join(ref, "kit.json"));
+  if (!confined(root, path)) throw accessError(path, "kit path escapes song directory");
+  let canonical: string;
+  try { canonical = await realpath(path); }
+  catch (cause) { throw accessError(path, "cannot access kit.json", undefined, cause); }
+  if (!confined(root, canonical)) throw accessError(path, "kit.json escapes song directory");
+  let raw: string;
+  try { raw = await readFile(canonical, "utf8"); }
+  catch (cause) { throw accessError(path, "cannot read kit.json", undefined, cause); }
+  let parsed: unknown;
+  try { parsed = JSON.parse(raw) as unknown; }
+  catch (cause) { throw new Music2Error("E_SCHEMA", `kit ${path}: invalid JSON`, { details: { kitPath: path }, cause }); }
+  const manifest = parseManifest(parsed, path);
+  return { names: Object.keys(manifest.samples), explicit: manifest.midi ?? {} };
 }
 
 /** Kit data and its decode cache belong to one load/render invocation. */

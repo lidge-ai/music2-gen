@@ -8,7 +8,7 @@ import { createStereo, writeWav } from "../audio-io/index.ts";
 import { Music2Error } from "../shared/index.ts";
 import type { ResolvedTrack } from "../song/index.ts";
 import type { VoiceContext, VoiceEvent } from "./render.schema.ts";
-import { loadKit, renderKit } from "./kit.tool.ts";
+import { loadKit, loadKitMidiMap, renderKit } from "./kit.tool.ts";
 
 function track(kind: "drums" | "notes", instrument: string): ResolvedTrack {
   return { id: "kit", kind, instrument, pattern: null, velocity: 1, gain: 0, pan: 0, gate: 1,
@@ -99,4 +99,47 @@ void test("note kit transposes +12 semitones to double playback speed", async (t
   const high = renderKit(ctx, kit);
   assert.ok(Math.abs((normal[2] ?? 0) - 0.25) < 1e-6);
   assert.ok(Math.abs((high[1] ?? 0) - 0.25) < 1e-6);
+});
+
+void test("manifest-only MIDI map validates names, range and duplicate assignments", async (t) => {
+  const { kitDir, songPath } = await setup(t);
+  const path = join(kitDir, "kit.json");
+  const samples = { kick: ["a.wav"], clay: ["b.wav"] };
+  await writeFile(path, JSON.stringify({ version: 1, samples, midi: { kick: 36, clay: 62 } }));
+  assert.deepEqual(await loadKitMidiMap(songPath, "kit:kit"), { names: ["kick", "clay"], explicit: { kick: 36, clay: 62 } });
+  assert.deepEqual((await loadKit(songPath, "kit:kit", 44100)).manifest.midi, { kick: 36, clay: 62 });
+  for (const [midi, name] of [
+    [{ clay: 128 }, "clay"], [{ clay: 62.5 }, "clay"], [{ kick: 36, clay: 36 }, "clay"],
+    [{ missing: 41 }, "missing"],
+  ] as const) {
+    await writeFile(path, JSON.stringify({ version: 1, samples, midi }));
+    await assert.rejects(loadKitMidiMap(songPath, "kit:kit"), (error: unknown) =>
+      error instanceof Music2Error && error.code === "E_SCHEMA" && error.message.includes(`$.midi.${name}`));
+  }
+  await writeFile(path, JSON.stringify({ version: 1, samples }));
+  assert.deepEqual(await loadKitMidiMap(songPath, "kit:kit"), { names: ["kick", "clay"], explicit: {} });
+});
+
+void test("manifest-only lookup rejects a symlink outside the song directory", async (t) => {
+  const { kitDir, songPath } = await setup(t);
+  const external = await mkdtemp(join(tmpdir(), "music2-kit-outside-"));
+  t.after(() => rm(external, { recursive: true, force: true }));
+  await writeFile(join(external, "kit.json"), JSON.stringify({ version: 1, samples: { bd: ["a.wav"] } }));
+  await symlink(join(external, "kit.json"), join(kitDir, "kit.json"));
+  await assert.rejects(loadKitMidiMap(songPath, "kit:kit"), errorCode("E_ACCESS"));
+  await assert.rejects(loadKitMidiMap(songPath, "kit:../kit"), errorCode("E_ACCESS"));
+});
+
+void test("optional MIDI metadata leaves legacy kit rendering bytes unchanged", async (t) => {
+  const { kitDir, songPath } = await setup(t);
+  const path = join(kitDir, "kit.json");
+  const base = { version: 1, samples: { bd: ["a.wav"] } };
+  await writeFile(path, JSON.stringify(base));
+  const plain = await loadKit(songPath, "kit:kit", 44100);
+  const ctx: VoiceContext = { sampleRate: 44100, frames: 16, track: track("drums", "kit:kit"),
+    events: [event(0, { name: "bd", index: 0 }, null)] };
+  const original = renderKit(ctx, plain);
+  await writeFile(path, JSON.stringify({ ...base, midi: { bd: 36 } }));
+  const mapped = await loadKit(songPath, "kit:kit", 44100);
+  assert.deepEqual(renderKit(ctx, mapped), original);
 });

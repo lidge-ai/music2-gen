@@ -21,8 +21,10 @@ src/cli/
     ├── validate.ts      # validate song and summarize timeline
     ├── events.ts        # list filtered timed song events
     ├── render.ts        # WAV, optional stems, encoding, and loudnorm
-    ├── export.ts        # ProjectIR JSON export with optional staged output
-    ├── export.test.ts   # stdout, staged file and error-envelope cases
+    ├── export.ts        # ProjectIR JSON or staged format-1 MIDI export
+    ├── export.test.ts   # IR and MIDI bytes, staged file and error-envelope cases
+    ├── import.ts        # bounded format-0/1 MIDI to Song v1 import
+    ├── import.test.ts   # MIDI note lists, collision and malformed-input cases
     ├── render.test.ts   # render command output and failure cases
     ├── analyze.ts       # WAV/song analysis and artifacts
     ├── analyze.test.ts  # analysis command and output cases
@@ -74,6 +76,8 @@ The signatures below come from exported declarations in the current source.
 | `export function stage(final: string): StagedFile` | `files.ts` | Name a temporary file beside its destination; the caller writes and cleans it. |
 | `export function commitNoReplace(staged: StagedFile[]): Promise<void>` | `files.ts` | Publish with `link()`, preserving existing outputs and rolling back files this call linked on failure. |
 | `export function commitReplace(staged: StagedFile[]): Promise<void>` | `files.ts` | Publish with `rename()`, restoring prior destinations if a later batch rename fails. |
+| `export const exportCommand: CommandSpec` | `commands/export.ts` | Dispatch `ir` and `midi`; MIDI loads confined kit maps and stages a `.mid` artifact. |
+| `export const importCommand: CommandSpec` | `commands/import.ts` | Parse bounded `.mid`, reconstruct and validate Song v1, then stage a `.json` artifact. |
 | `export function resolveSkillDir(root: string): string` | `commands/skill-path.ts` | Return the packaged skill directory after verifying its `SKILL.md` is a regular file. |
 | `export const sfx: CommandSpec` | `commands/sfx.ts` | Parse `--preset`, optional `-o` (default first free `$MUSIC2_HOME/sfx/<preset>-<seed>[-n].wav`), `--seed`, `--seconds`, `--sample-rate`, `--params`; resolve and synthesize through `src/sfx`; commit WAV then `<basename>.sfx.json` with no-replace `link()` (existing output → `E_ACCESS`). |
 | `export function sidecarJson(resolved: ResolvedSfx): string` | `commands/sfx.ts` | Stable sidecar key order: generatorVersion, preset, seed, seconds, frames, sampleRate, params. |

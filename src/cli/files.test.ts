@@ -124,3 +124,22 @@ void test("an output path through a non-directory is an access error", async () 
   await assert.rejects(assertDistinct([], ["/dev/null/out.json"]), (error: unknown) =>
     error instanceof Music2Error && error.code === "E_ACCESS");
 });
+
+test("MIDI caller uses staging for late .mid collision, force and alias safety", async () => {
+  await withDir(async (dir) => {
+    const input = join(dir, "input.mid");
+    await writeFile(input, Uint8Array.of(0x4d, 0x54, 0x68, 0x64));
+    await symlink(input, join(dir, "alias.mid"));
+    await assert.rejects(assertDistinct([input], [join(dir, "alias.mid")]), isCode("E_INPUT"));
+    const item = stage(join(dir, "out.mid"));
+    try {
+      await writeFile(item.temporary, Uint8Array.of(1, 2, 3));
+      await writeFile(item.final, Uint8Array.of(9));
+      await assert.rejects(commitNoReplace([item]), isCode("E_ACCESS"));
+      assert.deepEqual(await readFile(item.final), Buffer.from([9]));
+      await commitReplace([item]);
+      assert.deepEqual(await readFile(item.final), Buffer.from([1, 2, 3]));
+    } finally { await clean([item]); }
+    assert.deepEqual((await readdir(dir)).sort(), ["alias.mid", "input.mid", "out.mid"]);
+  });
+});

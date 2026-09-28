@@ -100,3 +100,49 @@ test("song schema failure retains its error code and single envelope", async () 
     assert.equal(result.stdout.trim().split("\n").length, 1);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+test("export midi writes type-1 bytes with a placement marker and deterministic output", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-midi-export-"));
+  try {
+    await writeFile(join(dir, "song.json"), JSON.stringify(source));
+    const args = ["export", "midi", "song.json", "-o", "one.mid", "--json"];
+    const result = await invoke(args, dir);
+    assert.equal(result.exit, 0);
+    const response = JSON.parse(result.stdout) as { artifacts: string[]; data: { format: number; ppq: number; tracks: number; notes: number; channels: Record<string, number> } };
+    assert.equal(result.stdout.trim().split("\n").length, 1);
+    assert.deepEqual(response.artifacts, [join(dir, "one.mid")]);
+    assert.deepEqual([response.data.format, response.data.ppq, response.data.tracks, response.data.notes], [1, 960, 2, 1]);
+    assert.deepEqual(response.data.channels, { lead: 1 });
+    const body = await readFile(join(dir, "one.mid"));
+    assert.equal(body.subarray(0, 14).toString("hex"), "4d546864000000060001000203c0");
+    assert.ok(body.includes(Buffer.from("00ff0604686f6f6b", "hex"))); // FF 06 hook, hand-derived
+    assert.equal((await invoke(args, dir)).exit, 4);
+    assert.equal((await invoke([...args, "--force"], dir)).exit, 0);
+    assert.deepEqual(await readFile(join(dir, "one.mid")), body);
+    assert.equal((await invoke(["export", "midi", "song.json", "-o", "two.mid", "--json"], dir)).exit, 0);
+    assert.deepEqual(await readFile(join(dir, "two.mid")), body);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test("export midi rejects source/output identity and escaped kit manifest", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-midi-kit-"));
+  try {
+    await writeFile(join(dir, "song.json"), JSON.stringify(source));
+    const alias = await invoke(["export", "midi", "song.json", "-o", "song.json", "--json"], dir);
+    assert.equal(alias.exit, 2);
+    const kitSong = { ...source, tracks: [{ id: "kit", kind: "drums", instrument: "kit:assets/kit",
+      notes: [{ start: 0, length: 1, sample: "kick" }] }] };
+    await writeFile(join(dir, "kit-song.json"), JSON.stringify(kitSong));
+    const outside = await mkdtemp(join(tmpdir(), "music2-midi-outside-"));
+    try {
+      await writeFile(join(outside, "kit.json"), JSON.stringify({ version: 1, samples: { kick: ["kick.wav"] } }));
+      const { mkdir } = await import("node:fs/promises");
+      await mkdir(join(dir, "assets", "kit"), { recursive: true });
+      await symlink(join(outside, "kit.json"), join(dir, "assets", "kit", "kit.json"));
+      const rejected = await invoke(["export", "midi", "kit-song.json", "-o", "kit.mid", "--json"], dir);
+      assert.equal(rejected.exit, 4);
+      assert.equal((JSON.parse(rejected.stdout) as { error: { code: string } }).error.code, "E_ACCESS");
+      await assert.rejects(readFile(join(dir, "kit.mid")), { code: "ENOENT" });
+    } finally { await rm(outside, { recursive: true, force: true }); }
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});

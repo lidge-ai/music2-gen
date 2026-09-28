@@ -8,6 +8,10 @@ export type { Song, Track, Section, ResolvedSong, ResolvedTrack, ResolvedSection
 export { buildProject } from "./project/index.ts";
 export type { ProjectIR, ProjectMarker, ProjectBus, ProjectTrackBase, ProjectInstrument,
   ProjectNoteTrack, ProjectAudioTrack, ProjectTrack, ProjectNote, ProjectClip, ProjectSample } from "./project/index.ts";
+export { writeSmf, readSmf, projectToSmf, smfToSong, GM_PROGRAMS, DRUM_NOTES, SFX_NOTES,
+  programForInstrument, instrumentForProgram, drumNoteFor, drumNameFor, sfxNoteFor, sfxNameFor,
+  kitMidiMap, keyToSmf, smfToKey } from "./midi/index.ts";
+export type { SmfFile, SmfTrack, SmfEvent, SmfChannelEvent, MidiProjection, ImportedSong, MidiImport } from "./midi/index.ts";
 export { createStereo, peakLinear, truePeakLinear, readWav, writeWav } from "./audio-io/index.ts";
 export type { StereoBuffer, WavInfo, WavWriteOptions } from "./audio-io/index.ts";
 export { renderSong, VOICES } from "./render/index.ts";
