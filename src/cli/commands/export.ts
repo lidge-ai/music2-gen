@@ -1,4 +1,4 @@
-import { lstat, mkdir, mkdtemp, open, readFile, readdir, rm, rmdir, writeFile } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, open, readFile, readdir, rm, rmdir, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { buildProject } from "../../project/index.ts";
@@ -40,9 +40,10 @@ async function stemDirectory(path: string, force: boolean): Promise<void> {
   }
 }
 
+/** The leaf is checked with lstat in stemDirectory; ancestors may be symlinks such as macOS /tmp. */
 async function ensureStemDirectory(path: string, created: string[]): Promise<void> {
   try {
-    const info = await lstat(path);
+    const info = await stat(path);
     if (!info.isDirectory()) throw new Music2Error("E_ACCESS", `output is not a directory: ${path}`);
     return;
   } catch (cause) {
@@ -54,7 +55,7 @@ async function ensureStemDirectory(path: string, created: string[]): Promise<voi
   try { await mkdir(path); created.push(path); }
   catch (cause) {
     if ((cause as NodeJS.ErrnoException).code === "EEXIST") {
-      const info = await lstat(path);
+      const info = await stat(path);
       if (info.isDirectory()) return;
     }
     throw new Music2Error("E_ACCESS", `cannot create output directory: ${path}`, { cause });
@@ -251,7 +252,8 @@ async function exportDawproject(input: string, output: string, values: Record<st
     try {
       const artifact = plan.files[0]!;
       if (!("bytes" in artifact)) throw new Music2Error("E_RENDER", "DAWproject planner returned no ZIP bytes");
-      await writeFile(staged.temporary, artifact.bytes, { flag: "wx" });
+      try { await writeFile(staged.temporary, artifact.bytes, { flag: "wx" }); }
+      catch (cause) { throw new Music2Error("E_ACCESS", `cannot write output: ${output}`, { details: { path: output }, cause }); }
       if (force) await commitReplace([staged]); else await commitNoReplace([staged]);
     } finally { await rm(staged.temporary, { force: true }); }
     return { command: "export", data: { ...plan.data, dawproject: output }, artifacts: [output],

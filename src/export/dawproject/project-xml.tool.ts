@@ -160,7 +160,7 @@ export function buildProjectXml(project: ProjectIR, view: DawView): ProjectXmlRe
       laneChildren.push(node("Points", `${key}.points.${index}`, { timeUnit: "beats",
         unit: automation.target === "gain" ? "linear" : "normalized" },
       [E("Target", { parameter: `@${key}.${param}` }), ...values]));
-      if (automation.target === "gain" && automation.points.some((point, i) => i > 0 && point.curve === "linear" &&
+      if (automation.target === "gain" && automation.points.some((point, i) => i > 0 && automation.points[i - 1]!.curve === "linear" &&
         point.value !== automation.points[i - 1]!.value)) warnings.push(`GAIN_CURVE_LAW_DIFFERENCE:${track.id}`);
     }
     lanes.push(node("Lanes", `${key}.lanes`, { track: `@${key}.track` }, laneChildren));
