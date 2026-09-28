@@ -60,3 +60,8 @@ The user forbade running the local suite. Every gate runs in hosted CI instead. 
 ## Audit log (wp0)
 
 Independent reviewer (read-only, no local suite). Round 1 FAIL, 6 blockers: lint-generic fixture under √n (F1), phrase test string arg (F2), pinned darwin/Node 24 digests (F3), stale 1.5 texts (F4), verifier/receipt/privacy order (F5), missing activation tests (F6); all folded (010/030 "Audit round 1 folds", 000 folds). Round 2 GO-WITH-FIXES (blockers=1): privacy grep matched commit headers and `JUNK`; folded as a content-only grep against a workspace identifier file. Notes folded: verifier wording, recapture split wp1 lint / wp3 render, draft PR at first push.
+
+## wp4 P entry
+
+Previous D (wp3): session hardening landed at `6548f76`, CI run 36444837538 8/8 green. wp4 B: move this unit to `devlog/_fin/260928_harness_hardening/` with `040_delivery.md` (commits, CI runs, criteria evidence, residual limits, follow-ups), commit, rerun the content privacy grep over `main..HEAD`, push the branch and fast-forward `origin/main` to the same SHA (`main` is unprotected; `git merge-base --is-ancestor origin/main HEAD` must hold). wp4 C: receipt on the `push` CI run for that SHA on `main`; confirm #1 and #2 closed by the `Fixes` trailers, else comment with the commits and close.
+
