@@ -143,3 +143,34 @@ test("MIDI caller uses staging for late .mid collision, force and alias safety",
     assert.deepEqual((await readdir(dir)).sort(), ["alias.mid", "input.mid", "out.mid"]);
   });
 });
+
+test("stems batch commits manifest last and rolls back only new files on late collision", async () => {
+  await withDir(async (dir) => {
+    const files = ["tracks/lead.wav", "returns/reverb.wav", "stems.json"];
+    await mkdir(join(dir, "tracks")); await mkdir(join(dir, "returns"));
+    const batch = files.map((path) => stage(join(dir, path)));
+    try {
+      for (const item of batch) await writeFile(item.temporary, `new ${item.final}`);
+      await writeFile(batch[2]!.final, "late manifest");
+      await assert.rejects(commitNoReplace(batch), isCode("E_ACCESS"));
+      await assert.rejects(readFile(batch[0]!.final), { code: "ENOENT" });
+      await assert.rejects(readFile(batch[1]!.final), { code: "ENOENT" });
+      assert.equal(await readFile(batch[2]!.final, "utf8"), "late manifest");
+    } finally { await clean(batch); }
+  });
+});
+
+test("stems force batch restores old manifest and track on missing last staged file", async () => {
+  await withDir(async (dir) => {
+    await mkdir(join(dir, "tracks"));
+    const batch = [stage(join(dir, "tracks", "lead.wav")), stage(join(dir, "stems.json"))];
+    try {
+      await writeFile(batch[0]!.final, "old track");
+      await writeFile(batch[1]!.final, "old manifest");
+      await writeFile(batch[0]!.temporary, "new track");
+      await assert.rejects(commitReplace(batch), isCode("E_ACCESS"));
+      assert.equal(await readFile(batch[0]!.final, "utf8"), "old track");
+      assert.equal(await readFile(batch[1]!.final, "utf8"), "old manifest");
+    } finally { await clean(batch); }
+  });
+});

@@ -12,6 +12,7 @@ The index table below is kept in sync with `src/`.
 | song | song.md | active |
 | project | project.md | active |
 | midi | midi.md | active |
+| export | export.md | active |
 | cli | cli.md | active |
 | audio-io | audio-io.md | active |
 | render | render.md | active |

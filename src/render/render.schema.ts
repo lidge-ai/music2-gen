@@ -1,9 +1,9 @@
 import type { ResolvedTrack } from "../song/index.ts";
 import type { StereoBuffer } from "../audio-io/index.ts";
 
-export interface RenderOptions { bars?: { start: number; end: number }; stems?: boolean; mastering?: "peak" | "loudnorm" | "lufs" }
+export interface RenderOptions { bars?: { start: number; end: number }; stems?: boolean; returns?: boolean; premaster?: boolean; mastering?: "peak" | "loudnorm" | "lufs" }
 export interface RenderStem { trackId: string; audio: StereoBuffer }
-export interface RenderResult { audio: StereoBuffer; stems: RenderStem[]; bars: number; durationSeconds: number; peakDbfs: number; truePeakDbtp: number; ceilingDb: number; events: number; loop: { startSample: 0; endSample: number } | null }
+export interface RenderResult { audio: StereoBuffer; stems: RenderStem[]; returns?: { reverb: StereoBuffer | null; delay: StereoBuffer | null }; premaster?: StereoBuffer; bars: number; durationSeconds: number; peakDbfs: number; truePeakDbtp: number; ceilingDb: number; events: number; loop: { startSample: 0; endSample: number } | null }
 export interface VoiceEvent { midi: number | null; sample: { name: string; index: number } | null; velocity: number; startFrame: number; gateFrames: number; stopFrame: number; eventIndex: number; seed: number }
 export interface VoiceContext { sampleRate: number; frames: number; track: ResolvedTrack; events: VoiceEvent[] }
 export interface ParamSpec { default: number; min: number; max: number; integer?: boolean }

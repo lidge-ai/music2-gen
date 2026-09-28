@@ -146,3 +146,92 @@ test("export midi rejects source/output identity and escaped kit manifest", asyn
     } finally { await rm(outside, { recursive: true, force: true }); }
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+test("export stems writes aligned PCM, exact envelope, crop markers and master parity", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-stems-cli-"));
+  try {
+    const song = { ...source, sampleRate: 48000, tailSeconds: 0,
+      sections: [{ id: "hook", bars: 1 }], arrangement: [{ section: "hook", repeats: 3 }] };
+    await writeFile(join(dir, "song.json"), JSON.stringify(song));
+    const args = ["export", "stems", "song.json", "-o", "bundle", "--bars", "1:3", "--bits", "16", "--premaster", "--json"];
+    const first = await invoke(args, dir);
+    assert.equal(first.exit, 0, first.stdout);
+    assert.equal(first.stderr, "");
+    assert.equal(first.stdout.trim().split("\n").length, 1);
+    const response = JSON.parse(first.stdout) as { data: { dir: string; manifest: string; files: string[]; frames: number; sampleRate: number }; artifacts: string[]; warnings: string[] };
+    assert.deepEqual(Object.keys(response.data), ["dir", "manifest", "files", "frames", "sampleRate"]);
+    assert.deepEqual(response.data.files, ["tracks/lead.wav", "master.wav", "premaster.wav", "stems.json"]);
+    assert.deepEqual(response.artifacts, response.data.files.map((path) => join(dir, "bundle", path)));
+    assert.deepEqual(response.warnings, []);
+    assert.equal(response.data.frames, 192000);
+    const manifest = JSON.parse(await readFile(response.data.manifest, "utf8")) as { barOrigin: number; bars: number; sectionMarkers: { bar: number; sourceBar: number; seconds: number }[] };
+    assert.equal(manifest.barOrigin, 2);
+    assert.equal(manifest.bars, 2);
+    assert.deepEqual(manifest.sectionMarkers.map((marker) => [marker.bar, marker.sourceBar, marker.seconds]),
+      [[1, 2, 0], [2, 3, 2]]);
+    for (const path of response.data.files.filter((name) => name.endsWith(".wav"))) {
+      const wav = await readFile(join(dir, "bundle", path));
+      assert.equal(wav.readUInt16LE(20), 1);
+      assert.equal(wav.readUInt16LE(22), 2);
+      assert.equal(wav.readUInt32LE(24), 48000);
+      assert.equal(wav.readUInt16LE(34), 16);
+      assert.equal(wav.length, 44 + response.data.frames * 4);
+    }
+    const rendered = await invoke(["render", "song.json", "-o", "legacy.wav", "--bits", "16", "--bars", "1:3", "--json"], dir);
+    assert.equal(rendered.exit, 0, rendered.stdout);
+    assert.deepEqual(await readFile(join(dir, "legacy.wav")), await readFile(join(dir, "bundle", "master.wav")));
+    assert.equal((await invoke(args, dir)).exit, 4);
+    await writeFile(join(dir, "bundle", "unrelated"), "keep");
+    assert.equal((await invoke([...args, "--force"], dir)).exit, 0);
+    assert.equal(await readFile(join(dir, "bundle", "unrelated"), "utf8"), "keep");
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test("export stems rejects occupied directories, invalid ranges and output identity", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-stems-errors-"));
+  try {
+    await writeFile(join(dir, "song.json"), JSON.stringify(source));
+    const { mkdir, readdir } = await import("node:fs/promises");
+    await mkdir(join(dir, "occupied"));
+    await writeFile(join(dir, "occupied", "keep"), "old");
+    const occupied = await invoke(["export", "stems", "song.json", "-o", "occupied", "--json"], dir);
+    assert.equal(occupied.exit, 4);
+    assert.equal(envelope(occupied.stdout).error.code, "E_ACCESS");
+    for (const range of ["1:1", "2:1", "-1:1", "0:2", "0:1.5"]) {
+      const rejected = await invoke(["export", "stems", "song.json", "-o", "new", "--bars", range, "--json"], dir);
+      assert.equal(rejected.exit, 2, range);
+      assert.equal(envelope(rejected.stdout).error.code, "E_INPUT");
+    }
+    for (const argv of [
+      ["export", "stems", "song.json", "-o", "song.json", "--json"],
+      ["export", "stems", "song.json", "-o", "new", "--bits", "32", "--json"],
+      ["export", "stems", "song.json", "--json"],
+    ]) assert.equal((await invoke(argv, dir)).exit, 2);
+    await writeFile(join(dir, "loop.json"), JSON.stringify({ ...source, loop: true }));
+    const loopCrop = await invoke(["export", "stems", "loop.json", "-o", "loop-bundle",
+      "--bars", "0:1", "--json"], dir);
+    assert.equal(loopCrop.exit, 2);
+    assert.equal(envelope(loopCrop.stdout).error.code, "E_INPUT");
+    assert.deepEqual((await readdir(join(dir, "occupied"))), ["keep"]);
+    await assert.rejects(readdir(join(dir, "new")), { code: "ENOENT" });
+    await assert.rejects(readdir(join(dir, "loop-bundle")), { code: "ENOENT" });
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test("export stems 24-bit no-master bundle is deterministic across output names", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-stems-24-"));
+  try {
+    await writeFile(join(dir, "song.json"), JSON.stringify(source));
+    for (const name of ["one", "two"]) {
+      const response = await invoke(["export", "stems", "song.json", "-o", name,
+        "--bits", "24", "--no-master", "--premaster", "--json"], dir);
+      assert.equal(response.exit, 0, response.stdout);
+    }
+    for (const file of ["tracks/lead.wav", "premaster.wav", "stems.json"])
+      assert.deepEqual(await readFile(join(dir, "one", file)), await readFile(join(dir, "two", file)));
+    const wav = await readFile(join(dir, "one", "premaster.wav"));
+    assert.equal(wav.readUInt16LE(34), 24);
+    assert.equal(wav.length, 44 + wav.readUInt32LE(40));
+    await assert.rejects(readFile(join(dir, "one", "master.wav")), { code: "ENOENT" });
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});

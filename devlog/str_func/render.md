@@ -120,8 +120,8 @@ is the voice contract; individual render methods are object members.
 
 | Type | Source | Shape and use |
 |---|---|---|
-| `RenderOptions` | `render.schema.ts` | Optional `bars`, `stems`, `mastering: "peak" \| "loudnorm" \| "lufs"`. |
-| `RenderResult` | `render.schema.ts` | `audio`, `stems`, `bars`, `durationSeconds`, peak fields, `ceilingDb`, `events`, and nullable whole-song `loop` sample points. |
+| `RenderOptions` | `render.schema.ts` | Optional `bars`, `stems`, `returns`, `premaster`, `mastering: "peak" \| "loudnorm" \| "lufs"`. |
+| `RenderResult` | `render.schema.ts` | `audio`, `stems`, optional `returns` and `premaster`, `bars`, `durationSeconds`, peak fields, `ceilingDb`, `events`, and nullable whole-song `loop` sample points. |
 | `RenderStem` | `render.schema.ts` | `trackId` and stereo `audio`. |
 | `VoiceEvent` | `render.schema.ts` | MIDI/sample, velocity, frame timing, event index, seed. |
 | `VoiceContext` | `render.schema.ts` | Sample rate, frame count, resolved track, selected events. |
@@ -187,6 +187,13 @@ overrides the voice's mono default.
   Ducking applies at the dry track before sends and stem capture.
 - Reverb and delay are wet-only sends. Reverb uses comb and all-pass stages;
   delay alternates channels at a dotted-eighth interval with feedback.
+- With `returns:true`, active wet bus outputs are captured as separate stereo
+  returns; inactive buses are `null`. With `premaster:true`, the buffer is copied
+  after the mix and loop fold, before master inserts and mastering. Both result
+  keys are absent without their options. When stems and returns are requested,
+  the renderer checks every Float32 frame/channel against the pre-master sum at
+  `1e-6 * max(1, sum(abs(components)))`. Loop exports fold each captured stem
+  and return tail; legacy `render --stems` keeps its original truncation.
 - `lufs` measures pre-master PCM with `measureLoudness`, adds the difference
   from `master.targetLufs` to master gain, and uses a milder soft-saturation
   normalization without peak scaling. Silence or a null target adds no LUFS gain.

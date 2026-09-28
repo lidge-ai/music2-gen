@@ -275,6 +275,8 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
   const reverbSend = createStereo(song.sampleRate, frames);
   const delaySend = createStereo(song.sampleRate, frames);
   const stems: RenderStem[] = [];
+  const returns: { reverb: StereoBuffer | null; delay: StereoBuffer | null } | undefined =
+    options.returns ? { reverb: null, delay: null } : undefined;
   let scratch: StereoBuffer | null = null;
   for (let index = 0; index < song.tracks.length; index++) {
     const track = song.tracks[index]!;
@@ -338,11 +340,13 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
   if (song.tracks.some((track) => track.sends.reverb > 0)) {
     const wet = song.fx?.reverb ? renderReverbBus(reverbSend, song.fx.reverb,
       { sampleRate: song.sampleRate, bpm: song.bpm }) : applyReverb(reverbSend);
+    if (returns) returns.reverb = wet;
     for (let i = 0; i < frames; i++) { audio.left[i]! += wet.left[i]!; audio.right[i]! += wet.right[i]!; }
   }
   if (song.tracks.some((track) => track.sends.delay > 0)) {
     const wet = song.fx?.delay ? renderDelayBus(delaySend, song.fx.delay,
       { sampleRate: song.sampleRate, bpm: song.bpm }) : applyDelay(delaySend, song.bpm);
+    if (returns) returns.delay = wet;
     for (let i = 0; i < frames; i++) { audio.left[i]! += wet.left[i]!; audio.right[i]! += wet.right[i]!; }
   }
   let output = audio;
@@ -353,13 +357,51 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
       audio.right[at]! += audio.right[i]!;
     }
     output = { ...audio, left: audio.left.subarray(0, bodyFrames), right: audio.right.subarray(0, bodyFrames) };
+    if (returns) {
+      for (const component of [...stems.map((stem) => stem.audio), returns.reverb, returns.delay]) {
+        if (!component) continue;
+        for (let i = bodyFrames; i < frames; i++) {
+          const at = (i - bodyFrames) % bodyFrames;
+          component.left[at]! += component.left[i]!;
+          component.right[at]! += component.right[i]!;
+        }
+      }
+      for (const id of ["reverb", "delay"] as const) {
+        const component = returns[id];
+        if (component) returns[id] = { ...component,
+          left: component.left.subarray(0, bodyFrames), right: component.right.subarray(0, bodyFrames) };
+      }
+    }
     for (const stem of stems) stem.audio = { ...stem.audio,
       left: stem.audio.left.subarray(0, bodyFrames), right: stem.audio.right.subarray(0, bodyFrames) };
+  }
+  const premaster = options.premaster ? { ...output, left: output.left.slice(), right: output.right.slice() } : undefined;
+  if (returns && options.stems) {
+    const components = [...stems.map((stem) => stem.audio), returns.reverb, returns.delay].filter(
+      (component): component is StereoBuffer => component !== null);
+    let maxAbsolute = 0, maxNormalized = 0, worstFrame = 0, worstChannel: "left" | "right" = "left";
+    for (const channel of ["left", "right"] as const) for (let frame = 0; frame < output[channel].length; frame++) {
+      let sum = 0; let magnitude = 0;
+      for (const component of components) {
+        const sample = component[channel][frame]!;
+        if (!Number.isFinite(sample)) throw renderError("nonfinite stem component", frame);
+        sum += sample; magnitude += Math.abs(sample);
+      }
+      const expected = output[channel][frame]!;
+      if (!Number.isFinite(expected)) throw renderError("nonfinite pre-master sample", frame);
+      const absolute = Math.abs(sum - expected), normalized = absolute / Math.max(1, magnitude);
+      if (absolute > maxAbsolute) maxAbsolute = absolute;
+      if (normalized > maxNormalized) { maxNormalized = normalized; worstFrame = frame; worstChannel = channel; }
+    }
+    if (maxNormalized > 1e-6) throw new Music2Error("E_RENDER", "stem sum exceeds pre-master tolerance", {
+      details: { maxAbsolute, maxNormalized, frame: worstFrame, channel: worstChannel, sources: components.length },
+    });
   }
   if (song.master.fx?.length) applyInsertChain(output, song.master.fx,
     { sampleRate: song.sampleRate, bpm: song.bpm }, "master");
   const levels = masterAudio(output, song, options.mastering);
-  return { audio: output, stems, bars, durationSeconds: output.left.length / song.sampleRate,
+  return { audio: output, stems, ...(returns ? { returns } : {}), ...(premaster ? { premaster } : {}),
+    bars, durationSeconds: output.left.length / song.sampleRate,
     peakDbfs: levels.peakDbfs, truePeakDbtp: levels.truePeakDbtp,
     ceilingDb: song.master.ceilingDb, events: selected.reduce((sum, group) => sum + group.length, 0),
     loop: song.loop ? { startSample: 0, endSample: bodyFrames } : null };

@@ -83,6 +83,63 @@ test("empty song.fx preserves both legacy send processors", async () => {
   assert.deepEqual(a.audio.right, b.audio.right);
 });
 
+test("return and pre-master capture are opt-in and preserve legacy dry samples", async () => {
+  const song = validateSong(fixture({ tracks: [
+    { id: "lead", kind: "notes", instrument: "lead", pattern: "c4 ~ ~ ~",
+      sends: { reverb: .3, delay: .2 } },
+    { id: "bass", kind: "notes", instrument: "bass", pattern: "c2 ~ ~ ~" },
+  ] }));
+  const timeline = buildTimeline(song);
+  const legacy = await mixTracks(song, timeline, "fixture.song.json", { stems: true });
+  const captured = await mixTracks(song, timeline, "fixture.song.json",
+    { stems: true, returns: true, premaster: true });
+  assert.equal("returns" in legacy, false);
+  assert.equal("premaster" in legacy, false);
+  assert.deepEqual(captured.audio.left, legacy.audio.left);
+  assert.deepEqual(captured.stems[0]!.audio.left, legacy.stems[0]!.audio.left);
+  assert.ok(captured.returns?.reverb);
+  assert.ok(captured.returns?.delay);
+  assert.ok(captured.premaster);
+  for (const side of ["left", "right"] as const) for (let i = 0; i < captured.premaster[side].length; i++) {
+    const sum = captured.stems.reduce((n, stem) => n + stem.audio[side][i]!, 0) +
+      captured.returns.reverb[side][i]! + captured.returns.delay[side][i]!;
+    assert.ok(Math.abs(sum - captured.premaster[side][i]!) <= 1e-6 * Math.max(1,
+      captured.stems.reduce((n, stem) => n + Math.abs(stem.audio[side][i]!), 0) +
+      Math.abs(captured.returns.reverb[side][i]!) + Math.abs(captured.returns.delay[side][i]!)));
+  }
+});
+
+test("loop export folds each captured tail while legacy stems retain truncation", async () => {
+  const source = fixture({ loop: true, tailSeconds: 2,
+    tracks: [{ id: "hit", kind: "notes", instrument: "bell", pattern: "~ ~ ~ c4",
+      sends: { reverb: .3, delay: .4 } }] });
+  const loop = validateSong(source);
+  const nonloop = validateSong({ ...source, loop: false });
+  const timeline = buildTimeline(loop);
+  const plain = await mixTracks(loop, timeline, "fixture.song.json", { stems: true });
+  const captured = await mixTracks(loop, timeline, "fixture.song.json",
+    { stems: true, returns: true, premaster: true });
+  const expanded = await mixTracks(nonloop, buildTimeline(nonloop), "fixture.song.json",
+    { stems: true, returns: true, premaster: true });
+  const body = captured.stems[0]!.audio.left.length;
+  assert.deepEqual(captured.audio.left, plain.audio.left);
+  assert.deepEqual(plain.stems[0]!.audio.left, expanded.stems[0]!.audio.left.subarray(0, body));
+  assert.ok(captured.stems[0]!.audio.left.some((sample, i) => sample !== plain.stems[0]!.audio.left[i]));
+  assert.ok(captured.returns?.reverb && captured.returns.delay);
+  for (const side of ["left", "right"] as const) for (let i = 0; i < body; i++) {
+    let sum = 0;
+    for (let sourceFrame = i; sourceFrame < expanded.stems[0]!.audio[side].length; sourceFrame += body)
+      sum += expanded.stems[0]!.audio[side][sourceFrame]!;
+    assert.ok(Math.abs(captured.stems[0]!.audio[side][i]! - sum) < 1e-6);
+    for (const bus of ["reverb", "delay"] as const) {
+      let wet = 0;
+      for (let sourceFrame = i; sourceFrame < expanded.returns![bus]![side].length; sourceFrame += body)
+        wet += expanded.returns![bus]![side][sourceFrame]!;
+      assert.ok(Math.abs(captured.returns[bus]![side][i]! - wet) < 1e-6);
+    }
+  }
+});
+
 test("tapestop partial stems equal the full-song window with earlier sustained notes in 4/4 and 3/4", async () => {
   for (const meter of [4, 3]) {
     const cropStart = meter === 4 ? 1 : 2;
