@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "instruments": [
+    {
+      "id": "grand-piano",
+      "title": "Grand piano (Salamander, trimmed)",
+      "sfz": "grand-piano/grand-piano.sfz",
+      "family": "piano",
+      "role": "focal",
+      "range": [
+        21,
+        108
+      ],
+      "license": {
+        "spdx": "CC-BY-3.0",
+        "attribution": "Salamander Grand Piano V3 by Alexander Holm",
+        "source": "https://freepats.zenvoid.org/Piano/"
+      }
+    },
+    {
+      "id": "strings",
+      "title": "String ensemble sustain (VSCO 2 CE)",
+      "sfz": "strings/strings.sfz",
+      "family": "strings",
+      "role": "bed",
+      "range": [
+        32,
+        90
+      ],
+      "license": {
+        "spdx": "CC0-1.0",
+        "attribution": "VSCO 2 Community Edition by Versilian Studios",
+        "source": "https://github.com/sgossner/VSCO-2-CE"
+      }
+    },
+    {
+      "id": "strings-staccato",
+      "title": "String ensemble spiccato (VSCO 2 CE)",
+      "sfz": "strings-staccato/strings-staccato.sfz",
+      "family": "strings",
+      "role": "focal",
+      "range": [
+        32,
+        90
+      ],
+      "license": {
+        "spdx": "CC0-1.0",
+        "attribution": "VSCO 2 Community Edition by Versilian Studios",
+        "source": "https://github.com/sgossner/VSCO-2-CE"
+      }
+    }
+  ]
+}
