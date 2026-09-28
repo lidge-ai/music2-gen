@@ -1,7 +1,8 @@
+import { basename, isAbsolute, win32 } from "node:path";
 import { barTicks, fractionToTicks, Fraction, Music2Error, PPQ, secondsToTicks } from "../shared/index.ts";
 import type { ResolvedAudioTrack, ResolvedSong, ResolvedTrack, TimedEvent, Timeline } from "../song/index.ts";
 import type { ProjectAudioTrack, ProjectBus, ProjectIR, ProjectNote, ProjectNoteTrack,
-  ProjectSample, ProjectTrackBase } from "./project.schema.ts";
+  ProjectPlugin, ProjectSample, ProjectTrackBase } from "./project.schema.ts";
 
 function internal(message: string): never { throw new Music2Error("E_INTERNAL", message); }
 function safeTick(value: number): number {
@@ -84,9 +85,24 @@ function projectedNotes(song: ResolvedSong, timeline: Timeline, quantization: Pr
   return buckets;
 }
 
-function base(track: ResolvedTrack | ResolvedAudioTrack, index: number): ProjectTrackBase {
+function projectPlugins(plugins: NonNullable<ResolvedTrack["plugins"]>, trackId: string,
+  warnings: string[]): ProjectPlugin[] {
+  return plugins.map((plugin) => {
+    // Song v1 resolves only id/params. Keep future resolved identifiers without copying host paths.
+    const resolved = plugin as ProjectPlugin;
+    const ref = resolved.ref;
+    const absolute = ref !== undefined && (isAbsolute(ref) || win32.isAbsolute(ref));
+    if (absolute) warnings.push(`PLUGIN_REF_BASENAME:${trackId}:${plugin.id}`);
+    return { id: plugin.id, ...(resolved.format === undefined ? {} : { format: resolved.format }),
+      ...(ref === undefined ? {} : { ref: absolute ? win32.isAbsolute(ref) ? win32.basename(ref) : basename(ref) : ref }),
+      ...(plugin.params === undefined ? {} : { params: plugin.params }) };
+  });
+}
+function base(track: ResolvedTrack | ResolvedAudioTrack, index: number, warnings: string[]): ProjectTrackBase {
   return { id: track.id, index, gainDb: track.gain, pan: track.pan, sends: track.sends,
-    inserts: track.fx ?? [], duck: track.duck, automation: track.automation ?? [] };
+    inserts: track.fx ?? [], duck: track.duck, automation: track.automation ?? [],
+    ...("instrument" in track && track.plugins !== undefined ?
+      { plugins: projectPlugins(track.plugins, track.id, warnings) } : {}) };
 }
 function instrument(track: ResolvedTrack): ProjectNoteTrack["instrument"] {
   if (track.instrument.startsWith("kit:")) return { kind: "kit", ref: track.instrument.slice(4) };
@@ -109,6 +125,7 @@ function bus(song: ResolvedSong, kind: "reverb" | "delay"): ProjectBus | null {
 export function buildProject(song: ResolvedSong, timeline: Timeline): ProjectIR {
   const perBar = barTicks(song.meter.numerator);
   const quantization = { events: 0, inexact: 0, maxErrorTicks: 0 };
+  const warnings: string[] = [];
   const notes = projectedNotes(song, timeline, quantization);
   const sampleMap = new Map<string, ProjectSample>();
   const addSample = (sample: ProjectSample): void => { sampleMap.set(sampleKey(sample), sample); };
@@ -116,7 +133,7 @@ export function buildProject(song: ResolvedSong, timeline: Timeline): ProjectIR 
     const resolvedInstrument = instrument(track);
     if (resolvedInstrument.kind === "kit" || resolvedInstrument.kind === "sfz")
       addSample({ role: resolvedInstrument.kind, ref: resolvedInstrument.ref });
-    return { ...base(track, index), type: track.kind, instrument: resolvedInstrument,
+    return { ...base(track, index, warnings), type: track.kind, instrument: resolvedInstrument,
       mono: track.mono, notes: notes[index]! };
   });
   for (const track of song.audioTracks ?? []) for (const clip of track.clips)
@@ -125,7 +142,7 @@ export function buildProject(song: ResolvedSong, timeline: Timeline): ProjectIR 
     a.role < b.role ? -1 : a.role > b.role ? 1 : a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0);
   const sampleIndices = new Map(samples.map((sample, index) => [sampleKey(sample), index]));
   const audioTracks: ProjectAudioTrack[] = (song.audioTracks ?? []).map((track, audioIndex) => ({
-    ...base(track, song.tracks.length + audioIndex), type: "audio",
+    ...base(track, song.tracks.length + audioIndex, warnings), type: "audio",
     clips: track.clips.map((clip) => ({ tick: clip.tick, lengthTicks: clip.lengthTicks,
       sample: sampleIndices.get(sampleKey({ role: "clip", ref: clip.file }))!,
       offsetSeconds: clip.offsetSeconds, gainDb: clip.gainDb, pitchSemitones: clip.pitchSemitones,
@@ -148,6 +165,6 @@ export function buildProject(song: ResolvedSong, timeline: Timeline): ProjectIR 
     buses: { reverb: bus(song, "reverb"), delay: bus(song, "delay") },
     master: { gainDb: song.master.gainDb, ceilingDb: song.master.ceilingDb,
       targetLufs: song.master.targetLufs, inserts: song.master.fx },
-    samples, quantization,
+    samples, quantization, ...(warnings.length ? { warnings } : {}),
   };
 }

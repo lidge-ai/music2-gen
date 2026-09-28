@@ -92,8 +92,11 @@ export function planDawproject(project: ProjectIR, media: readonly DawMedia[], r
       .sort((a, b) => Buffer.compare(Buffer.from(a.path), Buffer.from(b.path))).map((entry) =>
       ({ path: entry.path, bytes: entry.bytes }))];
   const zip = writeStoreZip(files);
-  const warnings = [...built.warnings];
-  if (options.content === "midi") warnings.push("MIDI_SOUND_NOT_PORTABLE: music2 instruments, effects and ducking are not embedded");
+  const warnings = [...built.warnings, ...(project.warnings ?? [])];
+  if (options.content === "midi") {
+    warnings.push("MIDI_SOUND_NOT_PORTABLE: music2 instruments, effects and ducking are not embedded");
+    for (const track of project.tracks) if (track.plugins?.length) warnings.push(`PLUGIN_NOT_PORTABLE:${track.id}`);
+  }
   else warnings.push("MASTER_PROCESSING_NOT_PORTABLE: premaster stems omit music2 mastering");
   if (project.buses.reverb || project.buses.delay) warnings.push("EFFECT_DEVICE_NOT_PORTABLE");
   if (project.quantization.inexact) warnings.push(`QUANTIZED_PATTERN_EVENTS:${project.quantization.inexact}:${project.quantization.maxErrorTicks}`);

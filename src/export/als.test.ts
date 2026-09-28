@@ -16,6 +16,15 @@ const project = { version: 1, ppq: 960, title: "A & B", seed: 1, sampleRate: 480
   quantization: { events: 0, inexact: 0, maxErrorTicks: 0 },
 } as unknown as ProjectIR;
 const audio = { left: new Float32Array(96000), right: new Float32Array(96000), sampleRate: 48000 as const, sourceChannels: 2 as const };
+test("MIDI ALS warns once per plugin-bearing track", () => {
+  const withPlugins = { ...project, tracks: [{ ...project.tracks[0]!,
+    plugins: [{ id: "softclip", params: { drive: 0.5 } }] }] } as ProjectIR;
+  const midi = planAls(withPlugins, null, { content: "midi", bits: 24 });
+  assert.equal(midi.warnings.filter((warning) => warning === "PLUGIN_NOT_PORTABLE:lead").length, 1);
+  const both = planAls(withPlugins, { stems: [{ trackId: "lead", audio }],
+    returns: { reverb: null, delay: null } }, { content: "both", bits: 24 });
+  assert.equal(both.warnings.includes("PLUGIN_NOT_PORTABLE:lead"), false);
+});
 test("ALS plan is deterministic, portable and marks every result experimental", () => {
   const first = planAls(project, null, { content: "midi", bits: 24 });
   const second = planAls(project, null, { content: "midi", bits: 24 });

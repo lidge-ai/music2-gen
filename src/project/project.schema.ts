@@ -11,6 +11,7 @@ export interface ProjectIR {
   master: { gainDb: number; ceilingDb: number; targetLufs: number | null; inserts: ResolvedInsert[] };
   samples: ProjectSample[];
   quantization: { events: number; inexact: number; maxErrorTicks: number };
+  warnings?: string[];
 }
 export interface ProjectMarker {
   tick: number; lengthTicks: number; name: string; section: string;
@@ -24,6 +25,11 @@ export interface ProjectTrackBase {
   id: string; index: number; gainDb: number; pan: number;
   sends: { reverb: number; delay: number }; inserts: ResolvedInsert[];
   duck: { by: string; amount: number; releaseMs: number } | null; automation: ResolvedLane[];
+  plugins?: ProjectPlugin[];
+}
+export interface ProjectPlugin {
+  id: string; format?: string; ref?: string;
+  params?: Readonly<Record<string, number | string | boolean>>;
 }
 export type ProjectInstrument =
   | { kind: "voice"; id: string; params: Record<string, number> }

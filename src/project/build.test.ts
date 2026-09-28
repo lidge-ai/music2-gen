@@ -10,6 +10,36 @@ const basic = (tracks: object[], extras: Record<string, unknown> = {}) => ({
   ...extras,
 });
 
+test("ProjectIR preserves only declared plugin fields and omits the key from legacy tracks", () => {
+  const song = validateSong(basic([
+    { id: "plain", kind: "notes", instrument: "piano", pattern: "c4" },
+    { id: "empty", kind: "notes", instrument: "piano", pattern: "e4", plugins: [] },
+    { id: "effect", kind: "notes", instrument: "piano", pattern: "g4",
+      plugins: [{ id: "softclip", params: { wet: true, drive: 0.5, label: "warm" } }] },
+  ]));
+  const ir = buildProject(song, buildTimeline(song));
+  assert.equal(Object.hasOwn(ir.tracks[0]!, "plugins"), false);
+  assert.deepEqual(ir.tracks[1]!.plugins, []);
+  assert.deepEqual(ir.tracks[2]!.plugins, [{ id: "softclip", params: { drive: 0.5, label: "warm", wet: true } }]);
+  assert.equal(Object.hasOwn(ir, "warnings"), false);
+});
+
+test("ProjectIR replaces an absolute resolved plugin ref with its basename and records a warning", () => {
+  const song = validateSong(basic([{ id: "lead", kind: "notes", instrument: "piano", pattern: "c4" }]));
+  const plugin = { id: "softclip", format: "vst3", ref: "/private/tmp/SoftClip.vst3",
+    params: { drive: 0.5 } };
+  song.tracks[0]!.plugins = [plugin];
+  const ir = buildProject(song, buildTimeline(song));
+  assert.deepEqual(ir.tracks[0]!.plugins, [{ id: "softclip", format: "vst3", ref: "SoftClip.vst3",
+    params: { drive: 0.5 } }]);
+  assert.deepEqual(ir.warnings, ["PLUGIN_REF_BASENAME:lead:softclip"]);
+  assert.equal(JSON.stringify(ir).includes("/private/tmp"), false);
+  plugin.ref = "C:\\Plugins\\SoftClip.vst3";
+  const windowsIr = buildProject(song, buildTimeline(song));
+  assert.equal(windowsIr.tracks[0]!.plugins?.[0]?.ref, "SoftClip.vst3");
+  assert.deepEqual(windowsIr.warnings, ["PLUGIN_REF_BASENAME:lead:softclip"]);
+});
+
 test("markers, list notes, clips and sorted de-duplicated samples are stable", () => {
   const song = validateSong(basic([
     { id: "lead", kind: "notes", instrument: "piano", notes: [{ start: 2, length: 1.5, pitch: 64 }] },

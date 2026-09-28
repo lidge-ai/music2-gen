@@ -105,9 +105,11 @@ export function planAls(project: ProjectIR, rendered: AlsRendered | null, option
     throw new Music2Error("E_CAPABILITY", "ALS XML exceeds the 128 MiB generation budget");
   const title = project.title.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80).replace(/-$/g, "") || "untitled";
   const als = `${title}.als`;
-  const warnings = ["ALS_EXPERIMENTAL: generated set has not been opened in Ableton Live 12", ...built.warnings];
+  const warnings = ["ALS_EXPERIMENTAL: generated set has not been opened in Ableton Live 12",
+    ...built.warnings, ...(project.warnings ?? [])];
   if (options.content === "midi") {
     warnings.push("ALS_MIDI_NO_INSTRUMENT: editable notes have empty instruments and omit source audio, effects and ducking");
+    for (const track of project.tracks) if (track.plugins?.length) warnings.push(`PLUGIN_NOT_PORTABLE:${track.id}`);
     const omitted = project.tracks.filter((track) => track.type === "audio").length;
     if (omitted) warnings.push(`ALS_AUDIO_OMITTED:${omitted}`);
   } else warnings.push("ALS_MASTER_PROCESSING_LOST: frozen playback is premaster; Live set omits music2 mastering");

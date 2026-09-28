@@ -24,6 +24,16 @@ function fixture(): ProjectIR {
     buses: { reverb: null, delay: null }, master: { gainDb: 0, ceilingDb: -1, targetLufs: null, inserts: [] },
     samples: [{ role: "clip", ref: "source.wav" }], quantization: { events: 0, inexact: 0, maxErrorTicks: 0 } };
 }
+test("MIDI DAWproject warns once for a track with external plugins", () => {
+  const project = fixture();
+  project.tracks[0]!.plugins = [{ id: "softclip" }];
+  const source: DawMedia = { path: "audio/source-0000.wav", bytes: wav(48000), frames: 48000,
+    sampleRate: 48000, channels: 2, owner: { kind: "source", sampleIndex: 0 } };
+  const plan = planDawproject(project, [source],
+    [{ trackId: "vox", clipIndex: 0, startSeconds: 0, endSeconds: 1 }],
+    { content: "midi", outputName: "plugins.dawproject" });
+  assert.equal(plan.warnings.filter((warning) => warning === "PLUGIN_NOT_PORTABLE:vox").length, 1);
+});
 test("mixed plan embeds one source and stem in fixed order with stable bytes", () => {
   const media: DawMedia[] = [
     { path: "audio/stem-vox.wav", bytes: wav(48000), frames: 48000, sampleRate: 48000, channels: 2,

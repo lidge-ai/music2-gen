@@ -49,8 +49,12 @@ Song and Timeline provide tracks, bus parameters and placements; RenderResult pr
 
 The set is experimental until a human opens it in Ableton Live 12. MIDI content has editable notes with empty instruments; audio content has frozen premaster playback; both mutes MIDI to avoid doubling. Frozen audio omits music2 mastering, and the empty Live return tracks do not reproduce effects. `planAls` always starts warnings with `ALS_EXPERIMENTAL`. Structural reader tests prove only self-consistency, not Ableton acceptance.
 
+For MIDI content, `planAls` emits `PLUGIN_NOT_PORTABLE:<trackId>` once for every ProjectIR track with a nonempty plugin chain. Its existing empty-instrument warning still applies. Frozen audio is required to retain external plugin sound; plugin device state is not serialized into ALS. Any ProjectIR path-sanitization warnings are carried into the plan.
+
 ## DAWproject 1.0 export
 
 `planDawproject(project, media, regions, {content, outputName, kitMaps?})` accepts validated ProjectIR plus supplied WAV bytes and resolved source regions. It returns one `ExportPlan<DawData>` ZIP descriptor and mapping warnings. `src/export/dawproject/project-xml.tool.ts` builds transport, mixer, editable/frozen tracks, notes, original and frozen audio warps, markers, and raw gain/pan automation. It assigns IDs in XML document order, resolves typed references, and uses the shared `xml.tool.ts` serializer. `metadata-xml.tool.ts` emits schema-ordered title/comment. The planner validates embedded RIFF headers against media descriptors, then calls the zero-dependency `writeStoreZip` with `metadata.xml`, `project.xml`, and lexically sorted WAV entries. No filesystem path, clock or output filename enters ZIP bytes.
 
 `midi` keeps editable tracks; `audio` uses frozen dry stems and effect returns; `both` adds muted editable tracks beside active frozen playback. Instrument/effect device state and mastering are not portable, and warnings identify omitted/approximate mappings. Official D16 Bitwig XSDs and license are pinned by SHA-256 in `tests/fixtures/dawproject/`; `tests/e2e/dawproject.test.ts` validates both XML files with xmllint when present. Linux CI installs `libxml2-utils` and requires that validator. A named DAW import remains unverified.
+
+For MIDI content, `planDawproject` emits `PLUGIN_NOT_PORTABLE:<trackId>` once per nonempty ProjectIR plugin chain alongside its general sound-portability warning. Frozen audio is required to retain plugin processing. ProjectIR path-sanitization warnings also pass through to the plan.

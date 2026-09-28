@@ -16,13 +16,15 @@ src/project/
 
 `project.schema.ts` owns the serialized `ProjectIR` shape. `build.tool.ts` maps the full Timeline to tick notes while preserving each event's per-track index, adds arrangement markers, projects clip references into a sorted deduplicated sample table, and reports pattern quantization error. It never reads files or alters render timing. Array order is semantic: song tracks precede audio tracks, markers follow placements, note order follows tick and original event index, and samples sort by role then ref.
 
+Instrument tracks copy an optional resolved plugin chain into `ProjectTrackBase.plugins`, preserving order, ID, supported format/ref identifiers, and resolved parameter values. An absent chain leaves the property absent, so plugin-free IR JSON keeps its previous bytes; an explicit empty chain stays empty. Song v1 currently resolves only ID and parameters. If a future resolved plugin supplies an absolute `ref`, the builder records only its basename and adds `PLUGIN_REF_BASENAME:<trackId>:<pluginId>` to the optional IR warnings. Host commands, configured binary paths and presets do not enter IR.
+
 ## Key Function Signatures
 
 | Export | Signature | Role |
 |---|---|---|
 | `buildProject` | `(song: ResolvedSong, timeline: Timeline): ProjectIR` | Pure IR projection. |
 | `ProjectIR` | `interface ProjectIR` | Versioned exchange envelope with tempo, meter, markers, tracks, buses, samples and quantization. |
-| `ProjectTrack`, `ProjectNote`, `ProjectClip` | Public IR types | Tick-positioned musical and audio lanes. |
+| `ProjectTrack`, `ProjectPlugin`, `ProjectNote`, `ProjectClip` | Public IR types | Tick-positioned musical/audio lanes and optional plugin metadata. |
 
 Pattern onsets parse `cycleBegin` as an exact fraction and round the bar position and swing shift separately. The `quantization` counters count pattern events, inexact projections, and maximum tick error; list notes copy resolved ticks with zero error. Mono notes stop at the next later tick. Distinct onsets collapsed to the same tick drop the earlier note and add an inexact warning count.
 
