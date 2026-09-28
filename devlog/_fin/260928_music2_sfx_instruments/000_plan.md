@@ -54,3 +54,18 @@ Architect F1–F9 are accepted as recorded in evidence/main-decisions.md, which 
 
 | Edge | Work-phase | Evidence |
 |---|---|---|
+| A→B, C→D | wp1 | Three-round unit audit (NEAR-PASS); unit committed 63e877a; unit check script exit 0. |
+| C→D | wp2 | d228ce9; code review R1 FAIL (overlap peak, check-then-rename race, inert controls, uncapped synthesis) → R2 NEAR-PASS (variant-1 noiseColor, lone-event knee, generator cap) all fixed; gates receipt 539 tests, 536 pass, 0 fail, 3 skipped. |
+| C→D | wp3 | 97c5a56; code review R1 FAIL (chord peaks > 1, kit-0 WAV test) → R2 NEAR-PASS: chord peaks match existing voices (keys 1.38, bell 1.47 on the same chord), so the ≤1 contract is per note and documented; kit-0 WAV test added; gates receipt 603 tests, 600 pass, 0 fail, 3 skipped. |
+| B | wp4 | Four examples pass validate, strict lint (0 results), render, song-backed analyze with no A1–A4 or targeted warnings (tests/e2e/examples.test.ts, 4/4). |
+
+## Delivery receipt (local)
+
+| Field | Evidence |
+|---|---|
+| Platform | Node v24.17.0, Darwin arm64, Apple M5 Pro. |
+| Presets | All 21 presets at 10 s, 44.1 kHz, median/max of 5 warm runs: 0.2–20 ms (slowest pitchriser 20.1 ms). Gate < 2 s met. |
+| Song budget | 10 tracks (piano, strings, choir, glockenspiel, two sfx, drums, bass), 35 inserts, 174.8 s rendered with stems in 24.1 s (2 inserts: 17.4 s). Gate < 60 s met. Process RSS about 1.2 GiB with stems held in memory. |
+| Legacy | Mixer drill WAV digest, legacy-render loop/--bars/stems/peak digests and voice PCM digests unchanged on the pinned platform; omitted vs explicit drums kit 0 equal at PCM and 16-bit WAV level. |
+| Examples | pop-transition (no genre), lofi-textures (lofi_hiphop), cinematic-cue (no genre), game-spark-loop (no genre, loop, clean seam). |
+| Hosted CI | Recorded in the goalplan ledger after the authorized push of main. |
