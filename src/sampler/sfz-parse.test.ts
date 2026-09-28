@@ -41,6 +41,8 @@ test("aliases, unsupported selection and located parse failures", async () => {
     await assert.rejects(parseSfz("bad.sfz", root), { code: "E_PARSE", details: { file: "bad.sfz", line: 1, opcode: "hivel" } });
     await writeFile(join(root, "codec.sfz"), "<region> sample=sample.flac\n");
     await assert.rejects(parseSfz("codec.sfz", root), { code: "E_CAPABILITY" });
+    await writeFile(join(root, "vel0.sfz"), "<region> sample=a.wav lovel=0 hivel=62\n");
+    assert.deepEqual((await parseSfz("vel0.sfz", root)).regions[0]?.velocity, [0, 62]);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 

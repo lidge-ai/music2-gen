@@ -49,7 +49,8 @@ const note: SfzOpcodeSpec = { kind: "note", min: 0, max: 127 };
 const u32 = integer(0, 0xffffffff);
 export const SFZ_OPCODES: Readonly<Record<string, SfzOpcodeSpec>> = {
   sample: { kind: "sample" }, key: note, lokey: note, hikey: note,
-  lovel: integer(1, 127), hivel: integer(1, 127),
+  // Libraries such as VSCO-2-CE write lovel=0; no played velocity is 0, so it selects the same notes as lovel=1.
+  lovel: integer(0, 127), hivel: integer(1, 127),
   pitch_keycenter: { kind: "keycenter" }, pitch_keytrack: integer(-1200, 1200),
   tune: number(-100, 100), transpose: integer(-127, 127),
   volume: number(-144, 6), amplitude: number(0, 100), pan: number(-100, 100),
