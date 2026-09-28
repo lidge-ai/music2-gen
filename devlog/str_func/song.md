@@ -23,6 +23,8 @@ src/song/
 
 ## Module Responsibility
 
+FX additions: `song.schema.ts` imports only the declarative `render/fx/fx.schema.ts` contract, generates discriminated JSON Schema branches, validates exact effect paths and frequency ordering, and resolves missing insert/bus values. `validateFxFields(input)` is also available for direct resolved-song render validation. Absent track/master chains resolve to empty arrays; absent `song.fx` resolves to `null`.
+
 `src/song` owns the song v1 contract from raw input through a timed event list.
 `song.schema.ts` publishes the JSON Schema, checks its structural constraints,
 validates cross-references and mini-notation atoms, and fills defaults into a

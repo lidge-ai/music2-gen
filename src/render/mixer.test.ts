@@ -5,7 +5,9 @@ import { createStereo, measureLoudness, peakLinear, truePeakLinear, writeWav } f
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Music2Error } from "../shared/index.ts";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { fnv1a32, Music2Error, packageRoot } from "../shared/index.ts";
 import type { Song } from "../song/index.ts";
 import { mixTracks } from "./mixer.tool.ts";
 
@@ -19,6 +21,67 @@ function rms(input: Float32Array, end = input.length): number {
   for (let i = 0; i < end; i++) sum += input[i]! * input[i]!;
   return Math.sqrt(sum / end);
 }
+
+// Digest recorded on Node 24 / macOS; float library differences can change bytes on other platforms or Node majors.
+const digestPlatform = process.platform === "darwin" && process.versions.node.startsWith("24.");
+
+test("drill-140 no-FX WAV retains the pre-integration byte digest", { skip: !digestPlatform && "digest is pinned to the recording platform" }, async () => {
+  const source = join(packageRoot(), "examples/drill-140.song.json");
+  const song = validateSong(JSON.parse(readFileSync(source, "utf8")) as unknown);
+  const result = await mixTracks(song, buildTimeline(song), source);
+  const dir = await mkdtemp(join(tmpdir(), "music2-fx-digest-"));
+  try {
+    const wav = join(dir, "drill.wav");
+    await writeWav(wav, result.audio, { bits: 16, seed: fnv1a32(song.seed, "master", "wav") });
+    assert.equal(createHash("sha256").update(readFileSync(wav)).digest("hex"),
+      "3170c6f0981f68875dce2e972b46f49f5d7063c25d229867aa8069c23cceca33");
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test("stereo insert is reflected in dry stems and remains before sends", async () => {
+  const base = fixture({ tracks: [{ id: "lead", kind: "notes", instrument: "lead", pattern: "c4 ~ ~ ~",
+    fx: [{ type: "drive", amount: 3, mix: 1 }], sends: { delay: 0.3 }, pan: 0.25 }] });
+  const song = validateSong(base);
+  const result = await mixTracks(song, buildTimeline(song), "fixture.song.json", { stems: true });
+  const plain = validateSong({ ...base, tracks: [{ ...base.tracks[0]!, fx: [] }] });
+  const before = await mixTracks(plain, buildTimeline(plain), "fixture.song.json", { stems: true });
+  assert.notDeepEqual(result.stems[0]!.audio.left, before.stems[0]!.audio.left);
+  assert.ok(rms(result.stems[0]!.audio.left) > 0);
+  assert.ok(result.audio.left.some((sample, i) => sample !== result.stems[0]!.audio.left[i]));
+});
+
+test("configured buses and master inserts remain finite and ceiling-limited", async () => {
+  const song = validateSong(fixture({ fx: { reverb: { type: "room", mix: 0.2 }, delay: { time: "1/8", mix: 0.2 } },
+    master: { ceilingDb: -3, fx: [{ type: "drive", amount: 2, mix: 0.2 }] },
+    tracks: [{ id: "lead", kind: "notes", instrument: "lead", pattern: "c4 ~ ~ ~",
+      sends: { reverb: 0.2, delay: 0.2 } }] }));
+  const result = await mixTracks(song, buildTimeline(song), "fixture.song.json");
+  assert.ok(result.audio.left.every(Number.isFinite));
+  assert.ok(result.audio.right.every(Number.isFinite));
+  assert.ok(result.truePeakDbtp <= -2.9);
+});
+
+test("center pan retains insert stereo while hard pan attenuates the opposite side", async () => {
+  const track = { id: "lead", kind: "notes" as const, instrument: "lead", pattern: "c4 ~ ~ ~",
+    fx: [{ type: "chorus" as const, mix: 1 }] };
+  const center = validateSong(fixture({ tracks: [track] }));
+  const a = await mixTracks(center, buildTimeline(center), "fixture.song.json", { stems: true });
+  assert.ok(a.stems[0]!.audio.left.some((sample, i) => sample !== a.stems[0]!.audio.right[i]));
+  const left = validateSong(fixture({ tracks: [{ ...track, pan: -1 }] }));
+  const b = await mixTracks(left, buildTimeline(left), "fixture.song.json", { stems: true });
+  assert.ok(rms(b.stems[0]!.audio.right) < 1e-6);
+});
+
+test("empty song.fx preserves both legacy send processors", async () => {
+  const source = fixture({ tracks: [{ id: "lead", kind: "notes", instrument: "lead", pattern: "c4 ~ ~ ~",
+    sends: { reverb: 0.2, delay: 0.2 } }] });
+  const legacy = validateSong(source);
+  const empty = validateSong({ ...source, fx: {} });
+  const a = await mixTracks(legacy, buildTimeline(legacy), "fixture.song.json");
+  const b = await mixTracks(empty, buildTimeline(empty), "fixture.song.json");
+  assert.deepEqual(a.audio.left, b.audio.left);
+  assert.deepEqual(a.audio.right, b.audio.right);
+});
 
  test("center and hard-left pan; dry gain is in dB before master", async () => {
   const base = fixture();

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add a production effect system in song JSON: per-track insert chains (`eq`, `filter` with LFO sweep, `drive` with 2x oversampling, stereo-linked RMS `compressor`, `chorus`, `phaser`, `width` with Linkwitz–Riley mono lows, `crush`, `tremolo`, tempo-synced `delay`), configurable send buses (`song.fx.reverb` plate after Dattorro or room/hall FDN with pre-delay and return filtering; `song.fx.delay` tempo-synced filtered ping-pong) and `master.fx` (eq, compressor, drive, width) before loudness targeting. Songs without these fields render byte-identically to before.
+- Add a band-limited `supersaw` voice and optional polyBLEP unison, detune and filter envelopes on `lead`, `bass` and `pad`.
+- Add advisory effect lint (reverb on low tracks, runaway delay feedback, widened lows) and an effects reference with genre chains.
 - Add layering lint rules L1–L6 for low ownership, chord spacing, low pan, kick/bass ducking, focal register collision, and sub-floor notes.
 - Add genre-aware rendered balance warnings A1–A4 for dominant low end, low-mid buildup, sub without body, and thin high end.
 - Add a layering reference and composition workflow pass, with rebalanced recipe starters and example songs checked by strict lint and song-backed analysis.

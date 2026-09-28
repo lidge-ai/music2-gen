@@ -9,12 +9,13 @@ import { keysVoice } from "./keys.tool.ts";
 import { leadVoice } from "./lead.tool.ts";
 import { padVoice } from "./pad.tool.ts";
 import { pluckVoice } from "./pluck.tool.ts";
+import { supersawVoice } from "./supersaw.tool.ts";
 
 interface Issue { path: string; message: string }
 
 export const VOICES: Readonly<Record<string, VoiceSpec>> = Object.freeze({
   drums: drumsVoice, "808": eightOhEightVoice, bass: bassVoice, bell: bellVoice,
-  keys: keysVoice, pluck: pluckVoice, pad: padVoice, lead: leadVoice,
+  keys: keysVoice, pluck: pluckVoice, pad: padVoice, lead: leadVoice, supersaw: supersawVoice,
 });
 
 function voiceFor(instrument: string): VoiceSpec | undefined {

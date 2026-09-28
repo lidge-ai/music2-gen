@@ -46,11 +46,14 @@ This produces five bars: the two-bar verse repeats twice, followed by one breakd
 | `sampleRate` | `44100` or `48000` Hz. | `44100` |
 | `tailSeconds` | Number 0–10 added after the final bar. | `2` |
 | `master` | Optional gain/ceiling/target object; see below. | `gainDb:0`, `ceilingDb:-1`, `targetLufs:null` |
+| `fx` | Optional shared `reverb` and/or `delay` bus settings. | `null`; legacy send processors |
 | `tracks` | Required array of 1–32 track objects with unique IDs. | — |
 | `sections` | Required array of 1–64 section objects with unique IDs. | — |
 | `arrangement` | Required array of 1–256 section references. | — |
 
 `master.gainDb` is -24–12 dB, `master.ceilingDb` is -6–0 dB, and optional `master.targetLufs` is -30–-6 LUFS. `targetLufs:null` is a resolved default, not a valid explicit JSON value. A set target selects built-in LUFS mastering on render; `render --loudnorm` explicitly uses ffmpeg.
+
+`master.fx` is an ordered array of up to 4 `eq`, `compressor`, `drive`, or `width` inserts. It runs after dry and wet signals (and loop folding), before loudness targeting and the final limiter. An omitted array resolves to `[]`. See [effect parameters and examples](../skills/music2/references/effects.md).
 
 ## Tracks
 
@@ -69,6 +72,7 @@ This produces five bars: the two-bar verse repeats twice, followed by one breakd
 | `transpose` | Integer -24–24 semitones. | `0` |
 | `swing` | Boolean; shifts qualifying offbeat sixteenth onsets according to song swing. | `false` |
 | `sends` | Object with `reverb` and/or `delay`, each 0–1. | Both `0` |
+| `fx` | Ordered array of up to 12 insert effects, applied before pan/gain/duck/sends. | `[]` |
 | `duck` | Object with required `by` (another track ID) and `amount` 0–1; optional `releaseMs` >=0. Cannot duck itself. | `null`; release 180 ms when set |
 | `params` | Voice-specific finite numeric parameters, within the voice registry's ranges. | Voice defaults |
 

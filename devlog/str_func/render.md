@@ -27,10 +27,14 @@ src/render/
     ├── pluck.tool.ts           # seeded plucked-string voice
     ├── pad.tool.ts             # detuned filtered pad
     ├── lead.tool.ts            # vibrato lead
+    ├── osc.tool.ts             # PolyBLEP oscillators and per-note TPT lowpass
+    ├── supersaw.tool.ts        # seeded unison saw voice
     └── *.test.ts               # one test file per voice
 ```
 
 ## Module Responsibility
+
+FX additions: `fx/index.ts` dispatches in-place stereo insert processors and checks output finiteness after each stage. `fx/fx-validate.tool.ts` checks direct render inputs. `mixer.tool.ts` retains the mono legacy path when a track has no inserts; an inserted track uses a reused stereo scratch buffer before pan, gain, ducking, stems, and sends. Configured buses replace only their corresponding legacy wet return. Master inserts run after wet summing and loop folding, before `masterAudio`.
 
 `src/render` accepts a validated `ResolvedSong` and the song file path.
 `renderSong` validates instruments, voice parameters, drum sample names,
@@ -69,9 +73,14 @@ re-exports only `renderSong`, `VOICES`, `RenderOptions`, `RenderResult`,
 | `export function validateVoiceParams(song: ResolvedSong): void` | `voices/registry.tool.ts` | Reject unknown, mismatched, or invalid voices and parameters. |
 | `export const DRUM_NAMES: readonly string[]` | `voices/drums.tool.ts` | Valid synthetic drum sample names. |
 
-The eight voice declarations are `drumsVoice`, `eightOhEightVoice`,
+The nine voice declarations are `drumsVoice`, `eightOhEightVoice`,
 `bassVoice`, `bellVoice`, `keysVoice`, `pluckVoice`, `padVoice`, and
-`leadVoice`, each typed `VoiceSpec` and exported from its own `.tool.ts`.
+`leadVoice`, plus `supersawVoice`, each typed `VoiceSpec` and exported from its own `.tool.ts`.
+Lead, bass, and pad keep their original sample order when no new parameter is
+explicit in `track.params`; `unison` or filter envelope controls select the
+PolyBLEP/unison/TPT filter path, as does `detuneCents` for lead and bass.
+Each new oscillator uses the event seed addressed by song seed, track ID, and
+event index; bass retains continuous phase and filter state across mono notes.
 `VoiceSpec.render(ctx: VoiceContext, params: Readonly<Record<string, number>>): Float32Array`
 is the voice contract; individual render methods are object members.
 

@@ -27,10 +27,10 @@ void test("resolved defaults fill every optional output field", () => {
     seed: song.seed, swing: song.swing, sampleRate: song.sampleRate, tailSeconds: song.tailSeconds, master: song.master },
   { title: "untitled", genre: null, meter: { numerator: 4, denominator: 4 }, key: null,
     seed: 1, swing: 0.5, sampleRate: 44100, tailSeconds: 2,
-    master: { gainDb: 0, ceilingDb: -1, targetLufs: null } });
+    master: { gainDb: 0, ceilingDb: -1, targetLufs: null, fx: [] } });
   assert.deepEqual(song.tracks[0], { id: "kick", kind: "drums", instrument: "drums", pattern: null,
     velocity: 0.8, gain: 0, pan: 0, gate: 0.9, mono: false, glide: 0, transpose: 0,
-    swing: false, sends: { reverb: 0, delay: 0 }, duck: null, params: {} });
+    swing: false, sends: { reverb: 0, delay: 0 }, fx: [], duck: null, params: {} });
   assert.equal(song.tracks[1]?.mono, true);
   assert.deepEqual(song.sections[0], { id: "a", bars: 1, role: null, patterns: {} });
   assert.deepEqual(song.arrangement, [{ section: "a", repeats: 1 }]);
@@ -92,6 +92,32 @@ void test("each published top-level property is accepted by validation", () => {
   const song = fixture();
   Object.assign(song, { genre: "test", meter: { numerator: 4, denominator: 4 }, seed: 0, swing: 0.5,
     sampleRate: 48000, tailSeconds: 0, loop: true, useCase: "game_loop", master: { gainDb: 0, ceilingDb: -1, targetLufs: -14 } });
-  assert.deepEqual(Object.keys(SONG_JSON_SCHEMA.properties).sort(), Object.keys(song).sort());
+  assert.deepEqual(Object.keys(SONG_JSON_SCHEMA.properties).sort(), [...Object.keys(song), "fx"].sort());
   assert.equal(validateSong(song).sampleRate, 48000);
+});
+
+void test("effect defaults resolve while absent buses stay on legacy path", () => {
+  const raw = fixture();
+  (raw["tracks"] as Record<string, unknown>[])[0]!["fx"] = [{ type: "drive", amount: 3 }];
+  raw["master"] = { fx: [{ type: "width" }] };
+  raw["fx"] = { reverb: { type: "hall", mix: 0.4 } };
+  const resolved = validateSong(raw);
+  assert.equal(resolved.tracks[0]?.fx?.[0]?.type, "drive");
+  assert.equal((resolved.tracks[0]?.fx?.[0] as { mix: number }).mix, 1);
+  assert.equal(resolved.fx?.reverb?.decaySeconds, 1.5);
+  assert.equal(resolved.fx?.delay, null);
+  assert.equal(resolved.master.fx[0]?.type, "width");
+  assert.equal(validateSong(fixture()).fx, null);
+});
+
+void test("effect validation reports exact indexed paths", () => {
+  const raw = fixture();
+  (raw["tracks"] as Record<string, unknown>[])[0]!["fx"] = [{ type: "delay", feedback: 2 }];
+  assert.ok(issues(raw).some((issue) => issue.path === "$.tracks[0].fx[0].feedback"));
+  (raw["tracks"] as Record<string, unknown>[])[0]!["fx"] = [{ type: "eq", lowHz: 400, midHz: 300 }];
+  assert.ok(issues(raw).some((issue) => issue.path === "$.tracks[0].fx[0].lowHz"));
+  raw["fx"] = { reverb: { lowCutHz: 1000, highCutHz: 1000 } };
+  assert.ok(issues(raw).some((issue) => issue.path === "$.fx.reverb.lowCutHz"));
+  raw["master"] = { fx: [{ type: "chorus" }] };
+  assert.ok(issues(raw).some((issue) => issue.path === "$.master.fx[0].type"));
 });

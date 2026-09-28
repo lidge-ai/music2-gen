@@ -18,9 +18,9 @@ function issuePaths(error: unknown): string[] {
   return (error.details?.["issues"] as { path: string }[]).map(({ path }) => path);
 }
 
-void test("all eight voice ids resolve with their declared kinds", () => {
+void test("all nine voice ids resolve with their declared kinds", () => {
   assert.deepEqual(Object.keys(VOICES).sort(),
-    ["drums", "808", "bass", "bell", "keys", "pluck", "pad", "lead"].sort());
+    ["drums", "808", "bass", "bell", "keys", "pluck", "pad", "lead", "supersaw"].sort());
   for (const spec of Object.values(VOICES)) {
     const track = songWith([{ id: "voice", kind: spec.kind, instrument: spec.id }]).tracks[0]!;
     assert.equal(resolveVoice(track, 0), spec);
@@ -47,7 +47,8 @@ void test("unknown instrument and kind mismatch identify the indexed track", () 
 void test("mergeParams fills defaults and applies known overrides without mutating input", () => {
   const given = { cutoffHz: 200, unused: 9 };
   const merged = mergeParams(VOICES["bass"]!, given);
-  assert.deepEqual(merged, { wave: 0, cutoffHz: 200, resonance: .15, releaseMs: 80 });
+  assert.deepEqual(merged, { wave: 0, cutoffHz: 200, resonance: .15, releaseMs: 80,
+    unison: 1, detuneCents: 0, filterEnvAmount: 0, filterEnvDecayMs: 500 });
   assert.deepEqual(given, { cutoffHz: 200, unused: 9 });
   assert.deepEqual(mergeParams(VOICES["808"]!, {}), { drive: 2.2, decayMs: 1100, attackMs: 3 });
 });
@@ -89,4 +90,15 @@ void test("valid boundary values and omitted params pass", () => {
   assert.doesNotThrow(() => validateVoiceParams(song));
   const bass: ResolvedTrack = song.tracks[0]!;
   assert.equal(mergeParams(resolveVoice(bass, 0)!, bass.params)["releaseMs"], 80);
+});
+
+void test("supersaw and expanded voice bounds validate", () => {
+  const song = songWith([
+    { id: "s", kind: "notes", instrument: "supersaw", params: { unison: 10, mix: 1.1 } },
+    { id: "b", kind: "notes", instrument: "bass", params: { unison: 2.5 } },
+  ]);
+  assert.throws(() => validateVoiceParams(song), (error: unknown) => {
+    assert.deepEqual(issuePaths(error), ["tracks[0].params.unison", "tracks[0].params.mix", "tracks[1].params.unison"]);
+    return true;
+  });
 });

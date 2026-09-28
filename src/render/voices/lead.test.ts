@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createHash } from "node:crypto";
 import { validateSong } from "../../song/index.ts";
 import type { VoiceContext, VoiceEvent } from "../render.schema.ts";
 import { leadVoice } from "./lead.tool.ts";
@@ -49,4 +50,23 @@ void test("lead releases after gate and mono cuts the previous note at next onse
   assert.deepEqual(mono.subarray(5000, 6000), secondOnly.subarray(5000, 6000));
   const poly = render([first, second]);
   assert.notDeepEqual(poly.subarray(5000, 6000), secondOnly.subarray(5000, 6000));
+});
+
+void test("legacy lead PCM remains byte-identical; explicit new control selects new path", () => {
+  const event = { ...note(57), velocity: 0.8, gateFrames: 11025, seed: 123 };
+  const ctx: VoiceContext = { sampleRate: rate, frames: rate, track: track(), events: [event] };
+  const old = leadVoice.render(ctx, defaults);
+  assert.equal(createHash("sha256").update(Buffer.from(old.buffer)).digest("hex"),
+    "364ca97994b09d65113e23f28d403817e1cb26356d4ac9b077df3ad0f3eb8d0d");
+  const changed = leadVoice.render({ ...ctx, track: { ...ctx.track, params: { unison: 1 } } }, defaults);
+  assert.notDeepEqual(changed, old);
+  assert.deepEqual(changed, leadVoice.render({ ...ctx, track: { ...ctx.track, params: { unison: 1 } } }, defaults));
+});
+
+void test("enhanced lead remains finite at maximum controls and MIDI", () => {
+  const ctx: VoiceContext = { sampleRate: rate, frames: rate,
+    track: { ...track(), params: { unison: 9 } }, events: [note(127)] };
+  const audio = leadVoice.render(ctx, { ...defaults, unison: 9, detuneCents: 50,
+    filterEnvAmount: 1, filterEnvDecayMs: 20, vibratoCents: 100, vibratoHz: 12 });
+  assert.ok(audio.every(Number.isFinite));
 });

@@ -6,6 +6,7 @@ import type { Track } from "../song/index.ts";
 import { isRecipeId } from "./recipe.schema.ts";
 import { createGeometry } from "./lint-geometry.tool.ts";
 import { genericRules } from "./lint-generic.tool.ts";
+import { fxRules } from "./lint-fx.tool.ts";
 import { genreRules } from "./lint-rules.tool.ts";
 import { lowLayeringRules } from "./lint-layering-low.tool.ts";
 import { harmonyLayeringRules } from "./lint-layering-harmony.tool.ts";
@@ -110,7 +111,7 @@ export function lintSong(input: unknown, options: LintOptions = {}): LintReport 
   // house/6 checks 8-bar phrase changes inside grooves, a different cause, so both can appear.
   const duplicateDensity = genreResults.some((result) => ["trap/7", "techno/5"].includes(result.id));
   const results = [...generic.filter((result) => result.id !== "generic/no_density_contrast" || !duplicateDensity), ...genreResults,
-    ...lowLayeringRules(g), ...harmonyLayeringRules(g), ...rhythmLayeringRules(g)];
+    ...lowLayeringRules(g), ...harmonyLayeringRules(g), ...rhythmLayeringRules(g), ...fxRules(song)];
   results.sort((a, b) => (a.severity === "error" ? 0 : 1) - (b.severity === "error" ? 0 : 1) || a.id.localeCompare(b.id) || a.path.localeCompare(b.path));
   return { genre, barsChecked: timeline.bars, results, errors: results.filter((r) => r.severity === "error").length,
     warnings: results.filter((r) => r.severity === "warning").length };

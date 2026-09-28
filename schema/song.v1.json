@@ -103,6 +103,252 @@
           "type": "number",
           "minimum": -30,
           "maximum": -6
+        },
+        "fx": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 4,
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "type": {
+                    "const": "eq"
+                  },
+                  "lowGainDb": {
+                    "type": "number",
+                    "minimum": -18,
+                    "maximum": 18
+                  },
+                  "lowHz": {
+                    "type": "number",
+                    "minimum": 40,
+                    "maximum": 500
+                  },
+                  "midGainDb": {
+                    "type": "number",
+                    "minimum": -18,
+                    "maximum": 18
+                  },
+                  "midHz": {
+                    "type": "number",
+                    "minimum": 200,
+                    "maximum": 6000
+                  },
+                  "midQ": {
+                    "type": "number",
+                    "minimum": 0.2,
+                    "maximum": 5
+                  },
+                  "highGainDb": {
+                    "type": "number",
+                    "minimum": -18,
+                    "maximum": 18
+                  },
+                  "highHz": {
+                    "type": "number",
+                    "minimum": 2000,
+                    "maximum": 18000
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "type": {
+                    "const": "compressor"
+                  },
+                  "thresholdDb": {
+                    "type": "number",
+                    "minimum": -60,
+                    "maximum": 0
+                  },
+                  "ratio": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 20
+                  },
+                  "attackMs": {
+                    "type": "number",
+                    "minimum": 0.1,
+                    "maximum": 100
+                  },
+                  "releaseMs": {
+                    "type": "number",
+                    "minimum": 10,
+                    "maximum": 2000
+                  },
+                  "kneeDb": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 24
+                  },
+                  "makeupDb": {
+                    "type": "number",
+                    "minimum": -12,
+                    "maximum": 24
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "type": {
+                    "const": "drive"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 12
+                  },
+                  "toneHz": {
+                    "type": "number",
+                    "minimum": 500,
+                    "maximum": 18000
+                  },
+                  "mix": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "type": {
+                    "const": "width"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 2
+                  },
+                  "monoBelowHz": {
+                    "type": "number",
+                    "minimum": 80,
+                    "maximum": 250
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "fx": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reverb": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "enum": [
+                "room",
+                "plate",
+                "hall"
+              ]
+            },
+            "decaySeconds": {
+              "type": "number",
+              "minimum": 0.2,
+              "maximum": 8
+            },
+            "preDelayMs": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 250
+            },
+            "damping": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "lowCutHz": {
+              "type": "number",
+              "minimum": 20,
+              "maximum": 1000
+            },
+            "highCutHz": {
+              "type": "number",
+              "minimum": 1000,
+              "maximum": 18000
+            },
+            "width": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "mix": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "delay": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "time": {
+              "enum": [
+                "1/16",
+                "1/16d",
+                "1/16t",
+                "1/8",
+                "1/8d",
+                "1/8t",
+                "1/4",
+                "1/4d",
+                "1/4t",
+                "1/2",
+                "1/2d",
+                "1/2t"
+              ]
+            },
+            "feedback": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 0.95
+            },
+            "pingPong": {
+              "type": "boolean"
+            },
+            "lowCutHz": {
+              "type": "number",
+              "minimum": 20,
+              "maximum": 1000
+            },
+            "highCutHz": {
+              "type": "number",
+              "minimum": 1000,
+              "maximum": 18000
+            },
+            "mix": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
         }
       }
     },
@@ -193,6 +439,381 @@
                 "minimum": 0,
                 "maximum": 1
               }
+            }
+          },
+          "fx": {
+            "type": "array",
+            "minItems": 0,
+            "maxItems": 12,
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": {
+                      "const": "eq"
+                    },
+                    "lowGainDb": {
+                      "type": "number",
+                      "minimum": -18,
+                      "maximum": 18
+                    },
+                    "lowHz": {
+                      "type": "number",
+                      "minimum": 40,
+                      "maximum": 500
+                    },
+                    "midGainDb": {
+                      "type": "number",
+                      "minimum": -18,
+                      "maximum": 18
+                    },
+                    "midHz": {
+                      "type": "number",
+                      "minimum": 200,
+                      "maximum": 6000
+                    },
+                    "midQ": {
+                      "type": "number",
+                      "minimum": 0.2,
+                      "maximum": 5
+                    },
+                    "highGainDb": {
+                      "type": "number",
+                      "minimum": -18,
+                      "maximum": 18
+                    },
+                    "highHz": {
+                      "type": "number",
+                      "minimum": 2000,
+                      "maximum": 18000
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": {
+                      "const": "filter"
+                    },
+                    "mode": {
+                      "enum": [
+                        "lowpass",
+                        "highpass",
+                        "bandpass"
+                      ]
+                    },
+                    "cutoffHz": {
+                      "type": "number",
+                      "minimum": 20,
+                      "maximum": 18000
+                    },
+                    "q": {
+                      "type": "number",
+                      "minimum": 0.2,
+                      "maximum": 10
+                    },
+                    "lfoRateHz": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 20
+                    },
+                    "lfoDepthOct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 4
+                    },
+                    "mix": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": {
+                      "const": "drive"
+                    },
+                    "amount": {
+                      "type": "number",
+                      "minimum": 1,
+                      "maximum": 12
+                    },
+                    "toneHz": {
+                      "type": "number",
+                      "minimum": 500,
+                      "maximum": 18000
+                    },
+                    "mix": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": {
+                      "const": "compressor"
+                    },
+                    "thresholdDb": {
+                      "type": "number",
+                      "minimum": -60,
+                      "maximum": 0
+                    },
+                    "ratio": {
+                      "type": "number",
+                      "minimum": 1,
+                      "maximum": 20
+                    },
+                    "attackMs": {
+                      "type": "number",
+                      "minimum": 0.1,
+                      "maximum": 100
+                    },
+                    "releaseMs": {
+                      "type": "number",
+                      "minimum": 10,
+                      "maximum": 2000
+                    },
+                    "kneeDb": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 24
+                    },
+                    "makeupDb": {
+                      "type": "number",
+                      "minimum": -12,
+                      "maximum": 24
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": {
+                      "const": "chorus"
+                    },
+                    "rateHz": {
+                      "type": "number",
+                      "minimum": 0.05,
+                      "maximum": 5
+                    },
+                    "depthMs": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 15
+                    },
+                    "baseMs": {
+                      "type": "number",
+                      "minimum": 5,
+                      "maximum": 35
+                    },
+                    "feedback": {
+                      "type": "number",
+                      "minimum": -0.8,
+                      "maximum": 0.8
+                    },
+                    "mix": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": {
+                      "const": "phaser"
+                    },
+                    "rateHz": {
+                      "type": "number",
+                      "minimum": 0.05,
+                      "maximum": 5
+                    },
+                    "depth": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "stages": {
+                      "type": "integer",
+                      "minimum": 2,
+                      "maximum": 12
+                    },
+                    "feedback": {
+                      "type": "number",
+                      "minimum": -0.8,
+                      "maximum": 0.8
+                    },
+                    "mix": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": {
+                      "const": "width"
+                    },
+                    "amount": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 2
+                    },
+                    "monoBelowHz": {
+                      "type": "number",
+                      "minimum": 80,
+                      "maximum": 250
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": {
+                      "const": "crush"
+                    },
+                    "bits": {
+                      "type": "integer",
+                      "minimum": 4,
+                      "maximum": 16
+                    },
+                    "downsample": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 32
+                    },
+                    "mix": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": {
+                      "const": "tremolo"
+                    },
+                    "rateHz": {
+                      "type": "number",
+                      "minimum": 0.05,
+                      "maximum": 20
+                    },
+                    "depth": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "phaseDegrees": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 180
+                    },
+                    "mix": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": {
+                      "const": "delay"
+                    },
+                    "time": {
+                      "enum": [
+                        "1/16",
+                        "1/16d",
+                        "1/16t",
+                        "1/8",
+                        "1/8d",
+                        "1/8t",
+                        "1/4",
+                        "1/4d",
+                        "1/4t",
+                        "1/2",
+                        "1/2d",
+                        "1/2t"
+                      ]
+                    },
+                    "feedback": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 0.95
+                    },
+                    "pingPong": {
+                      "type": "boolean"
+                    },
+                    "lowCutHz": {
+                      "type": "number",
+                      "minimum": 20,
+                      "maximum": 1000
+                    },
+                    "highCutHz": {
+                      "type": "number",
+                      "minimum": 1000,
+                      "maximum": 18000
+                    },
+                    "mix": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  }
+                }
+              ]
             }
           },
           "duck": {

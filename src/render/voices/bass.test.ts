@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createHash } from "node:crypto";
 import { validateSong } from "../../song/index.ts";
 import type { VoiceContext, VoiceEvent } from "../render.schema.ts";
 import { bassVoice } from "./bass.tool.ts";
@@ -67,4 +68,26 @@ void test("maximum resonance remains finite and bounded", () => {
     { ...defaults, cutoffHz: 8000, resonance: .9 });
   assert.ok(audio.every(Number.isFinite));
   assert.ok(audio.every((value) => Math.abs(value) <= 2));
+});
+
+void test("legacy bass PCM digest and enhanced mono cutoff semantics", () => {
+  const ctx = context([{ ...event(57, 0, rate, 0.8), gateFrames: 11025, seed: 123 }]);
+  const old = bassVoice.render(ctx, defaults);
+  assert.equal(createHash("sha256").update(Buffer.from(old.buffer)).digest("hex"),
+    "5deaec02a7cd35a90d3bde8f763a20a2edee789625aa1bfbc13f78b31c43d7c3");
+  const enhanced = { ...ctx, track: { ...ctx.track, params: { unison: 3 } } };
+  const params = { ...defaults, unison: 3, detuneCents: 15, filterEnvAmount: 0.5, filterEnvDecayMs: 500 };
+  const audio = bassVoice.render(enhanced, params);
+  assert.ok(audio.every(Number.isFinite));
+  const split = rate / 2;
+  const cut = bassVoice.render({ ...enhanced, events: [event(48, 0, rate), event(55, split, rate, 0)] }, params);
+  assert.ok(cut.slice(split).every((value) => value === 0));
+});
+
+void test("enhanced bass remains finite at maximum controls and MIDI", () => {
+  const ctx = context([event(127, 0, rate)]);
+  const audio = bassVoice.render({ ...ctx, track: { ...ctx.track, params: { unison: 9 } } },
+    { ...defaults, cutoffHz: 8000, resonance: 0.9, unison: 9, detuneCents: 50,
+      filterEnvAmount: 1, filterEnvDecayMs: 20 });
+  assert.ok(audio.every(Number.isFinite));
 });

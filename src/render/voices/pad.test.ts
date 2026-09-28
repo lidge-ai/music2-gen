@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createHash } from "node:crypto";
 import { validateSong } from "../../song/index.ts";
 import type { VoiceContext, VoiceEvent } from "../render.schema.ts";
 import { padVoice } from "./pad.tool.ts";
@@ -38,4 +39,24 @@ void test("detuned oscillators differ from unison and chord voices sum", () => {
 void test("pad release reaches near zero after its gate", () => {
   const audio = render([note()]);
   assert.ok(rms(audio, 1.8 * rate, 1.9 * rate) < rms(audio, 0.8 * rate, 0.9 * rate) * 0.002);
+});
+
+void test("legacy pad PCM digest and explicit unison branch", () => {
+  const event = { ...note(57), velocity: 0.8, gateFrames: 11025, stopFrame: rate, seed: 123 };
+  const ctx: VoiceContext = { sampleRate: rate, frames: rate, track, events: [event] };
+  const old = padVoice.render(ctx, defaults);
+  assert.equal(createHash("sha256").update(Buffer.from(old.buffer)).digest("hex"),
+    "36216e86ab00c7b33b2785b495736f20ee6c055f75fa5aac5876c60f99e2f99e");
+  const params = { ...defaults, unison: 5, filterEnvAmount: 0.5, filterEnvDecayMs: 500 };
+  const enhanced = padVoice.render({ ...ctx, track: { ...track, params: { unison: 5 } } }, params);
+  assert.notDeepEqual(enhanced, old);
+  assert.ok(enhanced.every(Number.isFinite));
+});
+
+void test("enhanced pad remains finite at maximum controls and MIDI", () => {
+  const ctx: VoiceContext = { sampleRate: rate, frames: rate,
+    track: { ...track, params: { unison: 9 } }, events: [note(127)] };
+  const audio = padVoice.render(ctx, { ...defaults, unison: 9, detuneCents: 50,
+    cutoffHz: 12000, filterEnvAmount: 1, filterEnvDecayMs: 20 });
+  assert.ok(audio.every(Number.isFinite));
 });
