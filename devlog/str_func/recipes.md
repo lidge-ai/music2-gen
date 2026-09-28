@@ -152,7 +152,7 @@ and generic findings are warnings unless noted otherwise.
 | `generic/low_chord_spacing` | Simultaneous same-track 1–11 semitone chord pairs below the interval-specific lower-MIDI floor (52, 51, 48, 46, 46, 47, 34, 43, 41, 41, 41); bass/808 excluded. |
 | `generic/low_pan` | Bass/808, or a pitched track with ≥25% MIDI ≤46 notes, has `abs(pan)>0.1`. |
 | `generic/kick_bass_unducked` | In house/techno, ≥50% of actual `bd` onsets coincide with a bass/808 note sounding or attacking within ±30 ms, without duck by a `bd` source of amount ≥0.1. A mixed drum source ducks on every event. |
-| `generic/register_collision` | Two focal tracks (lead/bell/pluck/keys) in a ≥2-bar placement have median MIDI distance ≤7 and ≥75% shared eighth-note onset slots on the sparser track. |
+| `generic/register_collision` | Two focal tracks (lead/bell/pluck/keys/piano/epiano/guitar/flute/brass/marimba/vibraphone/glockenspiel/kalimba) in a ≥2-bar placement have median MIDI distance ≤7 and ≥75% shared eighth-note onset slots on the sparser track. Strings, choir, and organ remain bed voices outside this check. |
 | `generic/sub_floor` | A pitched note at MIDI ≤22 occurs. |
 | `drill_uk/1` | BPM must be 138..146. |
 | `drill_uk/2` | At least 75% of full bars need a snare/clap on step 9, or step 13 without a step-5 backbeat (the alternate-bar moving snare). |

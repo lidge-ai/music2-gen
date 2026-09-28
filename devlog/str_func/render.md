@@ -30,6 +30,17 @@ src/render/
     ├── osc.tool.ts             # PolyBLEP oscillators and per-note TPT lowpass
     ├── supersaw.tool.ts        # seeded unison saw voice
     ├── sfx.tool.ts             # transition-effect drum-kind voice over src/sfx
+    ├── drum-kits.tool.ts       # drums kit 1..4 (909/808/acoustic/lo-fi); kit 0 stays in drums.tool.ts
+    ├── piano.tool.ts           # stiff-string partial bank with hammer noise
+    ├── epiano.tool.ts          # two-branch FM tine piano
+    ├── organ.tool.ts           # nine-drawbar additive organ with key click
+    ├── strings.tool.ts         # detuned saw ensemble with chorus
+    ├── brass.tool.ts           # envelope-opened resonant saw with pitch scoop
+    ├── flute.tool.ts           # near-sine with breath and delayed vibrato
+    ├── choir.tool.ts           # parallel vowel formants over a detuned voiced ensemble
+    ├── modal.tool.ts           # shared modal-bar renderer for mallets and kalimba
+    ├── marimba.tool.ts, vibraphone.tool.ts, glockenspiel.tool.ts, kalimba.tool.ts
+    ├── guitar.tool.ts          # seeded Karplus-Strong with fractional-delay tuning
     └── *.test.ts               # one test file per voice
 ```
 
@@ -81,7 +92,12 @@ re-exports only `renderSong`, `VOICES`, `RenderOptions`, `RenderResult`,
 
 The voice declarations are `drumsVoice`, `eightOhEightVoice`,
 `bassVoice`, `bellVoice`, `keysVoice`, `pluckVoice`, `padVoice`,
-`leadVoice`, `supersawVoice` and `sfxVoice`, each typed `VoiceSpec` and exported from its own `.tool.ts`.
+`leadVoice`, `supersawVoice`, `sfxVoice` and the twelve virtual instruments `pianoVoice`, `epianoVoice`,
+`organVoice`, `stringsVoice`, `brassVoice`, `fluteVoice`, `choirVoice`, `marimbaVoice`, `vibraphoneVoice`,
+`glockenspielVoice`, `kalimbaVoice`, `guitarVoice`, each typed `VoiceSpec` and exported from its own `.tool.ts`.
+`drumsVoice` gains `params.kit` (integer 0..4); 0 or omitted runs the original classic loop unchanged and 1..4 delegate
+to `drum-kits.tool.ts`. Voices without `releaseMs` bound per-note work by their own decay. `validateVoiceParams`
+adds one voice-specific rule: `vibraphone.tremoloHz` is 0 or 2..7.
 `sfxVoice` (drum kind) declares the ten transition atoms as `sampleNames`, renders each event through
 `renderTransition` for its full slot (`gateFrames`), capped at the render end, and softens only frames where events overlap.
 Lead, bass, and pad keep their original sample order when no new parameter is

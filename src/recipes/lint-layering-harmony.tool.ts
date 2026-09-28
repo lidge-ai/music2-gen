@@ -4,7 +4,8 @@ import type { LintResult } from "./lint.tool.ts";
 import type { Placement, TimedEvent } from "../song/index.ts";
 
 const LOW_INTERVAL_FLOORS = [0, 52, 51, 48, 46, 46, 47, 34, 43, 41, 41, 41];
-const FOCAL = new Set(["lead", "bell", "pluck", "keys"]);
+const FOCAL = new Set(["lead", "bell", "pluck", "keys", "piano", "epiano", "guitar", "flute",
+  "brass", "marimba", "vibraphone", "glockenspiel", "kalimba"]);
 const REGISTER_DISTANCE = 7;
 const SLOT_SHARE = 0.75;
 

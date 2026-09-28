@@ -1,5 +1,6 @@
 import { fnv1a32, mulberry32, Music2Error } from "../../shared/index.ts";
 import type { VoiceContext, VoiceEvent, VoiceSpec } from "../render.schema.ts";
+import { renderDrumKit } from "./drum-kits.tool.ts";
 
 type DrumName = "bd" | "sd" | "cp" | "hh" | "oh" | "rim" | "perc" | "tom";
 type Preset = readonly [pitch: number, length: number, color: number];
@@ -81,8 +82,10 @@ export const drumsVoice: VoiceSpec = {
     tone: { default: .5, min: 0, max: 1 },
     decayMs: { default: 180, min: 20, max: 1000 },
     noise: { default: .5, min: 0, max: 1 },
+    kit: { default: 0, min: 0, max: 4, integer: true },
   },
   render(ctx, params) {
+    if ((params["kit"] ?? 0) >= 1) return renderDrumKit(ctx, params);
     const out = new Float32Array(ctx.frames);
     for (const event of ctx.events) {
       const name = drumName(ctx, event);

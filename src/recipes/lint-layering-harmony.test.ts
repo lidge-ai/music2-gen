@@ -44,6 +44,34 @@ test("L5 median distance, shared eighth slots, and focal exclusions", () => {
   assert.equal(has(findings(tracks), "register_collision").length, 0);
 });
 
+test("L5 new focal instruments collide with a lead on shared onsets", () => {
+  for (const instrument of ["piano", "epiano", "guitar", "flute", "brass", "marimba",
+    "vibraphone", "glockenspiel", "kalimba"]) {
+    const tracks: Song["tracks"] = [
+      { id: "lead", kind: "notes", instrument: "lead", pattern: "60 60 60 60" },
+      { id: "other", kind: "notes", instrument, pattern: "67 67 67 67" },
+    ];
+    assert.equal(has(findings(tracks), "register_collision").length, 1, instrument);
+
+    tracks[1]!.pattern = "68 68 68 68";
+    assert.equal(has(findings(tracks), "register_collision").length, 0, `${instrument}: 8 semitones`);
+
+    tracks[0]!.pattern = "60 ~ 60 ~";
+    tracks[1]!.pattern = "~ 67 ~ 67";
+    assert.equal(has(findings(tracks), "register_collision").length, 0, `${instrument}: staggered onsets`);
+  }
+});
+
+test("L5 strings, choir, and organ remain bed voices", () => {
+  for (const instrument of ["strings", "choir", "organ"]) {
+    const tracks: Song["tracks"] = [
+      { id: "lead", kind: "notes", instrument: "lead", pattern: "60 60 60 60" },
+      { id: "bed", kind: "notes", instrument, pattern: "60 60 60 60" },
+    ];
+    assert.equal(has(findings(tracks), "register_collision").length, 0, instrument);
+  }
+});
+
 test("L5 75% shared slots fires and 74% skips", () => {
   const song = validateSong({ version: 1, bpm: 120, tracks: [
     { id: "a", kind: "notes", instrument: "lead", pattern: "60" },

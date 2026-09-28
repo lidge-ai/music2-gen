@@ -117,7 +117,7 @@ The following vectors turn the per-voice research oracles into reviewable tests.
 3. Compare `Float32Array` bytes twice with the same seed and call parameters on the same Node major/platform.
 4. Change only the seed for a stochastic voice and expect changed attack/noise samples without nominal f0 drift.
 5. Change an unrelated track's seed/event count and verify the target voice's addressed event bytes stay fixed.
-6. For every voice, assert track-length output exactly equals `ctx.frames`, with finite samples and peak ≤1 before mix.
+6. For every voice, assert track-length output exactly equals `ctx.frames`, with finite samples and a single-note peak ≤1 before mix. Chords may sum above full scale, as with the existing `keys` and `bell` voices; the mixer sums in float and the master limiter owns the output peak (wp3 review round 2).
 7. For each ADSR voice, the first sample after note-off starts from the last held amplitude before release attenuation.
 8. For a note ending at render frame count, no release write can exceed that frame count.
 9. For monophonic note tracks, next-onset stop still takes priority under `src/render/mixer.tool.ts:42-49`.

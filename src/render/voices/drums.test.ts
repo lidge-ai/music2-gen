@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createHash } from "node:crypto";
 import { validateSong } from "../../song/index.ts";
 import { Music2Error } from "../../shared/index.ts";
 import type { VoiceContext, VoiceEvent } from "../render.schema.ts";
@@ -63,4 +64,22 @@ void test("velocity scales an isolated drum linearly", () => {
   const a = drumsVoice.render(full, params);
   const b = drumsVoice.render(half, params);
   for (let i = 0; i < 1000; i++) assert.ok(Math.abs((a[i] ?? 0) * .5 - (b[i] ?? 0)) < 1e-7);
+});
+
+void test("omitted and explicit classic kit keep identical PCM for every name and variant", () => {
+  for (const rate of [44100, 48000]) {
+    for (const name of ["bd", "sd", "cp", "hh", "oh", "rim", "perc", "tom"]) {
+      for (let variant = 0; variant < 4; variant++) {
+        const ctx = context(name, variant);
+        ctx.sampleRate = rate;
+        ctx.frames = rate;
+        ctx.events[0]!.stopFrame = rate;
+        const omitted = drumsVoice.render(ctx, params);
+        const explicit = drumsVoice.render(ctx, { ...params, kit: 0 });
+        const digest = (audio: Float32Array): string => createHash("sha256")
+          .update(Buffer.from(audio.buffer)).digest("hex");
+        assert.equal(digest(omitted), digest(explicit), `${rate} ${name}:${variant}`);
+      }
+    }
+  }
 });

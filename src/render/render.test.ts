@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { resolve } from "node:path";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createStereo, writeWav } from "../audio-io/index.ts";
@@ -140,4 +140,18 @@ test("optional 180-second six-track benchmark", { skip: process.env.MUSIC2_BENCH
   console.log(`180-second six-track render ${elapsed.toFixed(1)} ms`);
   assert.ok(result.durationSeconds >= 180);
   assert.ok(elapsed < 20000, `render took ${elapsed.toFixed(1)} ms`);
+});
+
+test("explicit drums kit 0 writes the same WAV bytes as an omitted kit", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-kit0-"));
+  try {
+    const build = (params: Record<string, number>) => validateSong({ version: 1, bpm: 120, seed: 4,
+      tracks: [{ id: "d", kind: "drums", instrument: "drums", pattern: "bd sd:2 hh oh", params }],
+      sections: [{ id: "a", bars: 2 }], arrangement: [{ section: "a" }] });
+    const omitted = await renderSong(build({ tone: 0.4 }), join(dir, "a.song.json"));
+    const explicit = await renderSong(build({ tone: 0.4, kit: 0 }), join(dir, "b.song.json"));
+    await writeWav(join(dir, "a.wav"), omitted.audio, { bits: 16, seed: 4 });
+    await writeWav(join(dir, "b.wav"), explicit.audio, { bits: 16, seed: 4 });
+    assert.deepEqual(await readFile(join(dir, "a.wav")), await readFile(join(dir, "b.wav")));
+  } finally { await rm(dir, { recursive: true, force: true }); }
 });

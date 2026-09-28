@@ -116,3 +116,17 @@ void test("supersaw and expanded voice bounds validate", () => {
     return true;
   });
 });
+
+void test("twelve virtual instruments register as notes voices with validated selectors", () => {
+  const ids = ["piano", "epiano", "organ", "strings", "brass", "flute", "choir", "marimba", "vibraphone", "glockenspiel", "kalimba", "guitar"];
+  for (const id of ids) assert.equal(VOICES[id]?.kind, "notes", id);
+  const song = (instrument: string, params: Record<string, number>) => validateSong({ version: 1, bpm: 120,
+    tracks: [{ id: "t", kind: "notes", instrument, pattern: "c4", params }],
+    sections: [{ id: "a", bars: 1 }], arrangement: [{ section: "a" }] });
+  for (const tremoloHz of [0, 2, 7]) assert.doesNotThrow(() => validateVoiceParams(song("vibraphone", { tremoloHz })));
+  assert.throws(() => validateVoiceParams(song("vibraphone", { tremoloHz: 1 })), (error: unknown) =>
+    JSON.stringify((error as { details?: unknown }).details).includes("tracks[0].params.tremoloHz"));
+  assert.throws(() => validateVoiceParams(song("guitar", { type: 0.5 })));
+  assert.throws(() => validateVoiceParams(song("choir", { vowel: 5 })));
+  assert.throws(() => validateVoiceParams(song("organ", { d8: 9 })));
+});
