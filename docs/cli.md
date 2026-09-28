@@ -33,6 +33,24 @@ Analyze warnings are advisory measurements of whole-file six-band power. `LOW_EN
 
 ## JSON and failures
 
+## DAW bridge commands
+
+`export` and `import` are each one registered command with a positional subverb. Every `--json` success or failure prints one object. Existing outputs return `E_ACCESS` (exit 4) unless `--force` is supplied; force replaces only planned files. Invalid option combinations return `E_INPUT` (exit 2). Use fresh output paths in these examples.
+
+| Invocation | Output and options |
+| --- | --- |
+| `node bin/music2.js export ir examples/daw-notes-automation.song.json -o /tmp/music2-ir.json --json` | Optional `-o` writes ProjectIR; without it `data.ir` contains the 960-PPQ project. Quantization counters expose rounded pattern events. |
+| `node bin/music2.js export midi examples/daw-notes-automation.song.json -o /tmp/music2.mid --json` | Required `.mid` output; SMF type 1 with conductor data and per-track notes. `data` reports PPQ, notes, channels, quantization and dropped material; inspect warnings for GM/CC losses. |
+| `node bin/music2.js export stems examples/daw-notes-automation.song.json -o /tmp/music2-stems --premaster --json` | Required directory; aligned track/active return WAVs and `stems.json`. 24-bit by default; `--bits 16\|24`, `--no-master`, `--premaster`, and zero-based half-open `--bars a:b` are available. Loop songs cannot be cropped. |
+| `node bin/music2.js export als examples/daw-notes-automation.song.json -o /tmp/music2-live --content both --json` | Required directory; **experimental** Live 12 `.als` and `Samples/Imported` WAVs for audio modes. `--content midi\|audio\|both` defaults to both; `--bits 16\|24` defaults to 24. Generated sets still require a manual Live-open check. |
+| `node bin/music2.js export dawproject examples/daw-notes-automation.song.json -o /tmp/music2.dawproject --content both --json` | Required `.dawproject` ZIP. `--content midi\|audio\|both` defaults to both; entries include `metadata.xml`, `project.xml` and any audio media. |
+| `node bin/music2.js import midi /tmp/music2.mid -o /tmp/music2-imported.song.json --json` | Required `.mid` input and `.json` output. `--title text` names the song; `--strict` rejects tempo/meter changes. Returns track, note and dropped counts. |
+| `node bin/music2.js slice /tmp/clip.wav -o /tmp/music2-slices --bpm 120 --json` | Required WAV and directory; writes slice WAVs, `kit.json` and `slice.song.json`. Defaults: `--sensitivity 0.5`, `--min-gap-ms 50`, `--max-slices 64`, `--bpm 120`. |
+
+Each writer above accepts `--force` when an output already exists. Plugin inserts require explicit opt-in for `render --allow-plugins --plugin-host '<JSON argv>'`. The GPLv3 pedalboard bridge runs separately via `scripts/music2-plugin-bridge.py`. `export stems` and ALS/DAWproject audio modes require the same opt-in for songs with plugin inserts; absent opt-in returns `E_CAPABILITY` (exit 3) with a fix hint. IR, MIDI and MIDI-only export do not run the host. `doctor --json` reports whether plugins are configured; `doctor --plugins --plugin-host '<JSON argv>' --json` probes the host and configured entries. `MUSIC2_PLUGIN_HOST` can provide the host command when an explicit flag is absent. See the [DAW bridge guide](../skills/music2/references/daw-bridge.md).
+
+## JSON and failures
+
 JSON mode writes exactly one JSON object to stdout, including on a failure:
 
 ```json

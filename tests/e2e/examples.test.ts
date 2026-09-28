@@ -12,7 +12,7 @@ const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const CLI = "src/cli/index.ts";
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const NEW_EXAMPLES = new Set(["trap-hook-first-142", "drill-uk-moving-snare-144", "boom-bap-verse-led-90",
-  "game-loop-16bar", "short-30-bed", "type-beat-trap-140", "pop-transition", "lofi-textures", "cinematic-cue", "game-spark-loop"]);
+  "game-loop-16bar", "short-30-bed", "type-beat-trap-140", "pop-transition", "lofi-textures", "cinematic-cue", "game-spark-loop", "daw-notes-automation"]);
 const BALANCE_WARNINGS = new Set(["LOW_END_DOMINANCE", "LOW_MID_BUILDUP", "SUB_WITHOUT_BODY", "HIGH_END_THIN"]);
 
 interface ExampleCase {
@@ -40,6 +40,7 @@ const examples: ExampleCase[] = [
   { file: "lofi-textures", genre: "lofi_hiphop", bpm: 78, key: "D minor" },
   { file: "cinematic-cue", genre: null, bpm: 84, key: "D minor" },
   { file: "game-spark-loop", genre: null, bpm: 112, key: "G major" },
+  { file: "daw-notes-automation", genre: null, bpm: 120, key: "C major" },
 ];
 
 interface CliResult {

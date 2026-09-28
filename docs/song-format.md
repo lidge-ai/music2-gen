@@ -48,12 +48,28 @@ This produces five bars: the two-bar verse repeats twice, followed by one breakd
 | `master` | Optional gain/ceiling/target object; see below. | `gainDb:0`, `ceilingDb:-1`, `targetLufs:null` |
 | `fx` | Optional shared `reverb` and/or `delay` bus settings. | `null`; legacy send processors |
 | `tracks` | Required array of 1–32 track objects with unique IDs. | — |
+| `audioTracks` | Optional array of 0–16 audio tracks with song-relative WAV clips. | Absent |
 | `sections` | Required array of 1–64 section objects with unique IDs. | — |
 | `arrangement` | Required array of 1–256 section references. | — |
 
 `master.gainDb` is -24–12 dB, `master.ceilingDb` is -6–0 dB, and optional `master.targetLufs` is -30–-6 LUFS. `targetLufs:null` is a resolved default, not a valid explicit JSON value. A set target selects built-in LUFS mastering on render; `render --loudnorm` explicitly uses ffmpeg.
 
 `master.fx` is an ordered array of up to 4 `eq`, `compressor`, `drive`, or `width` inserts. It runs after dry and wet signals (and loop folding), before loudness targeting and the final limiter. An omitted array resolves to `[]`. See [effect parameters and examples](../skills/music2/references/effects.md).
+
+## DAW bridge fields in Song v1
+
+All fields here are optional and keep `version: 1`. Missing `notes`, `automation` and `audioTracks` stay absent in resolved JSON, preserving legacy songs and render behavior. See [the directly renderable note example](../examples/daw-notes-automation.song.json) and [the SFZ/clip template](../examples/daw-bridge/audio-sfz.song.json); the latter needs the [fixture builder](../examples/daw-bridge/make-fixtures.mjs) before rendering.
+
+| Field | Meaning and bounds |
+| --- | --- |
+| `tracks[].notes[]` | `start` and `length` are beats from song start, independent of section repeats. `kind:"notes"` uses `pitch` (MIDI number 0–127 or note name); `kind:"drums"` uses `sample`. Each note has optional `velocity` 0–1. A list track cannot also have `pattern`, a velocity pattern or track swing. Explicit length is not shortened by `gate`. |
+| `tracks[].automation[]` | Each lane has a unique `target` and ordered `points` of `{at,value,curve?}`. `at` is an absolute beat; `curve:"linear"` interpolates toward the next point, while `"hold"` keeps the current value until it. Accepted targets are `gain` (-60..12 dB), `pan` (-1..1), `send.reverb` and `send.delay` (0..1), supported numeric `fx.<insert index>.<parameter>`, and music-track `param.<voice parameter>`. Voice parameters are sampled at note onset. |
+| `audioTracks[]` | Up to 16 tracks with unique IDs, optional gain/pan/sends/inserts/duck/automation and at least one `clips[]`. These mix after music tracks. `param.*` automation does not apply to audio tracks. |
+| `audioTracks[].clips[]` | `file` is a confined song-relative `.wav` path. `start` and `length` are beats; `offset`, `fadeIn`, and `fadeOut` are seconds. Optional `gain` is dB and `pitch` is semitones. Clips on one lane cannot overlap. |
+| `clips[].stretch` | `{ "mode":"none" }`, `{ "mode":"varispeed", "ratio":1 }`, `{ "mode":"tempo", "sourceBpm":120 }`, or `{ "mode":"fit", "sourceSeconds":1 }`. Effective stretch ratio is bounded to 0.25..4. |
+| `tracks[].instrument` with `sfz:` | `kind:"notes"` can use `sfz:<song-relative .sfz path>`. WAV sample paths inside the SFZ stay confined to the SFZ directory. Music2 supports a documented SFZ subset and reports unsupported opcodes as warnings; it does not promise full SFZ player compatibility. |
+
+The supported SFZ subset includes `<region>` sample/key/velocity ranges, pitch center and tuning, volume/pan, sample offset/end, loop modes, attack/release triggers, amplitude envelopes, groups/choking, sequencing and deterministic random selection. Unknown or unsupported opcodes produce warnings; do not assume full SFZ player compatibility. An SFZ sample or clip file must exist for rendering and audio export; structural `validate` checks the Song JSON but does not synthesize missing media. Plugin inserts, if present, use the separate opt-in host described in the [CLI reference](cli.md). Export MIDI retains notes and selected CC7/CC10 but cannot carry the original samples or complete DSP; stems carry sound without editable notes.
 
 ## Tracks
 
@@ -63,6 +79,8 @@ This produces five bars: the two-bar verse repeats twice, followed by one breakd
 | `kind` | Required `"drums"` or `"notes"`. | — |
 | `instrument` | Required nonempty string. Built-in drums use `"drums"` and synthesized transition effects use `"sfx"` (both `kind: "drums"`); note voices are listed in the [instrument reference](../skills/music2/references/instruments.md); `kit:<relative kit.json>` uses a supplied kit. | — |
 | `pattern` | One-bar mini-notation string, repeated through each section unless overridden. | Silent (`null` resolved) |
+| `notes` | Optional arrangement-absolute note list, exclusive with `pattern`. | Absent |
+| `automation` | Optional ordered automation lanes. | Absent |
 | `velocity` | Number 0–1 or mini-notation string containing numeric atoms. | `0.8` |
 | `gain` | Number -60–12 dB. | `0` |
 | `pan` | Number -1–1, left to right. | `0` |

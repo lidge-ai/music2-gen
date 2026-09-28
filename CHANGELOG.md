@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Extend Song v1 with optional absolute note lists, SFZ instruments, audio clips and automation while retaining legacy render behavior for songs that omit them.
+- Add ProjectIR, MIDI import/export, aligned track and bus-return stems, sample slicing, and experimental Ableton Live 12 and DAWproject exports. MIDI and frozen-audio routes have documented loss boundaries; generated ALS files still require a manual Live-open check.
+- Add an optional out-of-process plugin bridge with explicit render/audio-export opt-in, plus DAW examples, deterministic sample-fixture generation and user/agent guidance.
+
 - Store default outputs under `~/.music2` (or `MUSIC2_HOME`): `render` without `-o` writes `renders/<song>.wav`, `analyze` without `--out` writes `analysis/<name>/`, and `sfx` no longer requires `-o` and writes `sfx/<preset>-<seed>.wav`, adding `-2`, `-3`, … instead of overwriting. Explicit paths are unchanged. `doctor` reports the active home, and an empty `MUSIC2_HOME` now falls back to `~/.music2`.
 - Add an `sfx` voice for in-song transitions: `riser`, `pitchriser`, `downlifter`, `impact`, `whoosh`, `revcymbal`, `noisebuild`, `subdrop`, `zap` and `crackle`, each with four timbre variants. An atom fills its whole weighted slot, and `impact`/`subdrop` ring out to `impactDecay`. `render` now checks every drum-kind atom against the voice's declared names, including unplaced section overrides. Lint never counts `sfx` tracks as kick, snare or hat.
 - Add a `tapestop` track insert that slows playback to a stop from an absolute, meter-aware bar; partial `--bars` renders pre-roll tape-stop tracks so crops match the full render.

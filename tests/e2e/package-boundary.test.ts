@@ -43,6 +43,12 @@ test("npm package includes the skill and shipped runtime has no forbidden import
   const output = JSON.parse(pack.stdout) as { files: { path: string }[] }[];
   const files = new Set(output[0]?.files.map((file) => file.path));
   assert.ok(files.has("skills/music2/SKILL.md"), "skill missing from npm package");
+  for (const file of ["skills/music2/references/daw-bridge.md", "skills/music2/references/ableton-als.md"])
+    assert.ok(files.has(file), `${file} missing from npm package`);
+  assert.equal([...files].filter((file) => file === "scripts/music2-plugin-bridge.py").length, 1,
+    "optional plugin bridge must be packaged once");
+  assert.ok([...files].every((file) => !file.startsWith("scripts/") || file === "scripts/music2-plugin-bridge.py"));
+  assert.ok([...files].every((file) => !file.startsWith("tests/fixtures/dawproject/") && !/\.(?:wav|mp3|ogg)$/.test(file)));
   assert.ok(files.has("LICENSE"), "MIT license missing from npm package");
 
   const tracked = spawnSync("git", ["ls-files", "-z", "--", "src"], {

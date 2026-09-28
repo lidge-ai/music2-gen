@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "title": "DAW Notes and Automation",
+  "bpm": 120,
+  "key": "C major",
+  "seed": 260928,
+  "tailSeconds": 0.5,
+  "tracks": [
+    {
+      "id": "pulse",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "bd hh sd hh bd hh sd hh",
+      "gain": -12
+    },
+    {
+      "id": "hook",
+      "kind": "notes",
+      "instrument": "piano",
+      "gain": -9,
+      "notes": [
+        { "start": 0, "length": 0.75, "pitch": "c5", "velocity": 0.65 },
+        { "start": 1, "length": 0.75, "pitch": "e5", "velocity": 0.65 },
+        { "start": 2, "length": 0.75, "pitch": "g5", "velocity": 0.68 },
+        { "start": 3, "length": 0.75, "pitch": "e5", "velocity": 0.65 },
+        { "start": 4, "length": 0.75, "pitch": "d5", "velocity": 0.65 },
+        { "start": 5, "length": 0.75, "pitch": "f5", "velocity": 0.65 },
+        { "start": 6, "length": 0.75, "pitch": "a5", "velocity": 0.68 },
+        { "start": 7, "length": 0.75, "pitch": "g5", "velocity": 0.65 }
+      ],
+      "automation": [
+        { "target": "gain", "points": [
+          { "at": 0, "value": -15, "curve": "linear" },
+          { "at": 4, "value": -9, "curve": "hold" },
+          { "at": 8, "value": -9 }
+        ] },
+        { "target": "pan", "points": [
+          { "at": 0, "value": -0.25, "curve": "hold" },
+          { "at": 4, "value": 0.25, "curve": "hold" }
+        ] }
+      ]
+    }
+  ],
+  "sections": [
+    { "id": "opening", "bars": 1, "role": "intro" },
+    { "id": "answer", "bars": 1, "role": "hook" }
+  ],
+  "arrangement": [
+    { "section": "opening" },
+    { "section": "answer" }
+  ]
+}

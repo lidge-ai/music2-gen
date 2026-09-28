@@ -49,6 +49,12 @@ Given the same song, seed, Node major version, and platform, music2 promises byt
 
 Layering checks flag source arrangement risks in strict lint and genre-aware band-balance warnings in song-backed analysis; use the [layering guide](skills/music2/references/layering.md) to inspect and revise the rendered mix.
 
+## DAW bridge
+
+Song v1 can carry absolute note lists, SFZ instruments, audio clips and automation. Start with [notes and automation](examples/daw-notes-automation.song.json). The [SFZ and clip example](examples/daw-bridge/audio-sfz.song.json) is a template: `node examples/daw-bridge/make-fixtures.mjs /tmp/music2-daw-example` creates tiny deterministic WAVs and a renderable song copy. No sample audio is bundled.
+
+Use `export midi` for editable notes, `export stems` for aligned sound, `export als` for an **experimental** Ableton Live 12 set, or `export dawproject` for notes and/or frozen audio. MIDI cannot preserve music2's instrument sound or every effect; frozen audio is not editable notes. `import midi` converts a MIDI file to Song v1 note lists; `slice` turns a WAV into a playable kit. See the [DAW choice and loss guide](skills/music2/references/daw-bridge.md), [CLI flags](docs/cli.md) and [Song fields](docs/song-format.md). A generated ALS still needs a manual Live-open check.
+
 ## Development and license
 
 Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, and `npm run audit:structure` after source changes. Contributions should follow [repository agent rules](AGENTS.md) and the existing `devlog/` plans.

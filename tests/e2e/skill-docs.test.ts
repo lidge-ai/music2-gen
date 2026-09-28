@@ -16,6 +16,7 @@ const skillDir = resolve(repoRoot, "skills/music2");
 const documents = [
   "SKILL.md", "references/mini-notation.md", "references/instruments.md",
   "references/genres.md", "references/mixing.md", "references/prompts.md",
+  "references/daw-bridge.md", "references/ableton-als.md",
 ] as const;
 
 test("skill relative links resolve", async () => {
@@ -51,7 +52,12 @@ test("documented CLI examples use current CommandSpec flags", async () => {
       const spec = commands.get(command);
       assert.ok(spec, `${name}: unknown command ${command}`);
       const flags = [...line.matchAll(/--[a-z][a-z0-9-]*|-o\b/g)].map((item) => item[0]);
-      for (const flag of flags) assert.ok(spec.usage.includes(flag), `${name}: ${command} does not accept ${flag}`);
+      for (const flag of flags) {
+        const registered = flag === "--json" || flag === "-o"
+          ? flag === "--json" || Object.values(spec.options).some((option) => option.short === "o")
+          : Object.hasOwn(spec.options, flag.slice(2));
+        assert.ok(registered, `${name}: ${command} does not accept ${flag}`);
+      }
       examples.push({ command, flags });
     }
   }

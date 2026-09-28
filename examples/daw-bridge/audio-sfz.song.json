@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "title": "DAW Audio and SFZ",
+  "bpm": 120,
+  "key": "C major",
+  "seed": 260929,
+  "tailSeconds": 0.5,
+  "tracks": [
+    {
+      "id": "beat",
+      "kind": "drums",
+      "instrument": "drums",
+      "pattern": "bd hh sd hh bd hh sd hh",
+      "gain": -13
+    },
+    {
+      "id": "sampled_hook",
+      "kind": "notes",
+      "instrument": "sfz:assets/tiny.sfz",
+      "gain": -8,
+      "notes": [
+        { "start": 0, "length": 0.8, "pitch": 72, "velocity": 0.7 },
+        { "start": 1, "length": 0.8, "pitch": 72, "velocity": 0.7 },
+        { "start": 4, "length": 0.8, "pitch": 72, "velocity": 0.7 },
+        { "start": 5, "length": 0.8, "pitch": 72, "velocity": 0.7 }
+      ],
+      "automation": [
+        { "target": "gain", "points": [
+          { "at": 0, "value": -14, "curve": "linear" },
+          { "at": 4, "value": -8 }
+        ] }
+      ]
+    }
+  ],
+  "audioTracks": [
+    {
+      "id": "recorded_clip",
+      "gain": -9,
+      "clips": [
+        { "file": "assets/clip.wav", "start": 2, "length": 1.5, "offset": 0.05,
+          "fadeIn": 0.05, "fadeOut": 0.1, "stretch": { "mode": "none" } }
+      ],
+      "automation": [
+        { "target": "pan", "points": [
+          { "at": 0, "value": -0.35, "curve": "hold" },
+          { "at": 4, "value": 0.35 }
+        ] }
+      ]
+    }
+  ],
+  "sections": [
+    { "id": "first", "bars": 1, "role": "intro" },
+    { "id": "second", "bars": 1, "role": "hook" }
+  ],
+  "arrangement": [
+    { "section": "first" },
+    { "section": "second" }
+  ]
+}
