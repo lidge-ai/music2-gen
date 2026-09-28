@@ -95,7 +95,11 @@ function instrument(track: ResolvedTrack): ProjectNoteTrack["instrument"] {
 }
 function sampleKey(sample: ProjectSample): string { return `${sample.role}\0${sample.ref}`; }
 function bus(song: ResolvedSong, kind: "reverb" | "delay"): ProjectBus | null {
-  const active = [...song.tracks, ...(song.audioTracks ?? [])].some((track) => track.sends[kind] > 0);
+  // A send lane replaces the static send level, so the bus exists when the lane ever rises above zero.
+  const active = [...song.tracks, ...(song.audioTracks ?? [])].some((track) => {
+    const lane = track.automation?.find((candidate) => candidate.target === `send.${kind}`);
+    return lane ? lane.points.some((point) => point.value > 0) : track.sends[kind] > 0;
+  });
   const params = song.fx?.[kind] ?? null;
   if (!active && params === null) return null;
   return { kind, legacy: params === null, params };

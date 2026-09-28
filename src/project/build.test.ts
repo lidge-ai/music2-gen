@@ -116,3 +116,14 @@ void test("same-tick list notes keep resolved pitch and velocity pairs in Projec
   assert.ok("notes" in notes);
   assert.deepEqual(notes.notes.map((note) => [note.pitch, note.velocity]), [[60, 0.2], [60, 0.3], [100, 0.1]]);
 });
+test("a send lane decides bus presence in place of the static send level", () => {
+  const lane = (values: number[]) => values.map((value, at) => ({ at, value }));
+  const song = validateSong(basic([
+    { id: "lead", kind: "notes", instrument: "piano", sends: { reverb: 0, delay: 0.4 },
+      notes: [{ start: 0, length: 1, pitch: 60 }],
+      automation: [{ target: "send.reverb", points: lane([0, 0.5]) }, { target: "send.delay", points: lane([0, 0]) }] },
+  ]));
+  const ir = buildProject(song, buildTimeline(song));
+  assert.equal(ir.buses.reverb?.kind, "reverb");
+  assert.equal(ir.buses.delay, null);
+});
