@@ -11,6 +11,7 @@ The index table below is kept in sync with `src/`.
 | pattern | pattern.md | active |
 | song | song.md | active |
 | project | project.md | active |
+| automation | automation.md | active |
 | midi | midi.md | active |
 | export | export.md | active |
 | cli | cli.md | active |
