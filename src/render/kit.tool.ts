@@ -17,10 +17,15 @@ function confined(root: string, candidate: string): boolean {
   return offset !== ".." && !offset.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) && !isAbsolute(offset);
 }
 
+/** Longest allowed start trim for a late-attack sample. */
+const MAX_START_MS = 10000;
+/** Short fade before a notes-track stop so a cut sample does not end in a step. */
+export const KIT_RELEASE_MS = 5;
+
 function parseManifest(input: unknown, kitPath: string): KitManifest {
   if (input === null || typeof input !== "object" || Array.isArray(input)) throw schemaError(kitPath, "manifest must be an object");
   const manifest = input as Record<string, unknown>;
-  const allowed = new Set(["version", "samples", "gainDb", "rootMidi", "midi"]);
+  const allowed = new Set(["version", "samples", "gainDb", "rootMidi", "midi", "startMs"]);
   for (const key of Object.keys(manifest)) if (!allowed.has(key)) throw schemaError(kitPath, `unknown field ${key}`);
   if (manifest["version"] !== 1) throw schemaError(kitPath, "version must be 1");
   const samples = manifest["samples"];
@@ -47,6 +52,14 @@ function parseManifest(input: unknown, kitPath: string): KitManifest {
           issues: [{ path: `$.midi.${name}`, message: "unknown sample, invalid note, or duplicate assignment" }],
         } });
       used.add(value as number);
+    }
+  }
+  const startMs = manifest["startMs"];
+  if (startMs !== undefined) {
+    if (startMs === null || typeof startMs !== "object" || Array.isArray(startMs)) throw schemaError(kitPath, "startMs must be an object");
+    for (const [name, value] of Object.entries(startMs)) {
+      if (!Object.hasOwn(samples, name) || typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > MAX_START_MS)
+        throw schemaError(kitPath, `invalid startMs.${name}: unknown sample or value outside [0,${MAX_START_MS}]`, name);
     }
   }
   const gainDb = manifest["gainDb"];
@@ -130,7 +143,10 @@ export async function loadKit(songPath: string, instrument: string, sampleRate: 
         mono = audio.sampleRate === sampleRate ? folded : resampleLinear(folded, audio.sampleRate, sampleRate);
         decoded.set(cacheKey, mono);
       }
-      loaded.push(mono);
+      // The decode cache keeps the untrimmed file; each sample name applies its own start trim.
+      const trim = Math.round((manifest.startMs?.[name] ?? 0) * sampleRate / 1000);
+      if (trim >= mono.length) throw schemaError(kitPath, `startMs.${name} is past the end of ${source}`, name);
+      loaded.push(trim > 0 ? mono.subarray(trim) : mono);
     }
     samples[name] = loaded;
   }
@@ -152,14 +168,19 @@ export function renderKit(ctx: VoiceContext, kit: LoadedKit): Float32Array {
     const ratio = ctx.track.kind === "notes" ? 2 ** (((event.midi ?? (kit.manifest.rootMidi ?? 60)) - (kit.manifest.rootMidi ?? 60)) / 12) : 1;
     const limit = Math.min(ctx.frames, ctx.track.kind === "notes" ? event.stopFrame : ctx.frames);
     const amplitude = gain * event.velocity;
-    for (let frame = Math.max(0, event.startFrame); frame < limit; frame++) {
+    const start = Math.max(0, event.startFrame);
+    // Only notes tracks cut a sample at stopFrame; drum samples play to their end.
+    const cut = ctx.track.kind === "notes" && limit < event.startFrame + sample.length / ratio;
+    const fade = cut ? Math.min(Math.round(KIT_RELEASE_MS * ctx.sampleRate / 1000), Math.floor((limit - start) / 2)) : 0;
+    for (let frame = start; frame < limit; frame++) {
       const position = (frame - event.startFrame) * ratio;
       if (position >= sample.length) break;
       const first = Math.floor(position);
       const fraction = position - first;
       const left = sample[first] ?? 0;
       const value = left + ((sample[Math.min(first + 1, sample.length - 1)] ?? left) - left) * fraction;
-      output[frame] = (output[frame] ?? 0) + value * amplitude;
+      const release = fade > 0 && frame >= limit - fade ? (limit - frame - 1) / fade : 1;
+      output[frame] = (output[frame] ?? 0) + value * amplitude * release;
     }
   }
   return output;

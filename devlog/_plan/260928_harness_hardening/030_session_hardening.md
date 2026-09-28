@@ -132,3 +132,8 @@ Verification: hosted CI only (see 010 "Verification constraint"); local evidence
 
 Previous D (wp2): issue #2 guard landed at `cb0646b`, CI run 36442221532 8/8 green; direction unchanged. Stale check: `git diff 084c1c0 HEAD --stat -- src/audio-io src/cli/commands/validate.ts src/sfx src/render/kit.tool.ts src/render/render.schema.ts` is empty. `skills/music2/references/mixing.md` gained an "Automation lanes replace static levels" section in wp2; the three new guidance sections go before it. Architect consultation reused (no design decision changed).
 
+
+## wp3 audit fold
+
+- W1 (Medium, accepted): revcymbal is band-passed noise, so "monotone toward 0" cannot hold sample by sample. The test asserts the envelope: the last sample is exactly 0, and for every k < 5 ms of samples from the end `|out[frames-1-k]| <= (k + 1) / (0.005·rate) · max|out|`.
+

@@ -12,7 +12,7 @@ export interface VoiceEvent { midi: number | null; sample: { name: string; index
 export interface VoiceContext { sampleRate: number; frames: number; track: ResolvedTrack; events: VoiceEvent[] }
 export interface ParamSpec { default: number; min: number; max: number; integer?: boolean }
 export interface VoiceSpec { id: string; kind: "drums" | "notes"; monoDefault: boolean; sampleNames?: readonly string[]; automatable?: readonly string[]; params: Readonly<Record<string, ParamSpec>>; render(ctx: VoiceContext, params: Readonly<Record<string, number>>): Float32Array }
-export interface KitManifest { version: 1; samples: Record<string, string[]>; gainDb?: number; rootMidi?: number; midi?: Record<string, number> }
+export interface KitManifest { version: 1; samples: Record<string, string[]>; gainDb?: number; rootMidi?: number; midi?: Record<string, number>; startMs?: Record<string, number> }
 export interface LoadedKit { manifest: KitManifest; samples: Readonly<Record<string, Float32Array[]>>; sampleRate: number }
 
 export interface DrumsParams { tone: number; decayMs: number; noise: number }

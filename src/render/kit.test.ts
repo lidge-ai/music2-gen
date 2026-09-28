@@ -143,3 +143,44 @@ void test("optional MIDI metadata leaves legacy kit rendering bytes unchanged", 
   const mapped = await loadKit(songPath, "kit:kit", 44100);
   assert.deepEqual(renderKit(ctx, mapped), original);
 });
+
+async function rampKit(t: TestContext, manifest: Record<string, unknown>): Promise<{ songPath: string; kitPath: string }> {
+  const { kitDir, songPath } = await setup(t);
+  const ramp = createStereo(44100, 2000);
+  for (let i = 0; i < 2000; i++) { ramp.left[i] = 0.5; ramp.right[i] = 0.5; }
+  ramp.left[0] = 0; ramp.right[0] = 0;
+  for (let i = 1; i < 1000; i++) { ramp.left[i] = i / 2000; ramp.right[i] = i / 2000; }
+  await writeWav(join(kitDir, "ramp.wav"), ramp, { bits: 24, seed: 1 });
+  const kitPath = join(kitDir, "kit.json");
+  await writeFile(kitPath, JSON.stringify({ version: 1, samples: { note: ["ramp.wav"] }, rootMidi: 60, ...manifest }));
+  return { songPath, kitPath };
+}
+
+void test("a notes kit cut at stopFrame fades over 5 ms and ends at zero", async (t) => {
+  const { songPath } = await rampKit(t, {});
+  const kit = await loadKit(songPath, "kit:kit", 44100);
+  const cutEvent = { ...event(0, null, 60), stopFrame: 1500, gateFrames: 1500 };
+  const out = renderKit({ sampleRate: 44100, frames: 2000, track: track("notes", "kit:kit"), events: [cutEvent] }, kit);
+  assert.equal(out[1499], 0);
+  assert.ok(Math.abs((out[1500 - 221 - 1] ?? 0) - 0.25) < 1e-4, String(out[1278]));
+  assert.ok((out[1500 - 111] ?? 0) < 0.14 && (out[1500 - 111] ?? 0) > 0.11, String(out[1389]));
+  const shortEvent = { ...event(1000, null, 60), stopFrame: 1088, gateFrames: 88 };
+  const short = renderKit({ sampleRate: 44100, frames: 2000, track: track("notes", "kit:kit"), events: [shortEvent] }, kit);
+  assert.equal(short[1087], 0);
+  // The note plays the start of the ramp (i / 2000 at velocity 0.5); only its last 44 frames fade.
+  assert.ok(Math.abs((short[1043] ?? 0) - 43 / 4000) < 1e-4, String(short[1043]));
+  assert.ok((short[1066] ?? 1) < 66 / 4000, String(short[1066]));
+});
+
+void test("kit startMs trims each sample name and rejects bad values", async (t) => {
+  const { songPath, kitPath } = await rampKit(t, { startMs: { note: 10 } });
+  const kit = await loadKit(songPath, "kit:kit", 44100);
+  assert.ok(Math.abs((kit.samples["note"]![0]![0] ?? 0) - 441 / 2000) < 1e-4);
+  assert.equal(kit.samples["note"]![0]!.length, 2000 - 441);
+  for (const startMs of [{ other: 5 }, { note: -1 }, { note: 20000 }, [5]]) {
+    await writeFile(kitPath, JSON.stringify({ version: 1, samples: { note: ["ramp.wav"] }, startMs }));
+    await assert.rejects(loadKit(songPath, "kit:kit", 44100), errorCode("E_SCHEMA"));
+  }
+  await writeFile(kitPath, JSON.stringify({ version: 1, samples: { note: ["ramp.wav"] }, startMs: { note: 46 } }));
+  await assert.rejects(loadKit(songPath, "kit:kit", 44100), errorCode("E_SCHEMA"));
+});

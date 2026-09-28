@@ -263,3 +263,20 @@ test("skill path is registered; bad subcommands exit 2", async () => {
   const bare = await runCli(["skill"]);
   assert.equal(bare.code, 2);
 });
+
+void test("validate rejects out-of-range voice parameters before render", async () => {
+  const { writeFileSync } = await import("node:fs");
+  const dir = mkdtempSync(join(tmpdir(), "music2-cli-voice-"));
+  try {
+    const path = join(dir, "voice.json");
+    writeFileSync(path, JSON.stringify({ version: 1, bpm: 140, tracks: [{ id: "ep", kind: "notes", instrument: "epiano",
+      params: { releaseMs: 600 }, pattern: "c4 eb4" }], sections: [{ id: "a", bars: 1 }], arrangement: [{ section: "a" }] }));
+    const c = capture();
+    assert.equal(await main(["validate", path, "--json"], c.io), 2);
+    const body = JSON.parse(c.output().stdout) as { error: { code: string; details: { issues: { path: string }[] } } };
+    assert.equal(body.error.code, "E_SCHEMA");
+    assert.deepEqual(body.error.details.issues.map((issue) => issue.path), ["tracks[0].params.releaseMs"]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

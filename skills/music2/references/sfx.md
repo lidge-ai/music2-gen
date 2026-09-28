@@ -13,7 +13,7 @@ Use a `drums`-kind track with `"instrument": "sfx"`. Its pattern accepts exactly
 | `downlifter` | Noise sweep falling, fading out | as `riser` | `sweepFromHz`, `sweepToHz`, `noiseColor` |
 | `impact` | Sub sine falling ~150→40 Hz under a noise/click transient | transient-to-body balance | `impactDecay` |
 | `whoosh` | Noise band sweeping 300→6000→300 Hz, swelling in the middle | as `riser` | `noiseColor` |
-| `revcymbal` | Bright 4–10 kHz noise growing toward a hard stop | as `riser` | `noiseColor` |
+| `revcymbal` | Bright 4–10 kHz noise growing toward a stop with a 5 ms fade, so it lands on the next downbeat without a click | as `riser` | `noiseColor` |
 | `noisebuild` | Pulsing noise that gets brighter and louder | pulse rate and color | `sweepFromHz`, `sweepToHz`, `noiseColor` |
 | `subdrop` | Low sine falling ~130→35 Hz | transient-to-body balance | `impactDecay` |
 | `zap` | Pulse wave falling ~1800→180 Hz | pulse width | none |

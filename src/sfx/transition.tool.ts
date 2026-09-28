@@ -45,7 +45,7 @@ function noiseSweep(ctx: TransitionContext): Float32Array {
     else if (atom === "whoosh") gain = Math.sin(Math.PI * u) ** 1.5;
     else if (atom === "revcymbal") gain = u * u;
     else gain = Math.sin(Math.PI * u / 2) ** 2 * (.65 + .35 * Math.sin(TAU * (5 + variant) * u) ** 2);
-    const taper = atom === "revcymbal" ? 1 : Math.min(1, (frames - n - 1) / Math.max(1, .005 * rate));
+    const taper = Math.min(1, (frames - n - 1) / Math.max(1, .005 * rate));
     out[n] = bounded(.75 * velocity * gain * taper * filtered);
   }
   return out;

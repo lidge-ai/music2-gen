@@ -128,3 +128,13 @@ test("noiseColor switches white and pink noise on every variant", () => {
     }
   }
 });
+
+test("revcymbal ends inside a 5 ms taper instead of a hard step", () => {
+  const rate = 44100;
+  const out = renderTransition("revcymbal", 0, 1, rate, 1, {});
+  const taper = .005 * rate;
+  let peak = 0;
+  for (const value of out) peak = Math.max(peak, Math.abs(value));
+  assert.equal(out[out.length - 1], 0);
+  for (let k = 0; k < taper; k++) assert.ok(Math.abs(out[out.length - 1 - k]!) <= (k + 1) / taper * peak + 1e-9, String(k));
+});

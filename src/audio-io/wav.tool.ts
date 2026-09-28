@@ -49,7 +49,9 @@ export async function readWav(path: string): Promise<StereoBuffer> {
   if (bytes.length < 12) invalid(path, "RIFF", "header too short");
   if (bytes.toString("ascii", 0, 4) !== "RIFF") invalid(path, "RIFF", "expected RIFF; RF64 is unsupported");
   if (bytes.toString("ascii", 8, 12) !== "WAVE") invalid(path, "RIFF", "expected WAVE");
-  const end = bytes.readUInt32LE(4) + 8;
+  let end = bytes.readUInt32LE(4) + 8;
+  // Some writers count a final pad byte in the RIFF size but never write it.
+  if (end === bytes.length + 1) end = bytes.length;
   if (end > bytes.length || end < 12) invalid(path, "RIFF", "truncated RIFF payload");
   let format: Format | undefined;
   let dataOffset: number | undefined;
@@ -60,10 +62,12 @@ export async function readWav(path: string): Promise<StereoBuffer> {
     const size = bytes.readUInt32LE(offset + 4);
     const payload = offset + 8;
     const next = payload + size + (size & 1);
-    if (payload + size > end || next > end) invalid(path, chunk, "truncated chunk payload or pad byte");
+    // A final odd-sized chunk may omit its pad byte; anywhere else the pad is required.
+    const unpaddedFinal = (size & 1) === 1 && payload + size === end;
+    if (payload + size > end || (next > end && !unpaddedFinal)) invalid(path, chunk, "truncated chunk payload or pad byte");
     if (chunk === "fmt " && format === undefined) format = parseFormat(bytes, payload, size, path);
     if (chunk === "data" && dataOffset === undefined) { dataOffset = payload; dataSize = size; }
-    offset = next;
+    offset = unpaddedFinal ? end : next;
   }
   if (format === undefined) invalid(path, "fmt ", "missing format chunk");
   if (dataOffset === undefined) invalid(path, "data", "missing data chunk");

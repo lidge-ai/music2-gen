@@ -18,7 +18,7 @@ src/cli/
     ├── help.ts          # command list and topic usage
     ├── version.ts       # installed package version
     ├── schema.ts        # print or write song JSON Schema
-    ├── validate.ts      # validate song and summarize timeline
+    ├── validate.ts      # validate song, voice rules and lanes; summarize timeline
     ├── events.ts        # list filtered timed song events
     ├── render.ts        # WAV, optional stems, encoding, and loudnorm
     ├── export.ts        # ProjectIR JSON or staged format-1 MIDI export

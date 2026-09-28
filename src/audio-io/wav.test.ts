@@ -75,9 +75,11 @@ void test("truncated chunks, RF64, nonfinite floats and three channels fail E_IN
   const rf64 = fixture(1, 16, 1, 44100, [0]); rf64.write("RF64", 0);
   const triple = fixture(1, 16, 1, 44100, [0]); triple.writeUInt16LE(3, 22);
   const nan = fixture(3, 32, 1, 44100, [NaN]);
-  const missingPad = Buffer.concat([fixture(1, 16, 1, 44100, [0]), Buffer.from([0x4a, 0x55, 0x4e, 0x4b, 1, 0, 0, 0, 7])]);
-  missingPad.writeUInt32LE(missingPad.length - 8, 4);
-  for (const [name, bytes] of [["truncated", malformed], ["rf64", rf64], ["channels", triple], ["nan", nan], ["pad", missingPad]] as const) {
+  // An odd chunk without its pad byte before another chunk is still truncated.
+  const header = fixture(1, 16, 1, 44100, [0]);
+  const midPad = Buffer.concat([header.subarray(0, 36), Buffer.from([0x4a, 0x55, 0x4e, 0x4b, 1, 0, 0, 0, 7]), header.subarray(36)]);
+  midPad.writeUInt32LE(midPad.length - 8, 4);
+  for (const [name, bytes] of [["truncated", malformed], ["rf64", rf64], ["channels", triple], ["nan", nan], ["midpad", midPad]] as const) {
     const path = join(dir, `${name}.wav`); await writeFile(path, bytes);
     await assert.rejects(readWav(path), (error: unknown) => error instanceof Music2Error && error.code === "E_INPUT" && error.details?.["file"] === path);
   }
@@ -92,4 +94,21 @@ void test("an empty data chunk decodes as silence", async (t) => {
   assert.equal(audio.left.length, 0);
   assert.equal(audio.right.length, 0);
   assert.equal(audio.sourceChannels, 1);
+});
+
+void test("a final odd chunk may omit its pad byte, whether or not the RIFF size counts it", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-wav-"));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const trailing = Buffer.concat([fixture(1, 16, 1, 44100, [0]), Buffer.from([0x4a, 0x55, 0x4e, 0x4b, 1, 0, 0, 0, 7])]);
+  trailing.writeUInt32LE(trailing.length - 8, 4);
+  // 24-bit mono with an odd frame count: the data chunk itself is odd-sized and last.
+  const odd = fixture(1, 24, 1, 44100, [4194304]);
+  const counted = Buffer.from(odd);
+  counted.writeUInt32LE(odd.length - 8 + 1, 4);
+  for (const [name, bytes] of [["trailing", trailing], ["odd24", odd], ["counted", counted]] as const) {
+    const path = join(dir, `${name}.wav`); await writeFile(path, bytes);
+    const audio = await readWav(path);
+    assert.equal(audio.left.length, 1, name);
+  }
+  assert.equal((await readWav(join(dir, "odd24.wav"))).left[0], .5);
 });

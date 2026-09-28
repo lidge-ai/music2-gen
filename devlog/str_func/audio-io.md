@@ -113,7 +113,7 @@ metadata with `bitsPerSample` equal to the requested 16 or 24 bits.
 
 - `readWav` reads the file into memory and checks the RIFF/WAVE header.
 - File-access failures use `E_ACCESS` and include the file in error details.
-- It scans chunk headers, validates lengths and odd-size pad bytes, and skips
+- It scans chunk headers, validates lengths and odd-size pad bytes (a final odd chunk may omit its pad, and a RIFF size that counts a missing final pad is accepted), and skips
   unknown chunks. The first `fmt ` and first `data` chunks are used.
 - It rejects RF64, missing chunks, truncated payloads, bad alignment, and
   partial sample frames as `E_INPUT` with file and chunk details.

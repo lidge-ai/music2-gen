@@ -49,12 +49,12 @@
       }
     },
     "examples/cinematic-cue.song.json": {
-      "render": "e48f59a0cdc1ed2f4121683f1b1f35e068225ba76de95602c78ccf65ca50855f",
+      "render": "ee29884b609233fd635dd1594914dad6bc5bede4b1608657a99ec7291ff89c78",
       "stems": {
         "brass.wav": "7cadcebc28939b11d806dd6830e2bf831beee358f4bcd790759cac383dd2d5bd",
         "cello.wav": "6d8f1c2ddf610885dc43a0090d0e9a38cff0d21517f50da12e3b241bf9bb51ef",
         "choir.wav": "01db34bccbd7c48880682277169c43f95b0c4751c4c9026804e61c0b93004c22",
-        "fx.wav": "a58e130287488598faf6aaf950a3166202286c1d21f88074df1198129f9c2f8b",
+        "fx.wav": "09802e83fa0597e736a96a92bdd5d1a1fdca2bbbb46ec43ead95665e3c4124ad",
         "glock.wav": "21932502a914daeb858164f9f720cac9dec7e9939d0e39f1d6e9a0110e5104b2",
         "perc.wav": "cf92e300833ea903ffca8a4d914a78b2fc67119e069b526d8e1c28d553b833c2",
         "strings.wav": "b15f07bfcf84f39d3f5b3b770cae625b5ed5dac965fea28abda86f18aa0ad863",

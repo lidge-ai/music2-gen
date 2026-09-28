@@ -10,7 +10,7 @@ src/sfx/
 ├── sfx.schema.ts            input parsing, validation, canonical resolution
 ├── presets.tool.ts          atom/preset IDs, physical ranges, draw order
 ├── dsp.tool.ts              local W3C biquad, polyBLEP, bounded noise
-├── transition.tool.ts       ten mono transition atoms and tail contract
+├── transition.tool.ts       ten mono transition atoms and tail contract (noise atoms, including revcymbal, end with a 5 ms taper)
 ├── game.tool.ts             physical-unit game/UI synthesis
 ├── generate.tool.ts         fixed-length stereo output
 └── *.test.ts                adjacent boundary, spectral, temporal tests

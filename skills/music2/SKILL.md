@@ -62,7 +62,8 @@ Use `validate` and `events` on this sketch before expanding it. Its four-step be
 | `CLIPPING` or true peak above the intended ceiling | Lower the loudest track gain 2–3 dB; shorten overlapping kick/808; inspect `master.ceilingDb`. | `clippedSamples` reaches zero and the measured true peak is controlled. |
 | `LUFS_OFF_TARGET` | If quiet, adjust `master.gainDb` only after checking headroom; if loud, reduce dense layers or limiting. | LUFS approaches the chosen target without a peak problem. |
 | `LOW_END_DOMINANCE` | Shorten or lower 808/bass; try `duck` keyed to the kick; move keys up. | Compare sub+low share and the kick transient. |
-| `EMPTY_HIGH_BAND` | Restore or raise a quiet hat, or brighten an allowed voice parameter. | Air share rises without harshness or clipping. |
+| `EMPTY_HIGH_BAND`, or a mix that sounds closed | Restore or raise a quiet hat, add real cymbal/shaker samples, relax melodic lowpasses, use a bright plate return; see "Open the top end" in mixing.md. | Air share rises without harshness or clipping. |
+| Audible limiting at phrase ends | Ramp roll velocities, lower risers under the hit, keep one downbeat marker; see "Limiter headroom at phrase ends" in mixing.md. | Stem peaks over the phrase and the rendered true peak. |
 | `KEY_UNCERTAIN` or `generic/out_of_key` | Inspect `events`, declared key, and note names; fix mistakes and keep intentional passing tones. | Lint and source pitches agree with the requested key; treat estimated key as advisory. |
 | Sparse hook, crowded verse, or a bright bell spike | Change section mutes/density; lower bell `index`, hat velocity, or send. | Inspect section metrics, piano roll, and spectrogram. |
 

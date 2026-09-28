@@ -125,7 +125,8 @@ const replay = hostFixture ?? fixture;
 const matchingPlatform = hostFixture !== null && process.platform === hostFixture.platform && nodeMajor === hostFixture.nodeMajor;
 // cinematic-cue and pop-transition moved from synthesized strings/brass to bundled samples; their entries
 // were recaptured on darwin/Node 24 with the same procedure as this replay. minimal's lint digest was recaptured
-// after clipping_risk calibration (threshold 2, weighted chords and attacks; its 1.6 warning is gone). All other
+// after clipping_risk calibration (threshold 2, weighted chords and attacks; its 1.6 warning is gone), and
+// cinematic-cue's master and fx stem after revcymbal gained its 5 ms end taper. All other
 // entries are pre-wp2 bytes.
 for (const [song, expected] of Object.entries(replay.examples)) {
   test(`legacy bytes and JSON: ${song}`, {

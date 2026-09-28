@@ -101,8 +101,8 @@ re-exports only `renderSong`, `VOICES`, `RenderOptions`, `RenderResult`,
 | `export function applyReverb(send: StereoBuffer): StereoBuffer` | `fx.tool.ts` | Return wet-only stereo reverb. |
 | `export function applyDelay(send: StereoBuffer, bpm: number): StereoBuffer` | `fx.tool.ts` | Return dotted-eighth cross-channel delay. |
 | `export function duckEnvelope(frames: number, onsets: readonly number[], sampleRate: number, amount: number, releaseMs = 180): Float32Array` | `fx.tool.ts` | Build a per-frame gain envelope. |
-| `export async function loadKit(songPath: string, instrument: string, sampleRate: number): Promise<LoadedKit>` | `kit.tool.ts` | Read and decode a confined sample kit. |
-| `export function renderKit(ctx: VoiceContext, kit: LoadedKit): Float32Array` | `kit.tool.ts` | Sum selected kit samples into mono PCM. |
+| `export async function loadKit(songPath: string, instrument: string, sampleRate: number): Promise<LoadedKit>` | `kit.tool.ts` | Read and decode a confined sample kit; apply per-name `startMs` trims to the cached decode. |
+| `export function renderKit(ctx: VoiceContext, kit: LoadedKit): Float32Array` | `kit.tool.ts` | Sum selected kit samples into mono PCM; notes tracks fade `KIT_RELEASE_MS` (5 ms, at most half the note) before a cut. |
 | `export function selectEvents(song: ResolvedSong, timeline: Timeline, start: number, end: number, frames: number): VoiceEvent[][]` | `select.tool.ts` | Preserve legacy event selection and seeded order. |
 | `export function isSampleInstrument(instrument: string): boolean` | `instrument.tool.ts` | Identify kit/SFZ resource lanes. |
 | `export async function loadSampleInstrument(songPath: string, track: ResolvedTrack, rate: number): Promise<LoadedSampleInstrument \| null>` | `instrument.tool.ts` | Load tagged kit/SFZ resources. |

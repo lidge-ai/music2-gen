@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import { buildTimeline, loadSong } from "../../song/index.ts";
 import { Music2Error } from "../../shared/index.ts";
+import { validateDawVoiceLanes, validateVoiceParams } from "../../render/voices/registry.tool.ts";
 import type { CommandSpec } from "../registry.ts";
 
 export const validate: CommandSpec = {
@@ -10,6 +11,9 @@ export const validate: CommandSpec = {
     if (args.length !== 1) throw new Music2Error("E_INPUT", "validate requires one song path");
     const song = await loadSong(resolve(cwd, args[0]!));
     const timeline = buildTimeline(song);
+    // Same voice checks as render, so bad parameters fail here with exit 2 instead of at render time.
+    validateVoiceParams(song);
+    validateDawVoiceLanes(song);
     return { command: "validate", data: {
       title: song.title, bpm: song.bpm, bars: timeline.bars, durationSeconds: timeline.durationSeconds,
       tracks: song.tracks.map((track) => ({ id: track.id, events: timeline.events.filter((event) => event.track === track.id).length })),
