@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { link, lstat, rm, unlink, writeFile } from "node:fs/promises";
+import { link, lstat, mkdir, rm, unlink, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { writeWav } from "../../audio-io/index.ts";
-import { fnv1a32, Music2Error } from "../../shared/index.ts";
+import { fnv1a32, Music2Error, storageDir } from "../../shared/index.ts";
 import { generateSfx, parseParamsFlag, resolveSfx } from "../../sfx/index.ts";
 import type { ResolvedSfx } from "../../sfx/index.ts";
 import type { CommandSpec } from "../registry.ts";
@@ -48,6 +48,18 @@ async function exists(path: string): Promise<boolean> {
   try { await lstat(path); return true; } catch { return false; }
 }
 
+function sidecarPath(wav: string): string {
+  return join(dirname(wav), basename(wav, extname(wav)) + ".sfx.json");
+}
+
+/** First unused $MUSIC2_HOME/sfx/<preset>-<seed>[-n].wav, so repeated default runs never collide. */
+async function defaultWav(preset: string, seed: number): Promise<string> {
+  for (let n = 1; ; n++) {
+    const wav = join(storageDir("sfx"), `${preset}-${seed}${n === 1 ? "" : `-${n}`}.wav`);
+    if (!await exists(wav) && !await exists(sidecarPath(wav))) return wav;
+  }
+}
+
 /** Sidecar bytes with a fixed key order; no clock, path or machine data. */
 export function sidecarJson(resolved: ResolvedSfx): string {
   const ordered = {
@@ -59,10 +71,10 @@ export function sidecarJson(resolved: ResolvedSfx): string {
 
 export const sfx: CommandSpec = {
   name: "sfx", summary: "Generate a deterministic sound effect WAV and JSON sidecar",
-  usage: "music2 sfx --preset <name> -o out.wav [--seed n] [--seconds s] [--sample-rate 44100|48000] [--params k=v,...] [--json]",
+  usage: "music2 sfx --preset <name> [-o out.wav] [--seed n] [--seconds s] [--sample-rate 44100|48000] [--params k=v,...] [--json] (default output: $MUSIC2_HOME/sfx/<preset>-<seed>.wav)",
   options: {
     preset: { type: "string", description: "Preset name (transition or game/UI)" },
-    out: { type: "string", short: "o", description: "Output WAV path; <basename>.sfx.json is written next to it" },
+    out: { type: "string", short: "o", description: "Output WAV path (default $MUSIC2_HOME/sfx/<preset>-<seed>.wav); <basename>.sfx.json is written next to it" },
     seed: { type: "string", description: "Unsigned 32-bit seed (default 1)" },
     seconds: { type: "string", description: "Length in seconds, 0.05..30 (default per preset)" },
     "sample-rate": { type: "string", description: "44100 or 48000 (default 44100)" },
@@ -73,10 +85,8 @@ export const sfx: CommandSpec = {
     const preset = stringFlag(values["preset"], "preset");
     if (preset === undefined) throw inputError("--preset is required");
     const outFlag = stringFlag(values["out"], "out");
-    if (outFlag === undefined) throw inputError("-o/--out is required");
-    const wav = resolve(cwd, outFlag);
-    if (extname(wav).toLowerCase() !== ".wav") throw inputError("out must end in .wav");
-    const sidecar = join(dirname(wav), basename(wav, extname(wav)) + ".sfx.json");
+    const explicitWav = outFlag === undefined ? undefined : resolve(cwd, outFlag);
+    if (explicitWav !== undefined && extname(explicitWav).toLowerCase() !== ".wav") throw inputError("out must end in .wav");
     const paramsText = stringFlag(values["params"], "params");
     const seed = seedFlag(stringFlag(values["seed"], "seed"));
     const seconds = secondsFlag(stringFlag(values["seconds"], "seconds"));
@@ -88,8 +98,15 @@ export const sfx: CommandSpec = {
       ...(sampleRate === undefined ? {} : { sampleRate }),
       ...(paramsText === undefined ? {} : { params: parseParamsFlag(paramsText) }),
     });
+    const wav = explicitWav ?? await defaultWav(resolved.preset, resolved.seed);
+    const sidecar = sidecarPath(wav);
     for (const path of [wav, sidecar]) {
       if (await exists(path)) throw new Music2Error("E_ACCESS", `output already exists: ${path}`, { details: { path } });
+    }
+    if (explicitWav === undefined) {
+      try { await mkdir(dirname(wav), { recursive: true }); } catch (cause) {
+        throw new Music2Error("E_ACCESS", `cannot create output directory: ${dirname(wav)}`, { details: { path: dirname(wav) }, cause });
+      }
     }
     let stereo;
     try { stereo = generateSfx(resolved); } catch (cause) {

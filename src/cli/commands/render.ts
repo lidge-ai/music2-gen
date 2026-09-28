@@ -5,7 +5,7 @@ import { writeWav } from "../../audio-io/index.ts";
 import { discoverFfmpeg, encodeAudio, loudnormWav } from "../../probe/index.ts";
 import { renderSong } from "../../render/index.ts";
 import type { RenderData } from "../../render/render.schema.ts";
-import { fnv1a32, Music2Error } from "../../shared/index.ts";
+import { fnv1a32, Music2Error, storageDir } from "../../shared/index.ts";
 import { loadSong } from "../../song/index.ts";
 import type { CommandSpec } from "../registry.ts";
 
@@ -52,9 +52,9 @@ async function checkCollisions(input: string, outputs: string[]): Promise<void> 
 
 export const render: CommandSpec = {
   name: "render", summary: "Render a song to WAV and optional encoded copies",
-  usage: "music2 render <song.json> [-o out.wav] [--bits 16|24] [--mp3] [--ogg] [--stems dir] [--bars a:b] [--loudnorm] [--json]",
+  usage: "music2 render <song.json> [-o out.wav] [--bits 16|24] [--mp3] [--ogg] [--stems dir] [--bars a:b] [--loudnorm] [--json] (default output: $MUSIC2_HOME/renders/<song>.wav, home ~/.music2)",
   options: {
-    out: { type: "string", short: "o", description: "Output WAV path" },
+    out: { type: "string", short: "o", description: "Output WAV path (default $MUSIC2_HOME/renders/<song>.wav)" },
     bits: { type: "string", description: "WAV bit depth: 16 or 24" },
     mp3: { type: "boolean", description: "Encode an MP3 copy" },
     ogg: { type: "boolean", description: "Encode an Ogg Vorbis copy" },
@@ -68,7 +68,8 @@ export const render: CommandSpec = {
     const bitDepth = bits(values["bits"]);
     const range = bars(values["bars"]);
     const outputName = basename(songPath).replace(/(?:\.song)?\.json$/i, "") + ".wav";
-    const wav = absolute(values["out"], cwd, "out") ?? join(dirname(songPath), outputName);
+    const explicitWav = absolute(values["out"], cwd, "out");
+    const wav = explicitWav ?? join(storageDir("renders"), outputName);
     if (extname(wav).toLowerCase() !== ".wav") throw inputError("out must end in .wav");
     const stemDir = absolute(values["stems"], cwd, "stems");
     const song = await loadSong(songPath);
@@ -96,6 +97,7 @@ export const render: CommandSpec = {
       return temporary;
     };
     try {
+      if (explicitWav === undefined) await mkdir(dirname(wav), { recursive: true });
       if (stemDir) await mkdir(stemDir, { recursive: true });
       let wavSource = stage(wav);
       await writeWav(wavSource, result.audio, { bits: bitDepth, seed: fnv1a32(song.seed, "master", "wav") });

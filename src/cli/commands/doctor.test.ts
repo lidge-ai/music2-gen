@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Music2Error } from "../../shared/index.ts";
+import { music2Home, Music2Error } from "../../shared/index.ts";
 import type { CommandContext } from "../registry.ts";
 import { doctor } from "./doctor.ts";
 
@@ -15,7 +15,7 @@ test("optional missing ffmpeg reports ready false; required missing throws", asy
   try {
     process.env.MUSIC2_FFMPEG = join(tmpdir(), "music2-nonexistent-ffmpeg");
     delete process.env.MUSIC2_REQUIRE_FFMPEG;
-    assert.deepEqual((await doctor.run(ctx)).data, { ffmpeg: null, required: false, ready: false });
+    assert.deepEqual((await doctor.run(ctx)).data, { ffmpeg: null, required: false, ready: false, home: music2Home() });
     process.env.MUSIC2_REQUIRE_FFMPEG = "1";
     await assert.rejects(doctor.run(ctx),
       (error: unknown) => error instanceof Music2Error && error.code === "E_FFMPEG_MISSING" && error.exit === 3);

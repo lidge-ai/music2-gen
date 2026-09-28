@@ -1,10 +1,10 @@
 import { discoverFfmpeg } from "../../probe/index.ts";
-import { Music2Error } from "../../shared/index.ts";
+import { music2Home, Music2Error } from "../../shared/index.ts";
 import type { DoctorData } from "../../probe/index.ts";
 import type { CommandSpec } from "../registry.ts";
 
 export const doctor: CommandSpec = {
-  name: "doctor", summary: "Inspect ffmpeg capabilities",
+  name: "doctor", summary: "Inspect ffmpeg capabilities and the music2 storage home",
   usage: "music2 doctor [--json]", options: {},
   async run({ args }) {
     if (args.length) throw new Music2Error("E_INPUT", "doctor takes no positional arguments");
@@ -14,6 +14,6 @@ export const doctor: CommandSpec = {
     const ready = ffmpeg !== null && ffmpeg.encoders.libmp3lame && ffmpeg.encoders.libvorbis;
     if (required && !ready) throw new Music2Error("E_CAPABILITY", "ffmpeg requires libmp3lame and libvorbis encoders");
     const data: DoctorData = { ffmpeg, required, ready };
-    return { command: "doctor", data: { ...data } };
+    return { command: "doctor", data: { ...data, home: music2Home() } };
   },
 };

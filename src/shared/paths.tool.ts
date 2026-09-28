@@ -3,8 +3,17 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+/** Root of music2's user storage: `MUSIC2_HOME` when set and nonempty, otherwise `~/.music2`. Not created here. */
 export function music2Home(): string {
-  return process.env["MUSIC2_HOME"] ?? join(homedir(), ".music2");
+  const configured = process.env["MUSIC2_HOME"];
+  return configured ? configured : join(homedir(), ".music2");
+}
+
+export type StorageKind = "renders" | "analysis" | "sfx" | "projects";
+
+/** Default directory for one kind of output inside the music2 home. Callers create it when they write. */
+export function storageDir(kind: StorageKind): string {
+  return join(music2Home(), kind);
 }
 
 let root: string | undefined;

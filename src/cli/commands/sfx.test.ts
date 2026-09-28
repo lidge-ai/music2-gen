@@ -72,7 +72,7 @@ test("invalid input exits 2 and existing outputs exit 4 without being modified",
   await withDir(async (dir) => {
     const out = join(dir, "x.wav");
     const bad: Record<string, unknown>[] = [
-      { out }, { preset: "nope", out }, { preset: "pickup" }, { preset: "pickup", out: join(dir, "x.mp3") },
+      { out }, { preset: "nope", out }, { preset: "pickup", out: join(dir, "x.mp3") },
       { preset: "pickup", out, seed: "-1" }, { preset: "pickup", out, seed: "4294967296" }, { preset: "pickup", out, seed: "1.5" },
       { preset: "pickup", out, seconds: "0" }, { preset: "pickup", out, seconds: "30.001" }, { preset: "pickup", out, seconds: "NaN" },
       { preset: "pickup", out, "sample-rate": "22050" }, { preset: "riser", out, params: "sweepFromHz=250,sweepFromHz=300" },
@@ -107,5 +107,21 @@ test("concurrent writers to one destination never overwrite each other", async (
     const winner = (won[0] as PromiseFulfilledResult<{ data: Record<string, unknown> }>).value;
     const sidecar = JSON.parse(await readFile(join(dir, "race.sfx.json"), "utf8")) as Record<string, unknown>;
     assert.equal(sidecar["seed"], winner.data["seed"], "WAV and sidecar come from the same writer");
+  });
+});
+
+test("without -o the WAV goes to MUSIC2_HOME/sfx and never overwrites an earlier default", async () => {
+  await withDir(async (home) => {
+    const prev = process.env["MUSIC2_HOME"];
+    process.env["MUSIC2_HOME"] = home;
+    try {
+      const first = await sfx.run(ctx({ preset: "blip", seed: "7", seconds: "0.1" }));
+      const second = await sfx.run(ctx({ preset: "blip", seed: "7", seconds: "0.1" }));
+      assert.deepEqual(first.artifacts, [join(home, "sfx", "blip-7.wav"), join(home, "sfx", "blip-7.sfx.json")]);
+      assert.deepEqual(second.artifacts, [join(home, "sfx", "blip-7-2.wav"), join(home, "sfx", "blip-7-2.sfx.json")]);
+      assert.deepEqual(await readFile(join(home, "sfx", "blip-7.wav")), await readFile(join(home, "sfx", "blip-7-2.wav")));
+    } finally {
+      if (prev === undefined) delete process.env["MUSIC2_HOME"]; else process.env["MUSIC2_HOME"] = prev;
+    }
   });
 });

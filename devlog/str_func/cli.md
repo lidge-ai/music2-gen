@@ -66,7 +66,7 @@ The signatures below come from exported declarations in the current source.
 | `export function renderFailure(error: unknown, json: boolean, command = "unknown"): { text: string; exit: number }` | `output.ts` | Format failure and status. |
 | `export function register(spec: CommandSpec): void` | `registry.ts` | Add a uniquely named command. |
 | `export function resolveSkillDir(root: string): string` | `commands/skill-path.ts` | Return the packaged skill directory after verifying its `SKILL.md` is a regular file. |
-| `export const sfx: CommandSpec` | `commands/sfx.ts` | Parse `--preset`, `-o`, `--seed`, `--seconds`, `--sample-rate`, `--params`; resolve and synthesize through `src/sfx`; commit WAV then `<basename>.sfx.json` with no-replace `link()` (existing output → `E_ACCESS`). |
+| `export const sfx: CommandSpec` | `commands/sfx.ts` | Parse `--preset`, optional `-o` (default first free `$MUSIC2_HOME/sfx/<preset>-<seed>[-n].wav`), `--seed`, `--seconds`, `--sample-rate`, `--params`; resolve and synthesize through `src/sfx`; commit WAV then `<basename>.sfx.json` with no-replace `link()` (existing output → `E_ACCESS`). |
 | `export function sidecarJson(resolved: ResolvedSfx): string` | `commands/sfx.ts` | Stable sidecar key order: generatorVersion, preset, seed, seconds, frames, sampleRate, params. |
 
 ### Exported types and values
@@ -85,9 +85,9 @@ The signatures below come from exported declarations in the current source.
 | `schema` | `export const schema: CommandSpec` | Song v1 JSON Schema command. |
 | `validate` | `export const validate: CommandSpec` | Song and timeline validation command. |
 | `events` | `export const events: CommandSpec` | Timed event listing command. |
-| `render` | `export const render: CommandSpec` | WAV render with optional stems and encoded copies. |
-| `doctor` | `export const doctor: CommandSpec` | ffmpeg capability inspection. |
-| `analyze` | `export const analyze: CommandSpec` | WAV/song analysis and artifact generation. |
+| `render` | `export const render: CommandSpec` | WAV render with optional stems and encoded copies; default WAV in `$MUSIC2_HOME/renders/`. |
+| `doctor` | `export const doctor: CommandSpec` | ffmpeg capability inspection and the active storage home. |
+| `analyze` | `export const analyze: CommandSpec` | WAV/song analysis and artifact generation; default folder `$MUSIC2_HOME/analysis/<name>/`. |
 | `recipes` | `export const recipes: CommandSpec` | List or inspect genre cards. |
 | `newCommand` | `export const newCommand: CommandSpec` | Create a starter song. |
 | `lint` | `export const lint: CommandSpec` | Static song and genre checks. |

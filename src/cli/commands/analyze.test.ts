@@ -26,3 +26,17 @@ test("analyze command returns artifact paths in the CLI envelope", async () => {
     assert.equal((result.data["summary"] as { declaredBpm: number }).declaredBpm, 120);
   } finally { await rm(out, { recursive: true, force: true }); }
 });
+
+test("without --out the analysis goes to MUSIC2_HOME/analysis/<name>", async () => {
+  const home = await mkdtemp(join(tmpdir(), "music2-analyze-home-"));
+  const prev = process.env["MUSIC2_HOME"];
+  process.env["MUSIC2_HOME"] = home;
+  try {
+    const result = await analyze.run({ args: ["examples/minimal.song.json"], values: {},
+      cwd: process.cwd(), json: true, stderr: process.stderr });
+    assert.ok(result.artifacts?.includes(join(home, "analysis", "minimal", "analysis.json")));
+  } finally {
+    if (prev === undefined) delete process.env["MUSIC2_HOME"]; else process.env["MUSIC2_HOME"] = prev;
+    await rm(home, { recursive: true, force: true });
+  }
+});

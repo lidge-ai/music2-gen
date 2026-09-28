@@ -7,6 +7,8 @@ description: Compose original songs with the offline music2 CLI when asked to ma
 
 Use this source-first workflow for a requested beat or instrumental. Run commands from the repository root with Node.js 22.18 or newer. `node bin/music2.js` is the CLI; no runtime package install or network is needed for composition. MP3 export needs ffmpeg. Audio critique is optional and needs an audio-capable Responses route. `node bin/music2.js skill path` prints this skill's directory for a host that wants to load it; it does not install anything.
 
+Store a request's files together in `~/.music2/projects/<name>/` (the music2 storage home; `MUSIC2_HOME` overrides it). Without an explicit path, `render` writes `~/.music2/renders/`, `analyze` writes `~/.music2/analysis/<name>/`, and `sfx` writes `~/.music2/sfx/`; the `/tmp` paths below are illustrations.
+
 Read [prompt decisions](references/prompts.md), [genre recipes](references/genres.md), [case studies](references/case-studies.md), [use cases](references/use-cases.md), [mini-notation](references/mini-notation.md), [instruments](references/instruments.md), [mixing](references/mixing.md), [layering](references/layering.md), [effects](references/effects.md), and [sound effects](references/sfx.md) as needed. The instrument reference lists twelve virtual instruments (piano, epiano, organ, strings, brass, flute, choir, marimba, vibraphone, glockenspiel, kalimba, guitar), five drum-kit characters, and the `sfx` transition voice; `music2 sfx` makes standalone one-shots for videos and games. The recipe cards are starting points; explicit user constraints win. Case-study keys and BPM can be estimates; never infer what a recording sounds like from metadata or analysis alone.
 
 ## Workflow

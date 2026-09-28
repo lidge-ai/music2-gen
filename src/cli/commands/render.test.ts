@@ -122,3 +122,18 @@ test("whole-song loop reports exclusive sample points and rejects bar crops", as
       (error: unknown) => error instanceof Music2Error && error.code === "E_INPUT" && error.exit === 2);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+test("without -o the WAV goes to MUSIC2_HOME/renders", async () => {
+  const home = await mkdtemp(join(tmpdir(), "music2-render-home-"));
+  const prev = process.env["MUSIC2_HOME"];
+  process.env["MUSIC2_HOME"] = home;
+  try {
+    const result = await render.run({ args: [drill], values: { bars: "0:1" }, json: true, cwd: process.cwd(), stderr: process.stderr });
+    const expected = join(home, "renders", "drill-140.wav");
+    assert.equal(result.data["wav"], expected);
+    assert.ok((await stat(expected)).size > 44);
+  } finally {
+    if (prev === undefined) delete process.env["MUSIC2_HOME"]; else process.env["MUSIC2_HOME"] = prev;
+    await rm(home, { recursive: true, force: true });
+  }
+});

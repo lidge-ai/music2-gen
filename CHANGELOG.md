@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Store default outputs under `~/.music2` (or `MUSIC2_HOME`): `render` without `-o` writes `renders/<song>.wav`, `analyze` without `--out` writes `analysis/<name>/`, and `sfx` no longer requires `-o` and writes `sfx/<preset>-<seed>.wav`, adding `-2`, `-3`, … instead of overwriting. Explicit paths are unchanged. `doctor` reports the active home, and an empty `MUSIC2_HOME` now falls back to `~/.music2`.
 - Add an `sfx` voice for in-song transitions: `riser`, `pitchriser`, `downlifter`, `impact`, `whoosh`, `revcymbal`, `noisebuild`, `subdrop`, `zap` and `crackle`, each with four timbre variants. An atom fills its whole weighted slot, and `impact`/`subdrop` ring out to `impactDecay`. `render` now checks every drum-kind atom against the voice's declared names, including unplaced section overrides. Lint never counts `sfx` tracks as kick, snare or hat.
 - Add a `tapestop` track insert that slows playback to a stop from an absolute, meter-aware bar; partial `--bars` renders pre-roll tape-stop tracks so crops match the full render.
 - Add `music2 sfx`, a standalone generator for the ten transition presets and eleven game/UI presets (pickup, laser, explosion, powerup, hit, jump, blip, alert, click, confirm, error). It writes a deterministic 16-bit WAV and a `.sfx.json` sidecar, never overwrites existing files, and accepts validated `--params` overrides.

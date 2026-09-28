@@ -32,8 +32,10 @@ Use `node bin/music2.js <command>`; add `--json` to get one machine-readable obj
 | `validate song.json`, `events song.json`, `lint song.json` | Check schema and timing, inspect timed events, or apply genre/static rules. |
 | `render song.json`, `analyze audio.wav` | Produce WAV and optional encoded copies; measure audio and write reports, an overview, and PNG views. |
 | `doctor`, `critique audio.wav` | Check ffmpeg; optionally request an audio-model review. |
-| `sfx --preset name -o out.wav` | Generate a standalone sound effect (transition or game/UI) with a reproducible JSON sidecar. |
+| `sfx --preset name [-o out.wav]` | Generate a standalone sound effect (transition or game/UI) with a reproducible JSON sidecar. |
 | `skill path` | Print the packaged composition skill directory. |
+
+Outputs without an explicit path are stored under `~/.music2` (override with `MUSIC2_HOME`): `render` writes `renders/<song>.wav`, `analyze` writes `analysis/<name>/`, and `sfx` writes `sfx/<preset>-<seed>.wav`. Keep a song's source, renders and analysis together in `~/.music2/projects/<name>/`. `music2 doctor --json` reports the active home.
 
 See [CLI reference](docs/cli.md) for flags, outputs, errors, and environment variables.
 

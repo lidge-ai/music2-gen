@@ -47,6 +47,7 @@ re-exports all listed public members.
 | `export function mulberry32(seed: number): () => number` | `prng.tool.ts` | Seeded stateful generator in `[0, 1)`. |
 | `export function unitHash(...parts: (string | number)[]): number` | `prng.tool.ts` | First draw at a stable address. |
 | `export function music2Home(): string` | `paths.tool.ts` | Resolve user data directory. |
+| `export function storageDir(kind: StorageKind): string` | `paths.tool.ts` | Default folder for `renders`, `analysis`, `sfx` or `projects` inside the home. |
 | `export function packageRoot(): string` | `paths.tool.ts` | Find `music2-gen` package root. |
 | `export function packageVersion(): string` | `paths.tool.ts` | Read package version. |
 | `constructor(n: number \| bigint, d: number \| bigint = 1)` | `Fraction` | Normalize signed rational parts. |
@@ -102,8 +103,8 @@ re-exports all listed public members.
 - `packageRoot()` walks parents from the current module and caches the match.
 - A matching root requires `package.json` with name `music2-gen`.
 - `packageVersion()` reads that package's `version` on each call.
-- `music2Home()` uses `MUSIC2_HOME` or the OS home plus `.music2`.
-- An unset `MUSIC2_HOME` does not create that directory.
+- `music2Home()` uses a nonempty `MUSIC2_HOME` or the OS home plus `.music2`.
+- Neither helper creates a directory; `render`, `analyze` and `sfx` create their default folder when they write there.
 - `packageRoot()` throws a plain `Error` if no matching parent exists.
 - Fraction comparison uses cross-products, avoiding floating-point ordering.
 
