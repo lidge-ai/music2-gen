@@ -39,7 +39,7 @@ function rollBars(g: LintGeometry): number {
   return g.full.filter((bar) => has(g, bar, (e) => isHat(g, e) && e.slot <= g.timeline.secondsPerBar / 32 + 1e-6)).length;
 }
 function swingRule(out: LintResult[], genre: string, g: LintGeometry): void {
-  const swungHat = g.song.tracks.some((track) => track.kind === "drums" && track.swing &&
+  const swungHat = g.song.tracks.some((track) => track.swing &&
     g.timeline.events.some((event) => event.track === track.id && isHat(g, event)));
   if (g.song.swing <= .5 || !swungHat) out.push(warning(`${genre}/3`, "tracks", `song swing ${g.song.swing}; swung hats ${swungHat}`,
     "song swing > 0.5 and swung hat/percussion", "Raise song swing and enable swing on a hat/percussion track."));

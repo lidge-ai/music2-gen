@@ -83,6 +83,46 @@ test("empty song.fx preserves both legacy send processors", async () => {
   assert.deepEqual(a.audio.right, b.audio.right);
 });
 
+test("tapestop partial stems equal the full-song window with earlier sustained notes in 4/4 and 3/4", async () => {
+  for (const meter of [4, 3]) {
+    const cropStart = meter === 4 ? 1 : 2;
+    const startBar = cropStart + 1;
+    const source = fixture({ meter: { numerator: meter, denominator: 4 }, tailSeconds: 0,
+      tracks: [{ id: "pad", kind: "notes", instrument: "pad", pattern: "c4",
+        fx: [{ type: "tapestop", startBar, beats: 2 }] }],
+      sections: [{ id: "notes", bars: cropStart }, { id: "rest", bars: 2, patterns: { pad: "~" } }],
+      arrangement: [{ section: "notes" }, { section: "rest" }] });
+    const song = validateSong(source);
+    const timeline = buildTimeline(song);
+    const full = await mixTracks(song, timeline, "fixture.song.json", { stems: true });
+    const cropped = await mixTracks(song, timeline, "fixture.song.json",
+      { bars: { start: cropStart, end: timeline.bars }, stems: true });
+    const offset = Math.round(cropStart * timeline.secondsPerBar * song.sampleRate);
+    assert.deepEqual(cropped.stems[0]!.audio.left,
+      full.stems[0]!.audio.left.subarray(offset, offset + cropped.stems[0]!.audio.left.length));
+    assert.deepEqual(cropped.stems[0]!.audio.right,
+      full.stems[0]!.audio.right.subarray(offset, offset + cropped.stems[0]!.audio.right.length));
+    assert.ok(cropped.stems[0]!.audio.left.subarray(0, 1000).some((sample) => sample !== 0));
+    assert.equal((startBar - 1) * timeline.secondsPerBar, meter === 3 ? 3 : 2);
+  }
+});
+
+test("tapestop respects its declared position relative to EQ", async () => {
+  const eq = { type: "eq" as const, midGainDb: 12, midHz: 500 };
+  const tape = { type: "tapestop" as const, startBar: 1, beats: 2 };
+  const source = fixture({ tracks: [{ id: "lead", kind: "notes", instrument: "lead", pattern: "c4",
+    fx: [eq, tape] }] });
+  const first = validateSong(source);
+  const second = validateSong({ ...source, tracks: [{ ...source.tracks[0]!, fx: [tape, eq] }] });
+  const before = await mixTracks(first, buildTimeline(first), "fixture.song.json", { stems: true });
+  const after = await mixTracks(second, buildTimeline(second), "fixture.song.json", { stems: true });
+  let delta = 0;
+  for (let i = 0; i < before.stems[0]!.audio.left.length; i++) {
+    delta += Math.abs(before.stems[0]!.audio.left[i]! - after.stems[0]!.audio.left[i]!);
+  }
+  assert.ok(delta > 1, `chain-order difference ${delta}`);
+});
+
  test("center and hard-left pan; dry gain is in dB before master", async () => {
   const base = fixture();
   const center = validateSong(base);

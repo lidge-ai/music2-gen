@@ -4,7 +4,7 @@ import { validateSong } from "../../song/index.ts";
 import { Music2Error } from "../../shared/index.ts";
 import type { ResolvedSong, ResolvedTrack } from "../../song/index.ts";
 import { DRUM_NAMES } from "./drums.tool.ts";
-import { mergeParams, resolveVoice, validateVoiceParams, VOICES } from "./registry.tool.ts";
+import { declaredSampleNames, mergeParams, resolveVoice, validateVoiceParams, VOICES } from "./registry.tool.ts";
 
 function songWith(tracks: { id: string; kind: "drums" | "notes"; instrument: string;
   mono?: boolean; params?: Record<string, number> }[]): ResolvedSong {
@@ -18,9 +18,9 @@ function issuePaths(error: unknown): string[] {
   return (error.details?.["issues"] as { path: string }[]).map(({ path }) => path);
 }
 
-void test("all nine voice ids resolve with their declared kinds", () => {
-  assert.deepEqual(Object.keys(VOICES).sort(),
-    ["drums", "808", "bass", "bell", "keys", "pluck", "pad", "lead", "supersaw"].sort());
+void test("legacy voice ids and every registered voice resolve with their declared kinds", () => {
+  for (const id of ["drums", "808", "bass", "bell", "keys", "pluck", "pad", "lead", "supersaw"])
+    assert.ok(Object.hasOwn(VOICES, id), `missing legacy voice ${id}`);
   for (const spec of Object.values(VOICES)) {
     const track = songWith([{ id: "voice", kind: spec.kind, instrument: spec.id }]).tracks[0]!;
     assert.equal(resolveVoice(track, 0), spec);
@@ -31,6 +31,20 @@ void test("all nine voice ids resolve with their declared kinds", () => {
 void test("kit instruments bypass built-in voice resolution", () => {
   const track = songWith([{ id: "kit", kind: "drums", instrument: "kit:my-kit.json" }]).tracks[0]!;
   assert.equal(resolveVoice(track, 0), null);
+  assert.equal(declaredSampleNames(track.instrument), null);
+});
+
+void test("built-in drum-kind voices declare separate sample vocabularies", () => {
+  assert.deepEqual(declaredSampleNames("drums"), DRUM_NAMES);
+  assert.deepEqual(declaredSampleNames("sfx"), ["riser", "pitchriser", "downlifter", "impact",
+    "whoosh", "revcymbal", "noisebuild", "subdrop", "zap", "crackle"]);
+  assert.equal(declaredSampleNames("bass"), null);
+  assert.equal(declaredSampleNames("missing"), null);
+  assert.equal(declaredSampleNames("kit:anything"), null);
+  const wrongKind = songWith([{ id: "x", kind: "notes", instrument: "sfx" }]).tracks[0]!;
+  assert.throws(() => resolveVoice(wrongKind, 0), (error: unknown) => {
+    assert.deepEqual(issuePaths(error), ["tracks[0].kind"]); return true;
+  });
 });
 
 void test("unknown instrument and kind mismatch identify the indexed track", () => {

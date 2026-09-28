@@ -54,14 +54,19 @@ export function at(step: number, event: TimedEvent): boolean {
   return Math.abs(phase(event) - step / 16) <= GRID_TOLERANCE;
 }
 export function eventsAt(g: LintGeometry, bar: number): TimedEvent[] { return g.events.get(bar) ?? []; }
+function kitRoleSample(g: LintGeometry, event: TimedEvent): string | null {
+  const track = g.song.tracks[event.trackIndex];
+  return track?.kind === "drums" && (track.instrument === "drums" || track.instrument.startsWith("kit:"))
+    ? event.sample?.name ?? null : null;
+}
 export function isKick(g: LintGeometry, event: TimedEvent): boolean {
-  return g.song.tracks[event.trackIndex]?.kind === "drums" && event.atom.name === "bd";
+  return kitRoleSample(g, event) === "bd";
 }
 export function isBackbeat(g: LintGeometry, event: TimedEvent): boolean {
-  return g.song.tracks[event.trackIndex]?.kind === "drums" && (event.atom.name === "sd" || event.atom.name === "cp");
+  return ["sd", "cp"].includes(kitRoleSample(g, event) ?? "");
 }
 export function isHat(g: LintGeometry, event: TimedEvent): boolean {
-  return g.song.tracks[event.trackIndex]?.kind === "drums" && ["hh", "oh", "sh"].includes(event.atom.name);
+  return ["hh", "oh", "sh"].includes(kitRoleSample(g, event) ?? "");
 }
 export function is808(g: LintGeometry, event: TimedEvent): boolean {
   const track = g.song.tracks[event.trackIndex];
@@ -136,9 +141,11 @@ export function createGeometry(song: ResolvedSong, timeline: Timeline, genre: st
     list.push(event); events.set(event.bar, list);
   }
   const full: number[] = [], hooks: number[] = [], grooves: number[] = [];
-  const kickTracks = new Set(timeline.events.filter((event) => song.tracks[event.trackIndex]?.kind === "drums" && event.atom.name === "bd").map((event) => event.track));
-  const snareTracks = new Set(timeline.events.filter((event) => song.tracks[event.trackIndex]?.kind === "drums" && ["sd", "cp"].includes(event.atom.name)).map((event) => event.track));
-  for (const track of song.tracks.filter((item) => item.kind === "drums")) {
+  const geometry = { song, genre, timeline, events, full, hooks, grooves, placements: timeline.placements };
+  const kickTracks = new Set(timeline.events.filter((event) => isKick(geometry, event)).map((event) => event.track));
+  const snareTracks = new Set(timeline.events.filter((event) => isBackbeat(geometry, event)).map((event) => event.track));
+  for (const track of song.tracks.filter((item) => item.kind === "drums" &&
+    (item.instrument === "drums" || item.instrument.startsWith("kit:")))) {
     if (track.id === "kick") kickTracks.add(track.id);
     if (track.id === "snare" || track.id === "clap") snareTracks.add(track.id);
   }
@@ -151,5 +158,5 @@ export function createGeometry(song: ResolvedSong, timeline: Timeline, genre: st
     const activeDrums = (ids: Set<string>): boolean => [...ids].some((id) => effective(id) !== null);
     if (["hook", "verse", "groove", ...(genre === "techno" ? ["build"] : [])].includes(placement.role ?? "") && activeDrums(kickTracks) && activeDrums(snareTracks)) full.push(...bars);
   }
-  return { song, genre, timeline, events, full, hooks, grooves, placements: timeline.placements };
+  return geometry;
 }

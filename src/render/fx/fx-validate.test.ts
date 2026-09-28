@@ -31,3 +31,21 @@ test("direct resolved bus retains unknown-key validation", () => {
   assert.throws(() => validateResolvedFx(song), (error: unknown) => error instanceof Music2Error &&
     (error.details?.["issues"] as { path: string }[]).some((issue) => issue.path === "$.fx.typo"));
 });
+
+test("tapestop bounds resolve on tracks and reject invalid or master placement", () => {
+  for (const settings of [{ startBar: 1, beats: 0.25 }, { startBar: 1024, beats: 16 }, {}]) {
+    const song = validateSong({ ...base, tracks: [{ ...base.tracks[0], fx: [{ type: "tapestop", ...settings }] }] });
+    assert.equal(song.tracks[0]!.fx![0]!.type, "tapestop");
+    assert.doesNotThrow(() => validateResolvedFx(song));
+  }
+  for (const [key, value] of [["startBar", 0], ["startBar", 1025], ["startBar", 1.5],
+    ["beats", 0.249], ["beats", 16.001]] as const) {
+    const source = { ...base, tracks: [{ ...base.tracks[0], fx: [{ type: "tapestop", [key]: value }] }] };
+    assert.throws(() => validateSong(source), (error: unknown) => error instanceof Music2Error &&
+      error.code === "E_SCHEMA" && (error.details?.["issues"] as { path: string }[])
+        .some((issue) => issue.path === `$.tracks[0].fx[0].${key}`));
+  }
+  assert.throws(() => validateSong({ ...base, master: { fx: [{ type: "tapestop" }] } }),
+    (error: unknown) => error instanceof Music2Error && error.code === "E_SCHEMA" &&
+      (error.details?.["issues"] as { path: string }[]).some((issue) => issue.path === "$.master.fx[0].type"));
+});

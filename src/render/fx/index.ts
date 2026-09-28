@@ -11,13 +11,14 @@ import { processDelay, renderDelayBus } from "./tempo-delay.tool.ts";
 import { processWidth } from "./width.tool.ts";
 import { processCrush } from "./crush.tool.ts";
 import { processTremolo } from "./tremolo.tool.ts";
+import { processTapeStop } from "./tapestop.tool.ts";
 export { renderDelayBus };
 export { renderReverbBus } from "./reverb.tool.ts";
 
 const processors: Record<InsertType, (buffer: StereoBuffer, params: never, ctx: FxContext) => void> = {
   eq: processEq, filter: processFilter, compressor: processCompressor, drive: processDrive,
   chorus: processChorus, phaser: processPhaser, delay: processDelay, width: processWidth,
-  crush: processCrush, tremolo: processTremolo,
+  crush: processCrush, tremolo: processTremolo, tapestop: processTapeStop,
 };
 
 /** Process one stereo buffer in declared order, retaining no per-insert full-length buffers. */

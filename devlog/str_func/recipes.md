@@ -121,6 +121,10 @@ optional. `LintOptions` contains optional `genre`. `LintResult` has `id`,
 
 - `full` bars come from hook, verse, and groove placements with active kick
   and snare patterns; techno also admits build placements.
+- Kick, backbeat, and hat events count only parsed sample events on built-in
+  `drums` or `kit:` tracks. The legacy `kick`/`snare`/`clap` track-ID hints for
+  full-bar eligibility also apply only to those tracks. SFX can still add to
+  general onset density, but never supplies a kit rhythm role.
 - `hooks` includes hook bars; `grooves` includes hook and groove bars.
 - Step predicates use sixteenth positions with `1/64` cycle tolerance.
 - A step-9 backbeat means zero-based step 8; steps 5/13 mean 4/12.

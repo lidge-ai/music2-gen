@@ -30,6 +30,7 @@ export const INSERT_SPECS = {
   crush: { bits: n(8, 4, 16, true), downsample: n(2, 1, 32, true), mix: n(1, 0, 1) },
   tremolo: { rateHz: n(4, 0.05, 20), depth: n(0.5, 0, 1), phaseDegrees: n(0, 0, 180), mix: n(1, 0, 1) },
   delay: { time: e<NoteDivision>("1/8d", NOTE_DIVISIONS), feedback: n(0.35, 0, 0.95), pingPong: b(false), lowCutHz: n(20, 20, 1000), highCutHz: n(18000, 1000, 18000), mix: n(0.35, 0, 1) },
+  tapestop: { startBar: n(1, 1, 1024, true), beats: n(2, 0.25, 16) },
 } as const satisfies Record<string, Record<string, ParamSpec>>;
 export type InsertType = keyof typeof INSERT_SPECS;
 export const INSERT_TYPES = Object.keys(INSERT_SPECS) as InsertType[];
@@ -58,7 +59,7 @@ export type DelayBusParams = Params<typeof DELAY_BUS_SPEC>;
 export type InsertInput = { [T in InsertType]: { type: T } & Partial<InsertParams<T>> }[InsertType];
 
 /** Context every processor receives. */
-export interface FxContext { sampleRate: number; bpm: number }
+export interface FxContext { sampleRate: number; bpm: number; startSeconds?: number; secondsPerBar?: number }
 /** In-place stereo processor contract shared by all insert effects. */
 export type InsertProcessor<T extends InsertType> = (buffer: StereoBuffer, params: InsertParams<T>, ctx: FxContext) => void;
 

@@ -33,7 +33,9 @@ src/cli/
     ├── critique.ts      # audible review and local DSP command
     ├── critique.test.ts # critic command cases
     ├── skill-path.ts    # resolve and print packaged skill directory
-    └── skill-path.test.ts # skill path validation cases
+    ├── skill-path.test.ts # skill path validation cases
+    ├── sfx.ts           # standalone sound-effect WAV + sidecar generator
+    └── sfx.test.ts      # determinism, sidecar order, exit codes, concurrent writers
 ```
 
 ## Module Responsibility
@@ -64,6 +66,8 @@ The signatures below come from exported declarations in the current source.
 | `export function renderFailure(error: unknown, json: boolean, command = "unknown"): { text: string; exit: number }` | `output.ts` | Format failure and status. |
 | `export function register(spec: CommandSpec): void` | `registry.ts` | Add a uniquely named command. |
 | `export function resolveSkillDir(root: string): string` | `commands/skill-path.ts` | Return the packaged skill directory after verifying its `SKILL.md` is a regular file. |
+| `export const sfx: CommandSpec` | `commands/sfx.ts` | Parse `--preset`, `-o`, `--seed`, `--seconds`, `--sample-rate`, `--params`; resolve and synthesize through `src/sfx`; commit WAV then `<basename>.sfx.json` with no-replace `link()` (existing output → `E_ACCESS`). |
+| `export function sidecarJson(resolved: ResolvedSfx): string` | `commands/sfx.ts` | Stable sidecar key order: generatorVersion, preset, seed, seconds, frames, sampleRate, params. |
 
 ### Exported types and values
 
@@ -152,6 +156,7 @@ they have no separately exported `run` function.
 | `lint` | `commands/lint.ts` | One song JSON path; optional genre override and strict QA policy. |
 | `critique` | `commands/critique.ts` | One WAV/song path; optional model, base URL, and excerpt seconds. |
 | `skill` | `commands/skill-path.ts` | Sole positional argument `path`; returns `{ path }` and prints the directory in human mode. |
+| `sfx` | `commands/sfx.ts` | No positionals; returns `{ wav, sidecar, generatorVersion, preset, seed, seconds, frames, sampleRate, params }` and both paths as artifacts. Invalid flags/params exit 2, existing outputs exit 4, synthesis failure exit 5. |
 
 ### Skill path command
 
@@ -336,6 +341,8 @@ assert, filesystem, process-spawn, OS-temp, and path modules.
 | `src/cli/commands/analyze.test.ts` | `./analyze.ts` | Verifies analysis command and artifact results. |
 | `src/cli/commands/recipes.test.ts`, `new.test.ts`, `lint.test.ts`, `critique.test.ts` | Adjacent command files | Verify new command contracts. |
 | `src/cli/commands/skill-path.test.ts` | `./skill-path.ts` | Verify argument validation and required skill file. |
+| `src/cli/commands/sfx.ts` | `../../sfx/index.ts`, `../../audio-io/index.ts` | Standalone SFX generation and WAV writing. |
+| `src/cli/commands/sfx.test.ts` | `./sfx.ts` | Verify per-preset determinism, sidecar order, exit codes and concurrent writers. |
 | `skills/music2/SKILL.md` | `music2 skill path` output | Entry document in the returned skill directory. |
 
 No other source feature currently imports `src/cli/index.ts`; it is the

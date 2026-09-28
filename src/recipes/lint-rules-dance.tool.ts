@@ -33,7 +33,7 @@ export function danceRules(g: LintGeometry, genre: "house" | "techno", generic: 
       `${meanActive(g, barsOf(outro)).toFixed(2)} >= ${meanActive(g, barsOf(groove)).toFixed(2)}`, "outro mean layers < final groove", "Mute one or more layers in the outro."));
   } else {
     const bass = bassId(g);
-    const percussion = g.song.tracks.find((track) => track.kind === "drums" &&
+    const percussion = g.song.tracks.find((track) =>
       g.timeline.events.some((e) => e.track === track.id && isHat(g, e)))?.id ?? null;
     if ([1, 2].some((size) => comparableBlocks(g.grooves, size)) && !motifIn(g, g.grooves, [1, 2], bass ?? percussion)) out.push(warning("techno/3", `tracks.${bass ?? percussion ?? "bass"}`, "no repeated bass/percussion motif", "repeated 1- or 2-bar motif", "Repeat a short bass or percussion motif."));
     const candidates = g.placements.filter((p) => p.role === "build" || p.role === "groove").flatMap(barsOf);

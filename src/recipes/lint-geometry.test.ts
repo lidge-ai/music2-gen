@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildTimeline, validateSong } from "../song/index.ts";
-import { at, createGeometry, fourKick, snare9 } from "./lint-geometry.tool.ts";
+import { at, createGeometry, fourKick, isBackbeat, isHat, isKick, snare9 } from "./lint-geometry.tool.ts";
 
 test("geometry uses unswung cycle positions and excludes a muted intro", () => {
   const song = validateSong({ version: 1, bpm: 140, swing: .65,
@@ -13,4 +13,34 @@ test("geometry uses unswung cycle positions and excludes a muted intro", () => {
   assert.ok(snare9(g, 1));
   assert.ok(!fourKick(g, 1));
   assert.ok(g.timeline.events.some((event) => at(8, event)));
+});
+
+test("only declared kit tracks with parsed samples supply rhythm roles", () => {
+  const song = validateSong({ version: 1, bpm: 120,
+    tracks: [
+      { id: "fx", kind: "drums", instrument: "sfx", pattern: "bd sd hh" },
+      { id: "drum", kind: "drums", instrument: "drums", pattern: "bd sd hh" },
+      { id: "custom", kind: "drums", instrument: "kit:custom", pattern: "bd sd hh" },
+    ], sections: [{ id: "hook", bars: 1, role: "hook" }], arrangement: [{ section: "hook" }] });
+  const timeline = buildTimeline(song);
+  const g = createGeometry(song, timeline);
+  const roles = [isKick, isBackbeat, isHat];
+  for (const id of ["fx", "drum", "custom"]) {
+    const events = timeline.events.filter((event) => event.track === id);
+    assert.deepEqual(roles.map((role, index) => role(g, events[index]!)),
+      id === "fx" ? [false, false, false] : [true, true, true]);
+  }
+  assert.deepEqual(g.full, [0]);
+  song.tracks[1]!.kind = "notes";
+  assert.equal(isKick(g, timeline.events.find((event) => event.track === "drum")!), false);
+  timeline.events.find((event) => event.track === "custom")!.sample = null;
+  assert.equal(isKick(g, timeline.events.find((event) => event.track === "custom")!), false);
+});
+
+test("SFX track IDs cannot create full-drum bars", () => {
+  const song = validateSong({ version: 1, bpm: 120,
+    tracks: [{ id: "kick", kind: "drums", instrument: "sfx", pattern: "bd sd hh" },
+      { id: "snare", kind: "drums", instrument: "sfx", pattern: "sd" }],
+    sections: [{ id: "hook", bars: 1, role: "hook" }], arrangement: [{ section: "hook" }] });
+  assert.deepEqual(createGeometry(song, buildTimeline(song)).full, []);
 });

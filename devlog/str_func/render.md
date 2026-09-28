@@ -29,16 +29,21 @@ src/render/
     ├── lead.tool.ts            # vibrato lead
     ├── osc.tool.ts             # PolyBLEP oscillators and per-note TPT lowpass
     ├── supersaw.tool.ts        # seeded unison saw voice
+    ├── sfx.tool.ts             # transition-effect drum-kind voice over src/sfx
     └── *.test.ts               # one test file per voice
 ```
 
 ## Module Responsibility
 
+Tapestop is a track-only insert with absolute, meter-aware `startBar` and a beat-count duration. Its processor snapshots the source at the stop, slows playback with quadratic speed, fades the final 15 ms, and silences the remainder. For partial bar renders, the mixer processes tapestop tracks and their full insert chains from song start before cropping; other tracks retain their existing selection and mix path.
+
 FX additions: `fx/index.ts` dispatches in-place stereo insert processors and checks output finiteness after each stage. `fx/fx-validate.tool.ts` checks direct render inputs. `mixer.tool.ts` retains the mono legacy path when a track has no inserts; an inserted track uses a reused stereo scratch buffer before pan, gain, ducking, stems, and sends. Configured buses replace only their corresponding legacy wet return. Master inserts run after wet summing and loop folding, before `masterAudio`.
 
 `src/render` accepts a validated `ResolvedSong` and the song file path.
-`renderSong` validates instruments, voice parameters, drum sample names,
-MIDI ranges, and the mastering capability before building the timeline.
+`renderSong` validates instruments and voice parameters, then checks each built-in
+drum-kind voice's declared sample names in base and all section override
+patterns, including unplaced sections. User `kit:` names remain manifest-owned.
+It also checks effective timeline samples, MIDI ranges, and the mastering capability.
 `mixTracks` selects events for a zero-based half-open bar range, allocates
 stereo buffers including the song tail, renders each voice or kit, applies
 track gain and pan, sends, ducking, wet effects, and selected mastering.
@@ -71,11 +76,14 @@ re-exports only `renderSong`, `VOICES`, `RenderOptions`, `RenderResult`,
 | `export function resolveVoice(track: ResolvedTrack, index: number): VoiceSpec \| null` | `voices/registry.tool.ts` | Resolve built-in instrument; return null for kit. |
 | `export function mergeParams(spec: VoiceSpec, params: Readonly<Record<string, number>>): Record<string, number>` | `voices/registry.tool.ts` | Fill omitted parameters with defaults. |
 | `export function validateVoiceParams(song: ResolvedSong): void` | `voices/registry.tool.ts` | Reject unknown, mismatched, or invalid voices and parameters. |
+| `export function declaredSampleNames(instrument: string): readonly string[] \| null` | `voices/registry.tool.ts` | Look up the built-in drum-kind voice vocabulary; return null for kits, notes, or unknown voices. |
 | `export const DRUM_NAMES: readonly string[]` | `voices/drums.tool.ts` | Valid synthetic drum sample names. |
 
-The nine voice declarations are `drumsVoice`, `eightOhEightVoice`,
-`bassVoice`, `bellVoice`, `keysVoice`, `pluckVoice`, `padVoice`, and
-`leadVoice`, plus `supersawVoice`, each typed `VoiceSpec` and exported from its own `.tool.ts`.
+The voice declarations are `drumsVoice`, `eightOhEightVoice`,
+`bassVoice`, `bellVoice`, `keysVoice`, `pluckVoice`, `padVoice`,
+`leadVoice`, `supersawVoice` and `sfxVoice`, each typed `VoiceSpec` and exported from its own `.tool.ts`.
+`sfxVoice` (drum kind) declares the ten transition atoms as `sampleNames`, renders each event through
+`renderTransition` for its full slot (`gateFrames`), capped at the render end, and softens only frames where events overlap.
 Lead, bass, and pad keep their original sample order when no new parameter is
 explicit in `track.params`; `unison` or filter envelope controls select the
 PolyBLEP/unison/TPT filter path, as does `detuneCents` for lead and bass.
@@ -94,7 +102,7 @@ is the voice contract; individual render methods are object members.
 | `VoiceEvent` | `render.schema.ts` | MIDI/sample, velocity, frame timing, event index, seed. |
 | `VoiceContext` | `render.schema.ts` | Sample rate, frame count, resolved track, selected events. |
 | `ParamSpec` | `render.schema.ts` | Default, min, max, optional integer constraint. |
-| `VoiceSpec` | `render.schema.ts` | ID, track kind, mono default, parameter specs, render method. |
+| `VoiceSpec` | `render.schema.ts` | ID, track kind, mono default, optional declared sample names, parameter specs, render method. |
 | `KitManifest` | `render.schema.ts` | Version 1, named sample arrays, optional gain dB/root MIDI. |
 | `LoadedKit` | `render.schema.ts` | Manifest, decoded mono variants, sample rate. |
 | `RenderData` | `render.schema.ts` | CLI output paths and render measurements, with optional `loopStartSample`/`loopEndSample`; imported directly by CLI. |

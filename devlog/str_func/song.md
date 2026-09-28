@@ -35,6 +35,9 @@ validates cross-references and mini-notation atoms, and fills defaults into a
 into a placement with absolute bar position. `timeline.tool.ts` applies track
 patterns and section overrides to those placements, then converts pattern
 onsets into seconds, note pitches or sample references, and velocities.
+For `instrument:"sfx"`, event duration equals the weighted pattern slot even
+when `gate` is lower than one; other instruments retain their existing gate
+and mono timing rules.
 
 The module does not render audio. Its timeline is the input for later audio
 work and for the current `validate` and `events` CLI commands. All source

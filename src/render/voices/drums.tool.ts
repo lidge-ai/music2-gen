@@ -76,6 +76,7 @@ function renderDrum(out: Float32Array, ctx: VoiceContext, event: VoiceEvent,
 
 export const drumsVoice: VoiceSpec = {
   id: "drums", kind: "drums", monoDefault: false,
+  sampleNames: DRUM_NAMES,
   params: {
     tone: { default: .5, min: 0, max: 1 },
     decayMs: { default: 180, min: 20, max: 1000 },

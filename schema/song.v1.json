@@ -812,6 +812,28 @@
                       "maximum": 1
                     }
                   }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": {
+                      "const": "tapestop"
+                    },
+                    "startBar": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1024
+                    },
+                    "beats": {
+                      "type": "number",
+                      "minimum": 0.25,
+                      "maximum": 16
+                    }
+                  }
                 }
               ]
             }

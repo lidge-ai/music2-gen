@@ -18,3 +18,4 @@ The index table below is kept in sync with `src/`.
 | recipes | recipes.md | active |
 | usecases | usecases.md | active |
 | critic | critic.md | active |
+| sfx | sfx.md | active |

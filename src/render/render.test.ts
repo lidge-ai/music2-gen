@@ -1,6 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { resolve } from "node:path";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { createStereo, writeWav } from "../audio-io/index.ts";
 import { buildTimeline, loadSong, validateSong } from "../song/index.ts";
 import { Music2Error } from "../shared/index.ts";
 import { renderSong } from "./render.tool.ts";
@@ -69,6 +73,62 @@ test("targetLufs no longer blocks render validation; bad drum names point to tra
   await assert.rejects(renderSong(song, "fixture.song.json"),
     (error: unknown) => error instanceof Music2Error && error.code === "E_SCHEMA" &&
       (error.details?.["issues"] as { path: string }[])[0]?.path === "tracks[0].pattern");
+});
+
+function sampleIssue(error: unknown, path: string): boolean {
+  return error instanceof Music2Error && error.code === "E_SCHEMA" &&
+    (error.details?.["issues"] as { path: string }[])[0]?.path === path;
+}
+
+test("declared atom names reject the opposite built-in voice at each base path", async () => {
+  for (const [instrument, pattern] of [["drums", "riser"], ["sfx", "bd"]]) {
+    const song = validateSong({ version: 1, bpm: 120,
+      tracks: [{ id: "cue", kind: "drums", instrument, pattern }],
+      sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] });
+    await assert.rejects(renderSong(song, "fixture.song.json"), (error: unknown) =>
+      sampleIssue(error, "tracks[0].pattern"));
+  }
+});
+
+test("all section override branches validate, including unplaced sections", async () => {
+  const song = validateSong({ version: 1, bpm: 120,
+    tracks: [{ id: "cue", kind: "drums", instrument: "sfx", pattern: "riser" }],
+    sections: [
+      { id: "active", bars: 1, patterns: { cue: "[riser|bd]" } },
+      { id: "unused", bars: 1, patterns: { cue: "whoosh mystery" } },
+    ], arrangement: [{ section: "active" }] });
+  await assert.rejects(renderSong(song, "fixture.song.json"), (error: unknown) =>
+    sampleIssue(error, "sections[0].patterns.cue"));
+  song.sections[0]!.patterns["cue"] = "impact";
+  await assert.rejects(renderSong(song, "fixture.song.json"), (error: unknown) =>
+    sampleIssue(error, "sections[1].patterns.cue"));
+});
+
+test("unplaced drum overrides reject unknown atoms before mixing", async () => {
+  const song = validateSong({ version: 1, bpm: 120,
+    tracks: [{ id: "drum", kind: "drums", instrument: "drums", pattern: "bd" }],
+    sections: [{ id: "active", bars: 1 }, { id: "unused", bars: 1, patterns: { drum: "[sd|cowbell]" } }],
+    arrangement: [{ section: "active" }] });
+  await assert.rejects(renderSong(song, "fixture.song.json"), (error: unknown) =>
+    sampleIssue(error, "sections[1].patterns.drum"));
+});
+
+test("kit manifest names remain separate from built-in declared names", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-declared-kit-"));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const kitDir = join(dir, "kit");
+  await mkdir(kitDir);
+  const audio = createStereo(44100, 64);
+  audio.left[0] = .5; audio.right[0] = .5;
+  await writeWav(join(kitDir, "hit.wav"), audio, { bits: 16, seed: 1 });
+  await writeFile(join(kitDir, "kit.json"), JSON.stringify({ version: 1, samples: { riser: ["hit.wav"] } }));
+  const song = validateSong({ version: 1, bpm: 120, tailSeconds: 0,
+    tracks: [{ id: "cue", kind: "drums", instrument: "kit:kit", pattern: "riser" },
+      { id: "drum", kind: "drums", instrument: "drums", pattern: "bd" }],
+    sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] });
+  const result = await renderSong(song, join(dir, "song.json"));
+  assert.equal(result.events, 2);
+  assert.ok(result.audio.left.some((sample) => sample !== 0));
 });
 
 test("optional 180-second six-track benchmark", { skip: process.env.MUSIC2_BENCH !== "1" }, async () => {

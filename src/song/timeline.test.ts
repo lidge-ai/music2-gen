@@ -56,3 +56,19 @@ void test("seeded choice and degradation remain identical on repeated builds", (
   assert.deepEqual(events.filter((event) => event.bar < 4).map((event) => event.atom.raw),
     events.filter((event) => event.bar >= 4).map((event) => event.atom.raw));
 });
+
+void test("SFX fills weighted slots regardless of gate while classic drums keep gate", () => {
+  const song = validateSong({ version: 1, bpm: 120,
+    tracks: [
+      { id: "fx", kind: "drums", instrument: "sfx", pattern: "riser@3 impact@1", gate: .05 },
+      { id: "single", kind: "drums", instrument: "sfx", pattern: "whoosh", gate: .05 },
+      { id: "kit", kind: "drums", instrument: "drums", pattern: "bd", gate: .05 },
+    ], sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] });
+  const timeline = buildTimeline(song);
+  assert.deepEqual(timeline.events.filter((event) => event.track === "fx").map((event) =>
+    [event.slot, event.duration]), [[1.5, 1.5], [.5, .5]]);
+  assert.deepEqual(timeline.events.filter((event) => event.track === "single").map((event) =>
+    [event.slot, event.duration]), [[2, 2]]);
+  assert.deepEqual(timeline.events.filter((event) => event.track === "kit").map((event) =>
+    [event.slot, event.duration]), [[2, .1]]);
+});

@@ -62,7 +62,7 @@ export function buildTimeline(song: ResolvedSong): Timeline {
           const sample = track.kind === "drums" ? parseSampleRef(hap.atom.raw) : null;
           const velocity = typeof track.velocity === "number" ? track.velocity : velocityAt(velocityNode, onset, ctx);
           events.push({ track: track.id, trackIndex, bar: absoluteBar, time,
-            duration: slot * (track.mono ? 1 : track.gate), slot,
+            duration: slot * (track.instrument === "sfx" || track.mono ? 1 : track.gate), slot,
             cycleBegin: onset.toString(), atom: hap.atom, midi, sample, velocity, order: hap.order });
           const count = (counts.get(track.id) ?? 0) + 1;
           if (count > 20000) throw new Music2Error("E_SCHEMA", `track ${track.id} exceeds 20000 events`, {

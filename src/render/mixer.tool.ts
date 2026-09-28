@@ -261,6 +261,14 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
     throw renderError("render exceeds 24-bit RIFF size limit");
   }
   const selected = selectEvents(song, timeline, start, end, frames);
+  const needsPreRoll = start > 0 && song.tracks.some((track) => track.fx?.some((fx) => fx.type === "tapestop"));
+  const preRollFrames = needsPreRoll ? Math.max(
+    Math.ceil((end * timeline.secondsPerBar + song.tailSeconds) * song.sampleRate),
+    Math.round(start * timeline.secondsPerBar * song.sampleRate) + frames) : 0;
+  if (needsPreRoll && (!Number.isSafeInteger(preRollFrames) || preRollFrames * 6 + 36 > RIFF_LIMIT)) {
+    throw renderError("render exceeds 24-bit RIFF size limit");
+  }
+  const preRollEvents = needsPreRoll ? selectEvents(song, timeline, 0, end, preRollFrames) : null;
   const kits: (LoadedKit | null)[] = [];
   for (const track of song.tracks) kits.push(track.instrument.startsWith("kit:") ? await loadKit(songPath, track.instrument, song.sampleRate) : null);
   const audio = createStereo(song.sampleRate, frames);
@@ -271,6 +279,35 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
   for (let index = 0; index < song.tracks.length; index++) {
     const track = song.tracks[index]!;
     const events = selected[index]!;
+    const tapePreRoll = preRollEvents !== null && track.fx?.some((fx) => fx.type === "tapestop");
+    if (tapePreRoll) {
+      const kit = kits[index];
+      const voice = kit ? null : resolveVoice(track, index);
+      const preroll = kit ? renderKit({ sampleRate: song.sampleRate, frames: preRollFrames, track,
+        events: preRollEvents[index]! }, kit) : voice!.render({ sampleRate: song.sampleRate,
+        frames: preRollFrames, track, events: preRollEvents[index]! }, mergeParams(voice!, track.params));
+      if (preroll.length !== preRollFrames) throw renderError(`voice ${track.instrument} returned incorrect frame count`);
+      const processed = createStereo(song.sampleRate, preRollFrames);
+      for (let frame = 0; frame < preRollFrames; frame++) {
+        if (!Number.isFinite(preroll[frame])) throw renderError("nonfinite voice sample", frame);
+      }
+      processed.left.set(preroll); processed.right.set(preroll);
+      applyInsertChain(processed, track.fx!, { sampleRate: song.sampleRate, bpm: song.bpm,
+        startSeconds: 0, secondsPerBar: timeline.secondsPerBar }, track.id);
+      const offset = Math.round(start * timeline.secondsPerBar * song.sampleRate);
+      const cropped = createStereo(song.sampleRate, frames);
+      cropped.left.set(processed.left.subarray(offset, offset + frames));
+      cropped.right.set(processed.right.subarray(offset, offset + frames));
+      const sourceIndex = track.duck ? song.tracks.findIndex((candidate) => candidate.id === track.duck!.by) : -1;
+      const duck = track.duck && sourceIndex >= 0 ? duckEnvelope(frames,
+        selected[sourceIndex]!.map((event) => event.startFrame), song.sampleRate,
+        track.duck.amount, track.duck.releaseMs) : null;
+      const stem = options.stems ? createStereo(song.sampleRate, frames) : null;
+      mixStereo(audio, reverbSend, delaySend, cropped, 10 ** (track.gain / 20), track.pan,
+        duck, track.sends.reverb, track.sends.delay, stem, track.id);
+      if (stem) stems.push({ trackId: track.id, audio: stem });
+      continue;
+    }
     const ctx = { sampleRate: song.sampleRate, frames, track, events };
     const kit = kits[index];
     const voice = kit ? null : resolveVoice(track, index);
@@ -288,7 +325,8 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
           { details: { track: track.id, frame } });
       }
       scratch.left.set(mono); scratch.right.set(mono);
-      applyInsertChain(scratch, track.fx, { sampleRate: song.sampleRate, bpm: song.bpm }, track.id);
+      applyInsertChain(scratch, track.fx, { sampleRate: song.sampleRate, bpm: song.bpm,
+        startSeconds: start * timeline.secondsPerBar, secondsPerBar: timeline.secondsPerBar }, track.id);
       mixStereo(audio, reverbSend, delaySend, scratch, 10 ** (track.gain / 20), track.pan,
         duck, track.sends.reverb, track.sends.delay, stem, track.id);
     } else {

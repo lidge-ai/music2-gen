@@ -67,6 +67,18 @@ test("zero eligible bars omit fraction checks", () => {
   assert.ok(!ids(song).includes("drill_uk/3"));
 });
 
+test("SFX cannot satisfy house groove while drums and kit tracks retain it", () => {
+  const song = { version: 1 as const, bpm: 124, genre: "house",
+    tracks: [{ id: "fx", kind: "drums" as const, instrument: "sfx", pattern: "bd*4" }],
+    sections: [{ id: "groove", bars: 1, role: "groove" }], arrangement: [{ section: "groove" }] };
+  assert.ok(ids(song).includes("house/2"));
+  for (const instrument of ["drums", "kit:custom"]) {
+    const withKit = { ...song, tracks: [...song.tracks,
+      { id: "kick", kind: "drums" as const, instrument, pattern: "bd*4" }] };
+    assert.ok(!ids(withKit).includes("house/2"));
+  }
+});
+
 test("parse-only result retains path/offset and other schema error still throws", () => {
   const song = base(); song.tracks[0]!.pattern = "[bd";
   const report = lintSong(song);

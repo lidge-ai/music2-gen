@@ -9,17 +9,25 @@ import { keysVoice } from "./keys.tool.ts";
 import { leadVoice } from "./lead.tool.ts";
 import { padVoice } from "./pad.tool.ts";
 import { pluckVoice } from "./pluck.tool.ts";
+import { sfxVoice } from "./sfx.tool.ts";
 import { supersawVoice } from "./supersaw.tool.ts";
 
 interface Issue { path: string; message: string }
 
 export const VOICES: Readonly<Record<string, VoiceSpec>> = Object.freeze({
   drums: drumsVoice, "808": eightOhEightVoice, bass: bassVoice, bell: bellVoice,
-  keys: keysVoice, pluck: pluckVoice, pad: padVoice, lead: leadVoice, supersaw: supersawVoice,
+  keys: keysVoice, pluck: pluckVoice, pad: padVoice, lead: leadVoice, supersaw: supersawVoice, sfx: sfxVoice,
 });
 
 function voiceFor(instrument: string): VoiceSpec | undefined {
   return Object.hasOwn(VOICES, instrument) ? VOICES[instrument] : undefined;
+}
+
+/** Built-in drum-kind sample vocabulary; kit manifests own their own names. */
+export function declaredSampleNames(instrument: string): readonly string[] | null {
+  if (instrument.startsWith("kit:")) return null;
+  const voice = voiceFor(instrument);
+  return voice?.kind === "drums" ? voice.sampleNames ?? null : null;
 }
 
 export function resolveVoice(track: ResolvedTrack, index: number): VoiceSpec | null {
