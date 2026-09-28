@@ -379,3 +379,9 @@ process entry point. The source-bin test exercises it through `bin/music2.js`.
 - [ ] Update the four new command tests when flags, results, or exit policy change.
 - [ ] Keep slice flags, kit/song bytes, one-bar section mapping and directory transaction checks aligned with `src/cli/commands/slice.test.ts`.
 - [ ] Update `devlog/str_func/AGENTS.md` index when adding or moving this document.
+
+### Experimental Ableton Live 12 export
+
+`music2 export als <song.json> -o <dir> [--content midi|audio|both] [--bits 16|24] [--force] [--json]` writes a project directory with `<title>.als` and, for audio/both, copied `Samples/Imported/*.wav` files. It is experimental until opened in Ableton Live 12. Every success JSON envelope carries `data.experimental=true` and an `ALS_EXPERIMENTAL` warning; human output begins with `EXPERIMENTAL`.
+
+MIDI keeps editable notes but has empty Live instruments and omits source audio/effects. Audio is frozen premaster playback; both keeps muted MIDI source tracks beside active frozen audio. The command renders once for audio/both, stages WAVs before the `.als`, verifies PCM headers, and uses the existing batch commit/rollback helpers. Invalid content/bits is `E_INPUT` (exit 2); occupied output is `E_ACCESS` (exit 4); missing or invalid stems are `E_RENDER` (exit 5). Master processing is not embedded in the set.

@@ -1,5 +1,5 @@
-import { lstat, mkdir, readdir, rm, rmdir, writeFile } from "node:fs/promises";
-import { dirname, extname, join, resolve } from "node:path";
+import { lstat, mkdir, open, readdir, rm, rmdir, writeFile } from "node:fs/promises";
+import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { buildProject } from "../../project/index.ts";
 import { projectToSmf, writeSmf } from "../../midi/index.ts";
 import { kitMidiMap } from "../../midi/gm.tool.ts";
@@ -8,7 +8,7 @@ import { Music2Error } from "../../shared/index.ts";
 import { buildTimeline, loadSong } from "../../song/index.ts";
 import { renderSong } from "../../render/index.ts";
 import { writeWav } from "../../audio-io/index.ts";
-import { planStems } from "../../export/index.ts";
+import { planAls, planStems } from "../../export/index.ts";
 import { validateDawVoiceLanes } from "../../render/voices/registry.tool.ts";
 import { assertDistinct, commitNoReplace, commitReplace, stage } from "../files.ts";
 import type { CommandSpec } from "../registry.ts";
@@ -99,9 +99,78 @@ async function exportStems(input: string, output: string, values: Record<string,
   artifacts: finals, warnings: [], text: `wrote ${output}` };
 }
 
+async function exportAls(input: string, output: string, values: Record<string, unknown>) {
+  const content = values["content"] ?? "both";
+  if (content !== "midi" && content !== "audio" && content !== "both") throw inputError("--content must be midi, audio or both");
+  const bitsValue = values["bits"] ?? "24";
+  if (bitsValue !== "16" && bitsValue !== "24") throw inputError("--bits must be 16 or 24");
+  const bits = bitsValue === "16" ? 16 : 24;
+  const force = values["force"] === true;
+  if (extname(input).toLowerCase() !== ".json") throw inputError("export als requires .json input");
+  await assertDistinct([input], [output]);
+  await stemDirectory(output, force);
+  const song = await loadSong(input);
+  validateDawVoiceLanes(song);
+  const timeline = buildTimeline(song);
+  const project = buildProject(song, timeline);
+  const sourcePaths = [...new Set(project.samples.map((sample) => resolve(dirname(input), sample.ref)))];
+  if ([input, ...sourcePaths].some((source) => {
+    const within = relative(output, source);
+    return within === "" || (within !== ".." && !within.startsWith("../") && !within.startsWith("..\\") && !isAbsolute(within));
+  })) throw inputError("ALS output directory contains an input/source file");
+  await assertDistinct([input, ...sourcePaths], [output]);
+  const kitMaps: Record<string, Record<string, number>> = {};
+  if (content !== "audio") for (const track of project.tracks) if (track.type !== "audio" && track.instrument.kind === "kit") {
+    const { names, explicit } = await loadKitMidiMap(input, `kit:${track.instrument.ref}`);
+    const declared = new Set(names);
+    for (const note of track.notes) if (note.sample && !declared.has(note.sample.name))
+      throw new Music2Error("E_SCHEMA", `kit ${track.id} is missing sample ${note.sample.name}`);
+    kitMaps[track.id] = kitMidiMap(names, explicit).byName;
+  }
+  const rendered = content === "midi" ? null : await renderSong(song, input, { stems: true, returns: true });
+  const plan = planAls(project, rendered ? { stems: rendered.stems,
+    returns: rendered.returns ?? { reverb: null, delay: null } } : null, { content, bits, kitMaps });
+  const finals = plan.files.map((file) => join(output, file.path));
+  await assertDistinct([input, ...sourcePaths], finals);
+  const createdDirectories: string[] = [];
+  const staged = plan.files.map((file) => stage(join(output, file.path)));
+  try {
+    for (const dir of [output, ...new Set(finals.map(dirname))]) await ensureStemDirectory(dir, createdDirectories);
+    for (let i = 0; i < plan.files.length; i++) {
+      const file = plan.files[i]!; const item = staged[i]!;
+      if ("wav" in file) {
+        await writeWav(item.temporary, file.wav, { bits: file.bits, seed: file.seed });
+        const handle = await open(item.temporary, "r");
+        const header = Buffer.alloc(44);
+        let size: number;
+        try { size = (await handle.stat()).size; await handle.read(header, 0, 44, 0); }
+        finally { await handle.close(); }
+        const expected = 44 + file.wav.left.length * 2 * file.bits / 8;
+        if (size !== expected || header.toString("ascii", 0, 4) !== "RIFF" ||
+          header.readUInt32LE(24) !== file.wav.sampleRate || header.readUInt16LE(34) !== file.bits ||
+          header.readUInt32LE(40) !== expected - 44)
+          throw new Music2Error("E_RENDER", `staged ALS WAV header mismatch: ${file.path}`);
+      } else {
+        try { await writeFile(item.temporary, file.bytes, { flag: "wx" }); }
+        catch (cause) { throw new Music2Error("E_ACCESS", `cannot stage output: ${item.final}`, { cause }); }
+      }
+    }
+    if (force) await commitReplace(staged); else await commitNoReplace(staged);
+  } finally {
+    for (const item of staged) await rm(item.temporary, { force: true });
+    for (const dir of createdDirectories.reverse()) await rmdir(dir).catch(() => undefined);
+  }
+  const als = join(output, plan.data.als);
+  const samples = plan.data.samples.map((path) => join(output, path));
+  return { command: "export", data: { als, samples, tracks: plan.data.tracks,
+    content: plan.data.content, quantization: plan.data.quantization, experimental: true },
+    artifacts: [als, ...samples], warnings: plan.warnings,
+    text: `EXPERIMENTAL (Live 12 open test pending): wrote ${als}` };
+}
+
 export const exportCommand: CommandSpec = {
-  name: "export", summary: "Export a song to ProjectIR JSON, MIDI, or aligned WAV stems",
-  usage: "music2 export ir <song.json> [-o ir.json] | music2 export midi <song.json> -o file.mid | music2 export stems <song.json> -o dir [--bits 16|24] [--premaster] [--no-master] [--bars a:b] [--force] [--json]",
+  name: "export", summary: "Export a song to ProjectIR JSON, MIDI, aligned WAV stems, or experimental Ableton Live Set",
+  usage: "music2 export ir <song.json> [-o ir.json] | music2 export midi <song.json> -o file.mid | music2 export stems <song.json> -o dir [--bits 16|24] [--premaster] [--no-master] [--bars a:b] [--force] [--json] | music2 export als <song.json> -o dir [--content midi|audio|both] [--bits 16|24] [--force] [--json]",
   options: {
     out: { type: "string", short: "o", description: "Output file or stems directory" },
     force: { type: "boolean", description: "Replace planned output files" },
@@ -109,13 +178,18 @@ export const exportCommand: CommandSpec = {
     premaster: { type: "boolean", description: "Include pre-master WAV" },
     "no-master": { type: "boolean", description: "Omit mastered WAV" },
     bars: { type: "string", description: "Stem crop, zero-based half-open a:b" },
+    content: { type: "string", description: "ALS content: midi, audio or both (default both)" },
   },
   async run({ args, values, cwd }) {
-    if ((args[0] !== "ir" && args[0] !== "midi" && args[0] !== "stems") || args.length !== 2 || !args[1])
-      throw inputError("export requires: ir|midi|stems <song.json>");
+    if ((args[0] !== "ir" && args[0] !== "midi" && args[0] !== "stems" && args[0] !== "als") || args.length !== 2 || !args[1])
+      throw inputError("export requires: ir|midi|stems|als <song.json>");
     const midi = args[0] === "midi";
     const stems = args[0] === "stems";
-    if (!stems && ["bits", "premaster", "no-master", "bars"].some((flag) => values[flag] !== undefined))
+    const als = args[0] === "als";
+    if (!als && values["content"] !== undefined) throw inputError("--content requires export als");
+    if (als && ["premaster", "no-master", "bars"].some((flag) => values[flag] !== undefined))
+      throw inputError("stem-only flags are unsupported for export als");
+    if (!stems && !als && ["bits", "premaster", "no-master", "bars"].some((flag) => values[flag] !== undefined))
       throw inputError("stem flags require export stems");
     const input = resolve(cwd, args[1]);
     if (midi && extname(input).toLowerCase() !== ".json") throw inputError("export midi requires .json input");
@@ -123,8 +197,9 @@ export const exportCommand: CommandSpec = {
     if (outValue !== undefined && (typeof outValue !== "string" || outValue.length === 0))
       throw inputError("--out requires a path");
     const output = typeof outValue === "string" ? resolve(cwd, outValue) : undefined;
-    if ((midi || stems) && output === undefined) throw inputError(`export ${args[0]} requires -o`);
+    if ((midi || stems || als) && output === undefined) throw inputError(`export ${args[0]} requires -o`);
     if (stems && output) return exportStems(input, output, values);
+    if (als && output) return exportAls(input, output, values);
     if (output !== undefined && extname(output).toLowerCase() !== (midi ? ".mid" : ".json"))
       throw inputError(`out must end in ${midi ? ".mid" : ".json"}`);
     const force = values["force"] === true;

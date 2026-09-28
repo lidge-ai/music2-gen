@@ -235,3 +235,44 @@ test("export stems 24-bit no-master bundle is deterministic across output names"
     await assert.rejects(readFile(join(dir, "one", "master.wav")), { code: "ENOENT" });
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+test("export als emits one experimental JSON envelope for MIDI and both", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-als-cli-"));
+  try {
+    await writeFile(join(dir, "song.json"), JSON.stringify(source));
+    const midi = await invoke(["export", "als", "song.json", "-o", "midi", "--content", "midi", "--json"], dir);
+    assert.equal(midi.exit, 0, midi.stdout);
+    const midiResult = JSON.parse(midi.stdout) as { data: { experimental: boolean; samples: string[] }; warnings: string[] };
+    assert.equal(midiResult.data.experimental, true);
+    assert.deepEqual(midiResult.data.samples, []);
+    assert.match(midiResult.warnings[0]!, /^ALS_EXPERIMENTAL:/);
+    const midiArtifact = (JSON.parse(midi.stdout) as { artifacts: string[] }).artifacts[0]!;
+    const contents = await readFile(midiArtifact);
+    const occupied = await invoke(["export", "als", "song.json", "-o", "midi", "--content", "midi", "--json"], dir);
+    assert.equal(occupied.exit, 4);
+    assert.deepEqual(await readFile(midiArtifact), contents);
+    await writeFile(join(dir, "midi", "unrelated.txt"), "keep");
+    const forced = await invoke(["export", "als", "song.json", "-o", "midi", "--content", "midi", "--force", "--json"], dir);
+    assert.equal(forced.exit, 0, forced.stdout);
+    assert.equal(await readFile(join(dir, "midi", "unrelated.txt"), "utf8"), "keep");
+    const both = await invoke(["export", "als", "song.json", "-o", "both", "--content", "both", "--json"], dir);
+    assert.equal(both.exit, 0, both.stdout);
+    const bothResult = JSON.parse(both.stdout) as { data: { experimental: boolean; samples: string[] }; artifacts: string[] };
+    assert.equal(bothResult.data.experimental, true);
+    assert.equal(bothResult.data.samples.length, 1);
+    assert.equal(bothResult.artifacts.length, 2);
+    const audio16 = await invoke(["export", "als", "song.json", "-o", "audio16", "--content", "audio", "--bits", "16", "--json"], dir);
+    assert.equal(audio16.exit, 0, audio16.stdout);
+    const audioResult = JSON.parse(audio16.stdout) as { data: { samples: string[]; tracks: number } };
+    assert.equal(audioResult.data.tracks, 1);
+    const header = await readFile(audioResult.data.samples[0]!);
+    assert.equal(header.readUInt16LE(34), 16);
+    const collision = await invoke(["export", "als", "song.json", "-o", ".", "--content", "midi", "--force", "--json"], dir);
+    assert.equal(collision.exit, 2);
+    assert.equal(envelope(collision.stdout).error.code, "E_INPUT");
+    const invalid = await invoke(["export", "als", "song.json", "-o", "bad", "--content", "bogus", "--json"], dir);
+    assert.equal(invalid.exit, 2);
+    assert.equal(envelope(invalid.stdout).error.code, "E_INPUT");
+    assert.equal(invalid.stdout.trim().split("\n").length, 1);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});

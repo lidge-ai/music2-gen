@@ -42,3 +42,9 @@ Song and Timeline provide tracks, bus parameters and placements; RenderResult pr
 - [ ] Recheck track/return IDs and frame alignment when audio-track rendering changes.
 - [ ] Recheck float summation and legacy render digests when the mixer changes.
 - [ ] Keep `src/export/index.ts` and this document aligned.
+
+## Experimental Ableton Live 12 export
+
+`planAls(project, rendered, {content,bits})` is a pure planner. `src/export/als.tool.ts` validates one tick-zero tempo/meter and aligned captured stems, then emits deterministic gzip XML plus portable `Samples/Imported` WAV descriptors. The authored skeleton is in `als/skeleton.tool.ts`; `clips.tool.ts`, `automation.tool.ts`, and `tracks.tool.ts` own arrangement clips, native mixer envelopes, and audible/muted track policy. Shared `xml.tool.ts` and `gzip.tool.ts` provide ordered XML and a fixed gzip header; the XML writer is reusable by DAWproject.
+
+The set is experimental until a human opens it in Ableton Live 12. MIDI content has editable notes with empty instruments; audio content has frozen premaster playback; both mutes MIDI to avoid doubling. Frozen audio omits music2 mastering, and the empty Live return tracks do not reproduce effects. `planAls` always starts warnings with `ALS_EXPERIMENTAL`. Structural reader tests prove only self-consistency, not Ableton acceptance.
