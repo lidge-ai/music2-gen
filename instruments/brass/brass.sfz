@@ -1,0 +1,32 @@
+// brass: VSCO 2 Community Edition (CC0), tenor trombone + F horn + trumpet, sustain
+<group> amp_veltrack=85 ampeg_attack=0.02 ampeg_release=0.25
+<region> sample=samples/tenortbn_sus_As0_v1_1.wav lokey=30 hikey=35 lovel=1 hivel=127 pitch_keycenter=34
+<region> sample=samples/tenortbn_sus_Cs1_v1_1.wav lokey=36 hikey=38 lovel=1 hivel=127 pitch_keycenter=37
+<region> sample=samples/tenortbn_sus_Ds1_v1_1.wav lokey=39 hikey=40 lovel=1 hivel=80 pitch_keycenter=39
+<region> sample=samples/tenortbn_sus_Ds1_v3_1.wav lokey=39 hikey=40 lovel=81 hivel=127 pitch_keycenter=39
+<region> sample=samples/tenortbn_sus_F1_v1_1.wav lokey=41 hikey=43 lovel=1 hivel=80 pitch_keycenter=41
+<region> sample=samples/tenortbn_sus_F1_v3_1.wav lokey=41 hikey=43 lovel=81 hivel=127 pitch_keycenter=41
+<region> sample=samples/tenortbn_sus_As1_v1_1.wav lokey=44 hikey=48 lovel=1 hivel=80 pitch_keycenter=46
+<region> sample=samples/tenortbn_sus_As1_v3_1.wav lokey=44 hikey=48 lovel=81 hivel=127 pitch_keycenter=46
+<region> sample=samples/MOHorn_sus_D2_v1_1.wav lokey=49 hikey=51 lovel=1 hivel=80 pitch_keycenter=50
+<region> sample=samples/MOHorn_sus_D2_v3_1.wav lokey=49 hikey=51 lovel=81 hivel=127 pitch_keycenter=50
+<region> sample=samples/MOHorn_sus_F2_v1_1.wav lokey=52 hikey=55 lovel=1 hivel=80 pitch_keycenter=53
+<region> sample=samples/MOHorn_sus_F2_v3_1.wav lokey=52 hikey=55 lovel=81 hivel=127 pitch_keycenter=53
+<region> sample=samples/MOHorn_sus_A2_v1_1.wav lokey=56 hikey=58 lovel=1 hivel=80 pitch_keycenter=57
+<region> sample=samples/MOHorn_sus_A2_v3_1.wav lokey=56 hikey=58 lovel=81 hivel=127 pitch_keycenter=57
+<region> sample=samples/Sum_SHTrumpet_sus_C3_v1_rr1.wav lokey=59 hikey=61 lovel=1 hivel=80 pitch_keycenter=60
+<region> sample=samples/Sum_SHTrumpet_sus_C3_v3_rr1.wav lokey=59 hikey=61 lovel=81 hivel=127 pitch_keycenter=60
+<region> sample=samples/Sum_SHTrumpet_sus_Ds3_v1_rr1.wav lokey=62 hikey=65 lovel=1 hivel=80 pitch_keycenter=63
+<region> sample=samples/Sum_SHTrumpet_sus_Ds3_v3_rr1.wav lokey=62 hikey=65 lovel=81 hivel=127 pitch_keycenter=63
+<region> sample=samples/Sum_SHTrumpet_sus_G3_v1_rr1.wav lokey=66 hikey=68 lovel=1 hivel=80 pitch_keycenter=67
+<region> sample=samples/Sum_SHTrumpet_sus_G3_v3_rr1.wav lokey=66 hikey=68 lovel=81 hivel=127 pitch_keycenter=67
+<region> sample=samples/Sum_SHTrumpet_sus_As3_v1_rr1.wav lokey=69 hikey=72 lovel=1 hivel=80 pitch_keycenter=70
+<region> sample=samples/Sum_SHTrumpet_sus_As3_v3_rr1.wav lokey=69 hikey=72 lovel=81 hivel=127 pitch_keycenter=70
+<region> sample=samples/Sum_SHTrumpet_sus_D4_v1_rr1.wav lokey=73 hikey=75 lovel=1 hivel=80 pitch_keycenter=74
+<region> sample=samples/Sum_SHTrumpet_sus_D4_v3_rr1.wav lokey=73 hikey=75 lovel=81 hivel=127 pitch_keycenter=74
+<region> sample=samples/Sum_SHTrumpet_sus_F4_v1_rr1.wav lokey=76 hikey=79 lovel=1 hivel=80 pitch_keycenter=77
+<region> sample=samples/Sum_SHTrumpet_sus_F4_v3_rr1.wav lokey=76 hikey=79 lovel=81 hivel=127 pitch_keycenter=77
+<region> sample=samples/Sum_SHTrumpet_sus_A4_v1_rr1.wav lokey=80 hikey=82 lovel=1 hivel=80 pitch_keycenter=81
+<region> sample=samples/Sum_SHTrumpet_sus_A4_v3_rr1.wav lokey=80 hikey=82 lovel=81 hivel=127 pitch_keycenter=81
+<region> sample=samples/Sum_SHTrumpet_sus_C5_v1_rr1.wav lokey=83 hikey=88 lovel=1 hivel=80 pitch_keycenter=84
+<region> sample=samples/Sum_SHTrumpet_sus_C5_v3_rr1.wav lokey=83 hikey=88 lovel=81 hivel=127 pitch_keycenter=84

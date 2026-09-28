@@ -48,6 +48,38 @@
         "attribution": "VSCO 2 Community Edition by Versilian Studios",
         "source": "https://github.com/sgossner/VSCO-2-CE"
       }
+    },
+    {
+      "id": "brass",
+      "title": "Brass section sustain (VSCO 2 CE)",
+      "sfz": "brass/brass.sfz",
+      "family": "brass",
+      "role": "bed",
+      "range": [
+        30,
+        88
+      ],
+      "license": {
+        "spdx": "CC0-1.0",
+        "attribution": "VSCO 2 Community Edition by Versilian Studios",
+        "source": "https://github.com/sgossner/VSCO-2-CE"
+      }
+    },
+    {
+      "id": "brass-staccato",
+      "title": "Brass section staccato (VSCO 2 CE)",
+      "sfz": "brass-staccato/brass-staccato.sfz",
+      "family": "brass",
+      "role": "focal",
+      "range": [
+        30,
+        88
+      ],
+      "license": {
+        "spdx": "CC0-1.0",
+        "attribution": "VSCO 2 Community Edition by Versilian Studios",
+        "source": "https://github.com/sgossner/VSCO-2-CE"
+      }
     }
   ]
 }

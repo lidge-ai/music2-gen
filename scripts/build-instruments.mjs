@@ -100,9 +100,12 @@ async function vscoSet({ id, sources, split, seconds, header, rr }) {
     fetchTo(vscoUrl(p.dir + "/" + p.f), cache);
     const file = "samples/" + safe(p.f.replace(/\.wav$/i, "")) + ".wav";
     await convert(cache, join(OUT, id, file), { seconds, fade: seconds > 1.5 ? 0.4 : 0.08, mono: true });
-    const vel = split[p.layer];
+    // A root recorded at only one dynamic covers the whole velocity range; a lone round robin plays every time.
+    const layers = new Set(picked.filter((x) => x.midi === p.midi).map((x) => x.layer));
+    const vel = layers.size > 1 ? split[p.layer] : [1, 127];
+    const rrs = picked.filter((x) => x.midi === p.midi && x.layer === p.layer).length;
     sfz += "<region> sample=" + file + " lokey=" + z.get(p.midi).lo + " hikey=" + z.get(p.midi).hi + " lovel=" + vel[0] + " hivel=" + vel[1] + " pitch_keycenter=" + p.midi
-      + (rr ? " seq_length=2 seq_position=" + p.rr : "") + "\n";
+      + (rr && rrs > 1 ? " seq_length=" + rrs + " seq_position=" + p.rr : "") + "\n";
   }
   writeFileSync(join(OUT, id, id + ".sfz"), sfz);
 }
@@ -127,8 +130,29 @@ async function strings() {
     ] });
 }
 
+
+async function brass() {
+  const tp = listing("Brass/Trumpet/sus"), hn = listing("Brass/F Horn/sus"), tb = listing("Brass/Tenor Trombone/sus");
+  const split = { 1: [1, 80], 3: [81, 127] };
+  await vscoSet({ id: "brass", seconds: 2.5, rr: false, split,
+    header: "// brass: VSCO 2 Community Edition (CC0), tenor trombone + F horn + trumpet, sustain\n<group> amp_veltrack=85 ampeg_attack=0.02 ampeg_release=0.25\n",
+    sources: [
+      { dir: "Brass/Tenor Trombone/sus", files: tb, re: /sus_([A-G]#?)(\d)_v([13])_1\.wav$/, use: (m) => m <= 46 },
+      { dir: "Brass/F Horn/sus", files: hn, re: /sus_([A-G]#?)(\d)_v([13])_1\.wav$/, use: (m) => m >= 47 && m <= 57 },
+      { dir: "Brass/Trumpet/sus", files: tp, re: /sus_([A-G]#?)(\d)_v([13])_rr1\.wav$/, use: (m) => m >= 58 },
+    ] });
+  const tps = listing("Brass/Trumpet/stac"), hns = listing("Brass/F Horn/stac"), tbs = listing("Brass/Tenor Trombone/stac");
+  await vscoSet({ id: "brass-staccato", seconds: 1, rr: true, split,
+    header: "// brass-staccato: VSCO 2 Community Edition (CC0), tenor trombone + F horn + trumpet, staccato with round robins\n<group> amp_veltrack=85 ampeg_release=0.1\n",
+    sources: [
+      { dir: "Brass/Tenor Trombone/stac", files: tbs, re: /stac_([A-G]#?)(\d)_v([13])_rr([12])\.wav$/, use: (m) => m <= 46 },
+      { dir: "Brass/F Horn/stac", files: hns, re: /stac_([A-G]#?)(\d)_v([13])_rr([12])\.wav$/, use: (m) => m >= 47 && m <= 57 },
+      { dir: "Brass/Trumpet/stac", files: tps, re: /stac_([A-G]#?)(\d)_v([13])_rr([12])\.wav$/, use: (m) => m >= 58 },
+    ] });
+}
 const only = process.argv.find((a) => a.startsWith("--only="))?.slice(7);
 if (!only || only === "grand-piano") await grandPiano();
 if (!only || only === "strings") await strings();
+if (!only || only === "brass") await brass();
 console.log("instruments written to", OUT);
 
