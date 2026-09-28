@@ -14,6 +14,8 @@ import { mergeParams, resolveVoice } from "./voices/registry.tool.ts";
 import { selectEvents } from "./select.tool.ts";
 import { mixDry, mixStereo } from "./mix-static.tool.ts";
 import { mixAutomated, prepareTrackCurves, sendActive } from "./mix-automated.tool.ts";
+import { createDecodeBudget } from "../sampler/index.ts";
+import { processTrackPlugins } from "./plugin.tool.ts";
 const RIFF_LIMIT = 0xffffffff;
 const SOFT_DRIVE = 1.2;
 const SOFT_NORM = Math.tanh(SOFT_DRIVE);
@@ -173,6 +175,9 @@ function masterAudio(audio: StereoBuffer, song: ResolvedSong, mastering: RenderO
 
 export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath: string,
   options: RenderOptions = {}): Promise<RenderResult> {
+  const decodeBudget = options.decodeBudget ?? createDecodeBudget();
+  if (song.tracks.some((track) => track.plugins?.length) && !options.external)
+    throw new Music2Error("E_CAPABILITY", "external plugin audio requires --allow-plugins and --plugin-host or MUSIC2_PLUGIN_HOST");
   validateResolvedFx(song);
   if (song.loop && options.bars) throw new Music2Error("E_INPUT", "--bars cannot render part of a loop song");
   const start = options.bars?.start ?? 0;
@@ -196,7 +201,7 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
   }
   const preRollEvents = needsPreRoll ? selectEvents(song, timeline, 0, end, preRollFrames) : null;
   const kits: (LoadedSampleInstrument | null)[] = [];
-  for (const track of song.tracks) kits.push(isSampleInstrument(track.instrument) ? await loadSampleInstrument(songPath, track, song.sampleRate) : null);
+  for (const track of song.tracks) kits.push(isSampleInstrument(track.instrument) ? await loadSampleInstrument(songPath, track, song.sampleRate, decodeBudget) : null);
   const audio = createStereo(song.sampleRate, frames);
   const reverbSend = createStereo(song.sampleRate, frames);
   const delaySend = createStereo(song.sampleRate, frames);
@@ -204,6 +209,7 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
   const returns: { reverb: StereoBuffer | null; delay: StereoBuffer | null } | undefined =
     options.returns ? { reverb: null, delay: null } : undefined;
   let scratch: StereoBuffer | null = null;
+  let pluginRan = false;
   for (let index = 0; index < song.tracks.length; index++) {
     const track = song.tracks[index]!;
     const events = selected[index]!;
@@ -224,13 +230,19 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
       if (track.fx?.length && !(processed instanceof Float32Array)) applyInsertChain(processed, track.fx,
         { sampleRate: song.sampleRate, bpm: song.bpm, startSeconds: 0,
           secondsPerBar: timeline.secondsPerBar, insertCurves: curves.inserts }, track.id);
+      if (track.plugins?.length) {
+        processed = await processTrackPlugins(track, processed, options.external,
+          { bpm: song.bpm, seed: song.seed, startSeconds: 0 }, song.sampleRate);
+        pluginRan = true;
+      }
       const sourceIndex = track.duck ? song.tracks.findIndex((candidate) => candidate.id === track.duck!.by) : -1;
-      const duck = track.duck && sourceIndex >= 0 ? duckEnvelope(frames,
-        selected[sourceIndex]!.map((event) => event.startFrame), song.sampleRate,
-        track.duck.amount, track.duck.releaseMs) : null;
+      const offset = Math.round(start * timeline.secondsPerBar * song.sampleRate);
+      const duck = track.duck && sourceIndex >= 0 ? duckEnvelope(offset + frames,
+        timeline.events.filter((event) => event.trackIndex === sourceIndex).map((event) => Math.round(event.time * song.sampleRate)),
+        song.sampleRate, track.duck.amount, track.duck.releaseMs).subarray(offset, offset + frames) : null;
       const stem = options.stems ? createStereo(song.sampleRate, frames) : null;
       mixAutomated({ master: audio, reverb: reverbSend, delay: delaySend }, processed,
-        Math.round(start * timeline.secondsPerBar * song.sampleRate), frames, track, curves, duck, stem);
+        offset, frames, track, curves, duck, stem);
       if (stem) stems.push({ trackId: track.id, audio: stem });
       continue;
     }
@@ -251,10 +263,14 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
       }
       applyInsertChain(processed, track.fx!, { sampleRate: song.sampleRate, bpm: song.bpm,
         startSeconds: 0, secondsPerBar: timeline.secondsPerBar }, track.id);
+      const plugged = await processTrackPlugins(track, processed, options.external,
+        { bpm: song.bpm, seed: song.seed, startSeconds: 0 }, song.sampleRate);
+      if (track.plugins?.length) pluginRan = true;
       const offset = Math.round(start * timeline.secondsPerBar * song.sampleRate);
       const cropped = createStereo(song.sampleRate, frames);
-      cropped.left.set(processed.left.subarray(offset, offset + frames));
-      cropped.right.set(processed.right.subarray(offset, offset + frames));
+      if (plugged instanceof Float32Array) throw renderError("plugin pre-roll returned mono audio");
+      cropped.left.set(plugged.left.subarray(offset, offset + frames));
+      cropped.right.set(plugged.right.subarray(offset, offset + frames));
       const sourceIndex = track.duck ? song.tracks.findIndex((candidate) => candidate.id === track.duck!.by) : -1;
       const duck = track.duck && sourceIndex >= 0 ? duckEnvelope(frames,
         selected[sourceIndex]!.map((event) => event.startFrame), song.sampleRate,
@@ -269,9 +285,15 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
     const kit = kits[index];
     const voice = kit ? null : resolveVoice(track, index);
     if (kit?.kind === "sfz") {
-      const stereo = renderSampleInstrument(ctx, kit);
+      let stereo = renderSampleInstrument(ctx, kit);
       if (track.fx?.length) applyInsertChain(stereo, track.fx, { sampleRate: song.sampleRate, bpm: song.bpm,
         startSeconds: start * timeline.secondsPerBar, secondsPerBar: timeline.secondsPerBar }, track.id);
+      if (track.plugins?.length) {
+        const plugged = await processTrackPlugins(track, stereo, options.external,
+          { bpm: song.bpm, seed: song.seed, startSeconds: start * timeline.secondsPerBar }, song.sampleRate);
+        if (plugged instanceof Float32Array) throw renderError("plugin returned mono audio");
+        stereo = plugged; pluginRan = true;
+      }
       const sourceIndex = track.duck ? song.tracks.findIndex((candidate) => candidate.id === track.duck!.by) : -1;
       const duck = track.duck && sourceIndex >= 0 ? duckEnvelope(frames,
         selected[sourceIndex]!.map((event) => event.startFrame), song.sampleRate,
@@ -298,20 +320,32 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
       scratch.left.set(mono); scratch.right.set(mono);
       applyInsertChain(scratch, track.fx, { sampleRate: song.sampleRate, bpm: song.bpm,
         startSeconds: start * timeline.secondsPerBar, secondsPerBar: timeline.secondsPerBar }, track.id);
-      mixStereo(audio, reverbSend, delaySend, scratch, 10 ** (track.gain / 20), track.pan,
+      const plugged = await processTrackPlugins(track, scratch, options.external,
+        { bpm: song.bpm, seed: song.seed, startSeconds: start * timeline.secondsPerBar }, song.sampleRate);
+      if (plugged instanceof Float32Array) throw renderError("plugin returned mono audio");
+      if (track.plugins?.length) pluginRan = true;
+      mixStereo(audio, reverbSend, delaySend, plugged, 10 ** (track.gain / 20), track.pan,
         duck, track.sends.reverb, track.sends.delay, stem, track.id);
     } else {
-      mixDry(audio, reverbSend, delaySend, mono, 10 ** (track.gain / 20), track.pan,
+      if (track.plugins?.length) {
+        const plugged = await processTrackPlugins(track, mono, options.external,
+          { bpm: song.bpm, seed: song.seed, startSeconds: start * timeline.secondsPerBar }, song.sampleRate);
+        if (plugged instanceof Float32Array) throw renderError("plugin returned mono audio");
+        pluginRan = true;
+        mixStereo(audio, reverbSend, delaySend, plugged, 10 ** (track.gain / 20), track.pan,
+          duck, track.sends.reverb, track.sends.delay, stem, track.id);
+      } else mixDry(audio, reverbSend, delaySend, mono, 10 ** (track.gain / 20), track.pan,
         duck, track.sends.reverb, track.sends.delay, stem);
     }
     if (stem) stems.push({ trackId: track.id, audio: stem });
   }
   const audioFlags = song.audioTracks?.length ? await mixAudioTracks(song, songPath,
     { startFrame: Math.round(start * timeline.secondsPerBar * song.sampleRate), frames },
-    { master: audio, reverb: reverbSend, delay: delaySend }, stems, timeline, options.stems === true) : null;
+    { master: audio, reverb: reverbSend, delay: delaySend }, stems, timeline, options.stems === true, decodeBudget) : null;
   const fullReturns = start > 0 && (song.audioTracks?.length || song.tracks.some((track) => track.automation?.length)) &&
     (song.tracks.some((track) => sendActive(track, "reverb") || sendActive(track, "delay")) || audioFlags?.reverbActive || audioFlags?.delayActive)
-    ? (await mixTracks(song, timeline, songPath, { bars: { start: 0, end }, returns: true, ...(options.mastering ? { mastering: options.mastering } : {}) })).returns : null;
+    ? (await mixTracks(song, timeline, songPath, { bars: { start: 0, end }, returns: true, decodeBudget,
+      ...(options.external ? { external: options.external } : {}), ...(options.mastering ? { mastering: options.mastering } : {}) })).returns : null;
   const cropReturn = (wet: StereoBuffer): StereoBuffer => {
     const crop = createStereo(song.sampleRate, frames);
     const offset = Math.round(start * timeline.secondsPerBar * song.sampleRate);
@@ -382,10 +416,14 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
     { sampleRate: song.sampleRate, bpm: song.bpm }, "master");
   const levels = masterAudio(output, song, options.mastering);
   return { audio: output, stems, ...(returns ? { returns } : {}), ...(premaster ? { premaster } : {}),
+    ...(pluginRan ? { deterministic: false as const } : {}),
     bars, durationSeconds: output.left.length / song.sampleRate,
     peakDbfs: levels.peakDbfs, truePeakDbtp: levels.truePeakDbtp,
     ceilingDb: song.master.ceilingDb, events: selected.reduce((sum, group) => sum + group.length, 0),
     loop: song.loop ? { startSample: 0, endSample: bodyFrames } : null,
-    ...(kits.some((kit) => kit?.warnings.length) ? { warnings: kits.flatMap((kit) => kit?.warnings.map((warning) =>
-      `${warning.file}:${warning.line}: ${warning.opcode ? `${warning.opcode}: ` : ""}${warning.message}`) ?? []) } : {}) };
+    ...((pluginRan || kits.some((kit) => kit?.warnings.length)) ? { warnings: [
+      ...kits.flatMap((kit) => kit?.warnings.map((warning) =>
+        `${warning.file}:${warning.line}: ${warning.opcode ? `${warning.opcode}: ` : ""}${warning.message}`) ?? []),
+      ...(pluginRan ? ["external plugin audio may vary between renders", ...(options.external?.warnings ?? [])] : []),
+    ] } : {}) };
 }

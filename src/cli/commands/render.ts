@@ -4,6 +4,7 @@ import { writeWav } from "../../audio-io/index.ts";
 import { discoverFfmpeg, encodeAudio, loudnormWav } from "../../probe/index.ts";
 import { renderSong } from "../../render/index.ts";
 import type { RenderData } from "../../render/render.schema.ts";
+import { createExternalProcessor, loadPluginConfig, parseHostArgv } from "../../plugin-host/index.ts";
 import { fnv1a32, Music2Error, storageDir } from "../../shared/index.ts";
 import { loadSong } from "../../song/index.ts";
 import { assertDistinct, commitReplace, stage } from "../files.ts";
@@ -37,7 +38,7 @@ function bars(value: unknown): { start: number; end: number } | undefined {
 }
 export const render: CommandSpec = {
   name: "render", summary: "Render a song to WAV and optional encoded copies",
-  usage: "music2 render <song.json> [-o out.wav] [--bits 16|24] [--mp3] [--ogg] [--stems dir] [--bars a:b] [--loudnorm] [--json] (default output: $MUSIC2_HOME/renders/<song>.wav, home ~/.music2)",
+  usage: "music2 render <song.json> [-o out.wav] [--bits 16|24] [--mp3] [--ogg] [--stems dir] [--bars a:b] [--loudnorm] [--allow-plugins] [--plugin-host JSON-argv] [--json] (default output: $MUSIC2_HOME/renders/<song>.wav, home ~/.music2)",
   options: {
     out: { type: "string", short: "o", description: "Output WAV path (default $MUSIC2_HOME/renders/<song>.wav)" },
     bits: { type: "string", description: "WAV bit depth: 16 or 24" },
@@ -46,6 +47,8 @@ export const render: CommandSpec = {
     stems: { type: "string", description: "Write dry stems to directory" },
     bars: { type: "string", description: "Zero-based half-open bar range" },
     loudnorm: { type: "boolean", description: "Two-pass ffmpeg loudness mastering" },
+    "allow-plugins": { type: "boolean", description: "Allow configured external effect plugins" },
+    "plugin-host": { type: "string", description: "Trusted host command as a JSON argv array" },
   },
   async run({ args, values, cwd }) {
     if (args.length !== 1) throw inputError("render requires one song path");
@@ -58,6 +61,11 @@ export const render: CommandSpec = {
     if (extname(wav).toLowerCase() !== ".wav") throw inputError("out must end in .wav");
     const stemDir = absolute(values["stems"], cwd, "stems");
     const song = await loadSong(songPath);
+    if (values["plugin-host"] !== undefined && values["allow-plugins"] !== true)
+      throw inputError("--plugin-host requires --allow-plugins");
+    const host = values["plugin-host"] === undefined ? undefined : parseHostArgv(values["plugin-host"] as string);
+    const external = song.tracks.some((track) => track.plugins?.length) && values["allow-plugins"] === true
+      ? createExternalProcessor(await loadPluginConfig(), host) : undefined;
     if (song.loop && range) throw inputError("--bars cannot render part of a loop song");
     const mp3 = values["mp3"] === true ? wav.slice(0, -4) + ".mp3" : undefined;
     const ogg = values["ogg"] === true ? wav.slice(0, -4) + ".ogg" : undefined;
@@ -72,6 +80,7 @@ export const render: CommandSpec = {
     const result = await renderSong(song, songPath, {
       ...(range ? { bars: range } : {}), stems: stemDir !== undefined,
       mastering: values["loudnorm"] === true ? "loudnorm" : song.master.targetLufs === null ? "peak" : "lufs",
+      ...(external ? { external } : {}),
     });
     const pending: StagedFile[] = [];
     const temporaryFiles: string[] = [];
@@ -112,6 +121,7 @@ export const render: CommandSpec = {
     const data: RenderData = {
       wav, ...(mp3 ? { mp3 } : {}), ...(ogg ? { ogg } : {}),
       ...(stemDir ? { stems: stemPaths } : {}), ...(result.warnings?.length ? { warnings: result.warnings } : {}), bars: result.bars,
+      ...(result.deterministic === false ? { deterministic: false } : {}),
       sampleRate: result.audio.sampleRate, frames: result.audio.left.length,
       durationSeconds: result.durationSeconds,
       peakDbfs: Number.isFinite(result.peakDbfs) ? result.peakDbfs : null,
@@ -119,6 +129,7 @@ export const render: CommandSpec = {
       ceilingDb: result.ceilingDb, events: result.events,
       ...(result.loop ? { loopStartSample: result.loop.startSample, loopEndSample: result.loop.endSample } : {}),
     };
-    return { command: "render", data: { ...data }, artifacts: outputPaths };
+    return { command: "render", data: { ...data }, artifacts: outputPaths,
+      ...(result.warnings?.length ? { warnings: [...result.warnings] } : {}) };
   },
 };

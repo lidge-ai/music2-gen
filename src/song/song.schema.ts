@@ -3,8 +3,8 @@ import { noteToMidi, parseMini, parseNumber, parseSampleRef } from "../pattern/i
 import type { Node } from "../pattern/index.ts";
 import { DELAY_BUS_SPEC, INSERT_SPECS, MASTER_INSERT_TYPES, MAX_MASTER_INSERTS, MAX_TRACK_INSERTS, REVERB_SPEC } from "../render/fx/fx.schema.ts";
 import type { DelayBusParams, InsertInput, ResolvedInsert, ReverbBusParams, ParamSpec } from "../render/fx/fx.schema.ts";
-import { audioTracksRule, automationRule, notesRule, resolveAudioTracks, resolveDawTrack, validateDawFields } from "./song-daw.schema.ts";
-import type { AudioTrackInput, LaneInput, NoteInput, ResolvedAudioTrack, ResolvedLane, ResolvedNote } from "./song-daw.schema.ts";
+import { audioTracksRule, automationRule, notesRule, pluginChainRule, resolveAudioTracks, resolveDawTrack, resolvePlugins, validateDawFields, validatePluginFields } from "./song-daw.schema.ts";
+import type { AudioTrackInput, LaneInput, NoteInput, PluginUse, ResolvedAudioTrack, ResolvedLane, ResolvedNote } from "./song-daw.schema.ts";
 
 /** Delivery presets (devlog/_fin/260928_music2_flow_practice/020_real_world_checks.md). Owned here so song validation needs no usecases import. */
 export const USE_CASE_IDS = ["short_15", "short_30", "short_60", "vo_bed", "podcast_sting", "podcast_theme", "game_loop", "type_beat", "study_lofi"] as const;
@@ -30,6 +30,7 @@ export interface Track {
   duck?: { by: string; amount: number; releaseMs?: number };
   params?: Record<string, number>;
   notes?: NoteInput[]; automation?: LaneInput[];
+  plugins?: PluginUse[];
 }
 export interface Section {
   id: string; bars: number;
@@ -45,6 +46,7 @@ export interface ResolvedTrack {
   duck: { by: string; amount: number; releaseMs: number } | null;
   params: Record<string, number>;
   notes?: ResolvedNote[]; automation?: ResolvedLane[];
+  plugins?: PluginUse[];
 }
 export interface ResolvedSection { id: string; bars: number; role: Section["role"] | null; patterns: Record<string, string | null> }
 export interface ResolvedSong {
@@ -92,7 +94,7 @@ const trackProperties = {
   duck: { type: "object", required: ["by", "amount"], additionalProperties: false,
     properties: { by: id, amount: unit, releaseMs: { type: "number", minimum: 0 } } },
   params: { type: "object", additionalProperties: { type: "number" } },
-  notes: notesRule, automation: automationRule,
+  notes: notesRule, automation: automationRule, plugins: pluginChainRule,
 };
 const sectionProperties = {
   id, bars: { type: "integer", minimum: 1, maximum: 256 },
@@ -326,6 +328,7 @@ export function validateSong(input: unknown): ResolvedSong {
       }
       if (typeof raw["velocity"] === "string" && raw["notes"] === undefined) checkPattern(raw["velocity"], "velocity", `${path}.velocity`, issues);
     });
+    validatePluginFields(tracks, issues);
     sections.forEach((raw: unknown, i) => {
       if (!object(raw)) return;
       const path = `$.sections[${i}]`;
@@ -381,6 +384,7 @@ export function validateSong(input: unknown): ResolvedSong {
       duck: track.duck ? { by: track.duck.by, amount: track.duck.amount, releaseMs: track.duck.releaseMs ?? 180 } : null,
       params: { ...track.params },
       ...(track.notes === undefined && track.automation === undefined ? {} : resolveDawTrack(track, song)),
+      ...(track.plugins === undefined ? {} : { plugins: resolvePlugins(track.plugins) }),
     })),
     sections: song.sections.map((section) => ({ id: section.id, bars: section.bars, role: section.role ?? null, patterns: { ...section.patterns } })),
     arrangement: song.arrangement.map(({ section, repeats }) => ({ section, repeats: repeats ?? 1 })),

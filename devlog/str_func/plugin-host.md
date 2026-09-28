@@ -1,6 +1,6 @@
 # Plugin host boundary
 
-`src/plugin-host/index.ts` exposes the optional external effect bridge. Song files carry only logical effect IDs and bounded parameter values. A caller must explicitly opt in and supply an external processor to rendering; the render, export and doctor integrations belong to the parent lane. This module does not import render or CLI code.
+`src/plugin-host/index.ts` exposes the optional external effect bridge. Song files carry only logical effect IDs and bounded parameter values. `render` and audio-producing `export` modes inject a processor only after `--allow-plugins`; `doctor --plugins` probes explicitly. This module does not import render or CLI code.
 
 ## Public functions and types
 
@@ -22,4 +22,4 @@ Errors map to `E_CAPABILITY` for missing host/library/ID, `E_INPUT` for bad conf
 
 `scripts/music2-plugin-bridge.py` is a separately installed, MIT-header Python program. It imports pedalboard only when executed; music2 core has no pedalboard dependency or bundled wheel. Redistributors of a Python environment containing pedalboard must review its GPLv3 obligations. The script implements `probe`, `render` and a built-in Gain self-test using JSON and standard float WAV bytes.
 
-Colocated contract, host and detection tests use `tests/fixtures/plugin-host/stub-host.mjs` for deterministic gain, probe and failure vectors. The fixture requires only Node. The user has forbidden local test execution in this lane; hosted CI owns test execution. Before integration, keep these exports, the song schema, render injection, CLI flags and doctor results in sync with `devlog/_plan/260928_music2_daw_bridge/080_plugin_bridge.md` and update the feature index in `devlog/str_func/AGENTS.md` from the parent lane.
+Colocated contract, host and detection tests use `tests/fixtures/plugin-host/stub-host.mjs` for deterministic gain, probe and failure vectors. The fixture requires only Node. Local tests were forbidden in this lane; hosted CI owns their execution. The optional Python script is included in the npm `files` list, without its GPLv3 pedalboard dependency.

@@ -38,3 +38,10 @@ test("zero static send becomes active when its lane rises, and crop controls sha
   assert.equal(full.reverb.left[0], 0);
   assert.ok(full.reverb.left[22059]! > 0);
 });
+
+test("an all-zero send lane overrides a positive static send", () => {
+  const track = { gain: 0, pan: 0, sends: { reverb: .5, delay: 0 }, automation: [
+    { target: "send.reverb", points: [{ tick: 0, value: 0, curve: "hold" as const }] },
+  ] };
+  assert.equal(sendActive(track, "reverb"), false);
+});

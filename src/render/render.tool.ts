@@ -5,6 +5,7 @@ import { buildTimeline } from "../song/index.ts";
 import type { ResolvedSong } from "../song/index.ts";
 import { mixTracks } from "./mixer.tool.ts";
 import type { RenderOptions, RenderResult } from "./render.schema.ts";
+import { createDecodeBudget } from "../sampler/index.ts";
 import { declaredSampleNames, validateDawVoiceLanes, validateVoiceParams } from "./voices/registry.tool.ts";
 
 function visitAtoms(node: Node, visit: (raw: string) => void): void {
@@ -46,6 +47,8 @@ function validateDeclaredSamples(song: ResolvedSong): void {
 /** Render a validated, resolved song to deterministic stereo PCM. */
 export async function renderSong(song: ResolvedSong, songPath: string,
   options: RenderOptions = {}): Promise<RenderResult> {
+  if (song.tracks.some((track) => track.plugins?.length) && !options.external)
+    throw new Music2Error("E_CAPABILITY", "external plugin audio requires --allow-plugins and --plugin-host or MUSIC2_PLUGIN_HOST");
   validateVoiceParams(song);
   validateDawVoiceLanes(song);
   validateDeclaredSamples(song);
@@ -63,5 +66,5 @@ export async function renderSong(song: ResolvedSong, songPath: string,
       });
     }
   }
-  return mixTracks(song, timeline, songPath, options);
+  return mixTracks(song, timeline, songPath, { ...options, decodeBudget: options.decodeBudget ?? createDecodeBudget() });
 }

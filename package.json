@@ -42,6 +42,7 @@
     "dist",
     "schema",
     "skills",
+    "scripts/music2-plugin-bridge.py",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"

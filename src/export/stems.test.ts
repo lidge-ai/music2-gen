@@ -16,6 +16,17 @@ function fixture(overrides: Partial<Song> = {}): Song {
     arrangement: [{ section: "intro" }, { section: "hook", repeats: 2 }], ...overrides };
 }
 
+test("stem manifest marks tracks whose static controls are overridden by automation", async () => {
+  const song = validateSong(fixture({ tracks: [{ id: "lead", kind: "notes", instrument: "lead", pattern: "c4 ~ ~ ~",
+    gain: -3, automation: [{ target: "gain", points: [{ at: 0, value: -12 }] }] }] }));
+  const timeline = buildTimeline(song);
+  const result = await mixTracks(song, timeline, "fixture.song.json", { stems: true, returns: true });
+  const plan = planStems(song, timeline, result, { bits: 24, includeMaster: true, includePremaster: false });
+  const manifest = JSON.parse(Buffer.from((plan.files.at(-1)! as { bytes: Uint8Array }).bytes).toString()) as StemsManifest;
+  assert.equal(manifest.tracks[0]?.automated, true);
+  assert.equal(manifest.tracks[0]?.gainDb, -3);
+});
+
 test("stem plan orders paths, JSON keys and cropped occurrence markers", async () => {
   const song = validateSong(fixture({ tailSeconds: 2, tracks: [
     { id: "lead", kind: "notes", instrument: "lead", pattern: "c4 ~ ~ ~", sends: { reverb: .2 } },

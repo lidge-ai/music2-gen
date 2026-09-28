@@ -3,6 +3,7 @@ import { AUTOMATABLE_INSERT_PARAMS, INSERT_SPECS } from "../render/fx/fx.schema.
 import type { InsertInput, ParamSpec, ResolvedInsert } from "../render/fx/fx.schema.ts";
 import { beatsToTicks, Music2Error, PPQ } from "../shared/index.ts";
 import type { ResolvedTrack, Song, Track } from "./song.schema.ts";
+export interface PluginUse { id: string; params?: Readonly<Record<string, number | string | boolean>> }
 
 export interface NoteInput { start: number; length: number; pitch?: number | string; sample?: string; velocity?: number }
 export interface ResolvedNote { tick: number; lengthTicks: number; pitch: number | null; sample: { name: string; index: number } | null; velocity: number; inputIndex: number }
@@ -30,6 +31,40 @@ const object = (value: unknown): value is Record<string, unknown> => typeof valu
 const number = (minimum: number, maximum?: number): Rule => ({ type: "number", minimum, ...(maximum === undefined ? {} : { maximum }) });
 const unit = number(0, 1);
 const id = { type: "string", pattern: "^[a-z][a-z0-9_-]{0,31}$" };
+export const pluginChainRule = { type: "array", minItems: 0, maxItems: 4, items: {
+  type: "object", required: ["id"], additionalProperties: false,
+  properties: { id, params: { type: "object", additionalProperties: {
+    oneOf: [{ type: "number" }, { type: "string" }, { type: "boolean" }],
+  } } },
+} };
+export function validatePluginFields(tracks: readonly unknown[], issues: Issue[]): void {
+  tracks.forEach((raw, trackIndex) => {
+    if (!object(raw) || !Array.isArray(raw["plugins"])) return;
+    const seen = new Set<string>();
+    raw["plugins"].forEach((entry: unknown, index: number) => {
+      if (!object(entry)) return;
+      const path = `$.tracks[${trackIndex}].plugins[${index}]`;
+      if (typeof entry["id"] === "string") {
+        if (seen.has(entry["id"])) issues.push({ path: `${path}.id`, message: "duplicate plugin id" });
+        seen.add(entry["id"]);
+      }
+      if (!object(entry["params"])) return;
+      const params = entry["params"];
+      if (Object.keys(params).length > 32) issues.push({ path: `${path}.params`, message: "at most 32 parameters" });
+      for (const [name, value] of Object.entries(params)) {
+        const paramPath = `${path}.params.${name}`;
+        if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/u.test(name)) issues.push({ path: paramPath, message: "invalid parameter name" });
+        if (typeof value === "number" && !Number.isFinite(value) ||
+            typeof value === "string" && (Buffer.byteLength(value) > 256 || value.includes("\0")))
+          issues.push({ path: paramPath, message: "invalid parameter value" });
+      }
+    });
+  });
+}
+export function resolvePlugins(plugins: readonly PluginUse[]): PluginUse[] {
+  return plugins.map((plugin) => ({ id: plugin.id, ...(plugin.params === undefined ? {} :
+    { params: Object.fromEntries(Object.entries(plugin.params).sort(([a], [b]) => a.localeCompare(b))) }) }));
+}
 export const notesRule = { type: "array", minItems: 0, maxItems: 20000, items: {
   type: "object", required: ["start", "length"], additionalProperties: false,
   properties: { start: number(0), length: number(0.001), pitch: { oneOf: [{ type: "integer", minimum: 0, maximum: 127 }, { type: "string" }] },

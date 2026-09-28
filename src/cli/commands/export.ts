@@ -8,6 +8,9 @@ import { loadKitMidiMap } from "../../render/kit.tool.ts";
 import { Music2Error } from "../../shared/index.ts";
 import { buildTimeline, loadSong } from "../../song/index.ts";
 import { renderSong } from "../../render/index.ts";
+import { createExternalProcessor, loadPluginConfig, parseHostArgv } from "../../plugin-host/index.ts";
+import type { ResolvedSong } from "../../song/index.ts";
+import type { ExternalProcessor } from "../../render/render.schema.ts";
 import { readWav, writeWav } from "../../audio-io/index.ts";
 import { planAls, planDawproject, planStems, type DawClipRegion, type DawContent, type DawMedia } from "../../export/index.ts";
 import { confinedRealpath, fnv1a32 } from "../../shared/index.ts";
@@ -16,6 +19,16 @@ import { assertDistinct, commitNoReplace, commitReplace, stage } from "../files.
 import type { CommandSpec } from "../registry.ts";
 
 function inputError(message: string): Music2Error { return new Music2Error("E_INPUT", message); }
+const PLUGIN_WARNING = "external plugin audio may vary between renders";
+const EDITABLE_PLUGIN_WARNING = "external plugin processing is absent from editable output; frozen audio is required to retain sound";
+async function audioProcessor(song: ResolvedSong, values: Record<string, unknown>): Promise<ExternalProcessor | undefined> {
+  if (!song.tracks.some((track) => track.plugins?.length)) return undefined;
+  if (values["allow-plugins"] !== true) throw new Music2Error("E_CAPABILITY",
+    "external plugin audio requires --allow-plugins and configure --plugin-host or MUSIC2_PLUGIN_HOST");
+  const host = values["plugin-host"] === undefined ? undefined : parseHostArgv(values["plugin-host"] as string);
+  return createExternalProcessor(await loadPluginConfig(), host);
+}
+function hasPlugins(song: ResolvedSong): boolean { return song.tracks.some((track) => track.plugins?.length); }
 
 function stemBars(value: unknown): { start: number; end: number } | undefined {
   if (value === undefined) return undefined;
@@ -75,7 +88,9 @@ async function exportStems(input: string, output: string, values: Record<string,
   const timeline = buildTimeline(song);
   if (bars && (song.loop || bars.end > timeline.bars)) throw inputError("--bars is outside the song or selects a loop crop");
   const includePremaster = values["premaster"] === true;
-  const result = await renderSong(song, input, { stems: true, returns: true, premaster: includePremaster, ...(bars ? { bars } : {}) });
+  const external = await audioProcessor(song, values);
+  const result = await renderSong(song, input, { stems: true, returns: true, premaster: includePremaster,
+    ...(bars ? { bars } : {}), ...(external ? { external } : {}) });
   const plan = planStems(song, timeline, result, { bits, includeMaster: values["no-master"] !== true,
     includePremaster, ...(bars ? { bars } : {}) });
   const finals = plan.files.map((file) => join(output, file.path));
@@ -98,8 +113,9 @@ async function exportStems(input: string, output: string, values: Record<string,
     for (const dir of createdDirectories.reverse()) await rmdir(dir).catch(() => undefined);
   }
   return { command: "export", data: { dir: output, manifest: join(output, "stems.json"),
-    files: plan.data.files, frames: plan.data.frames, sampleRate: plan.data.sampleRate },
-  artifacts: finals, warnings: [], text: `wrote ${output}` };
+    files: plan.data.files, frames: plan.data.frames, sampleRate: plan.data.sampleRate,
+    ...(result.deterministic === false ? { deterministic: false } : {}) },
+  artifacts: finals, warnings: [...(result.warnings ?? [])], text: `wrote ${output}` };
 }
 
 async function exportAls(input: string, output: string, values: Record<string, unknown>) {
@@ -130,7 +146,9 @@ async function exportAls(input: string, output: string, values: Record<string, u
       throw new Music2Error("E_SCHEMA", `kit ${track.id} is missing sample ${note.sample.name}`);
     kitMaps[track.id] = kitMidiMap(names, explicit).byName;
   }
-  const rendered = content === "midi" ? null : await renderSong(song, input, { stems: true, returns: true });
+  const external = content === "midi" ? undefined : await audioProcessor(song, values);
+  const rendered = content === "midi" ? null : await renderSong(song, input,
+    { stems: true, returns: true, ...(external ? { external } : {}) });
   const plan = planAls(project, rendered ? { stems: rendered.stems,
     returns: rendered.returns ?? { reverb: null, delay: null } } : null, { content, bits, kitMaps });
   const finals = plan.files.map((file) => join(output, file.path));
@@ -166,8 +184,10 @@ async function exportAls(input: string, output: string, values: Record<string, u
   const als = join(output, plan.data.als);
   const samples = plan.data.samples.map((path) => join(output, path));
   return { command: "export", data: { als, samples, tracks: plan.data.tracks,
-    content: plan.data.content, quantization: plan.data.quantization, experimental: true },
-    artifacts: [als, ...samples], warnings: plan.warnings,
+    content: plan.data.content, quantization: plan.data.quantization, experimental: true,
+    ...(rendered?.deterministic === false ? { deterministic: false } : {}) },
+    artifacts: [als, ...samples], warnings: [...plan.warnings,
+      ...(rendered?.warnings ?? []), ...(content === "midi" && hasPlugins(song) ? [EDITABLE_PLUGIN_WARNING] : [])],
     text: `EXPERIMENTAL (Live 12 open test pending): wrote ${als}` };
 }
 
@@ -186,6 +206,7 @@ async function exportDawproject(input: string, output: string, values: Record<st
       if ((cause as NodeJS.ErrnoException).code !== "ENOENT") throw cause; }
   }
   const song = await loadSong(input);
+  const external = content === "midi" ? undefined : await audioProcessor(song, values);
   validateDawVoiceLanes(song);
   const project = buildProject(song, buildTimeline(song));
   const sources = new Map<number, DawMedia>();
@@ -229,9 +250,11 @@ async function exportDawproject(input: string, output: string, values: Record<st
     }
   const media: DawMedia[] = [...sources.values()];
   let temporaryDir: string | undefined;
+  let pluginRendered = false;
   try {
     if (content !== "midi") {
-      const rendered = await renderSong(song, input, { stems: true, returns: true });
+      const rendered = await renderSong(song, input, { stems: true, returns: true, ...(external ? { external } : {}) });
+      pluginRendered = rendered.deterministic === false;
       temporaryDir = await mkdtemp(join(tmpdir(), "music2-dawproject-"));
       const all = [...rendered.stems.map((stem) => ({ owner: { kind: "stem" as const, trackId: stem.trackId },
         path: `audio/stem-${stem.trackId}.wav` as const, audio: stem.audio })),
@@ -256,14 +279,16 @@ async function exportDawproject(input: string, output: string, values: Record<st
       catch (cause) { throw new Music2Error("E_ACCESS", `cannot write output: ${output}`, { details: { path: output }, cause }); }
       if (force) await commitReplace([staged]); else await commitNoReplace([staged]);
     } finally { await rm(staged.temporary, { force: true }); }
-    return { command: "export", data: { ...plan.data, dawproject: output }, artifacts: [output],
-      warnings: plan.warnings, text: `wrote ${output}` };
+    return { command: "export", data: { ...plan.data, dawproject: output,
+      ...(pluginRendered ? { deterministic: false } : {}) }, artifacts: [output],
+      warnings: [...plan.warnings, ...(content !== "midi" && hasPlugins(song) ? [PLUGIN_WARNING] : []),
+        ...(content === "midi" && hasPlugins(song) ? [EDITABLE_PLUGIN_WARNING] : [])], text: `wrote ${output}` };
   } finally { if (temporaryDir) { await rm(join(temporaryDir, "media.wav"), { force: true }); await rmdir(temporaryDir); } }
 }
 
 export const exportCommand: CommandSpec = {
   name: "export", summary: "Export ProjectIR, MIDI, WAV stems, Ableton Live Set, or DAWproject",
-  usage: "music2 export ir <song.json> [-o ir.json] | music2 export midi <song.json> -o file.mid | music2 export stems <song.json> -o dir [--bits 16|24] [--premaster] [--no-master] [--bars a:b] [--force] [--json] | music2 export als <song.json> -o dir [--content midi|audio|both] [--bits 16|24] [--force] [--json] | music2 export dawproject <song.json> -o file.dawproject [--content midi|audio|both] [--force] [--json]",
+  usage: "music2 export <ir|midi|stems|als|dawproject> <song.json> [-o path] [--content midi|audio|both] [--allow-plugins] [--plugin-host JSON-argv] [--force] [--json]",
   options: {
     out: { type: "string", short: "o", description: "Output file or stems directory" },
     force: { type: "boolean", description: "Replace planned output files" },
@@ -272,10 +297,15 @@ export const exportCommand: CommandSpec = {
     "no-master": { type: "boolean", description: "Omit mastered WAV" },
     bars: { type: "string", description: "Stem crop, zero-based half-open a:b" },
     content: { type: "string", description: "DAW export content: midi, audio or both (default both)" },
+    "allow-plugins": { type: "boolean", description: "Allow configured external effects in audio exports" },
+    "plugin-host": { type: "string", description: "Trusted host command as a JSON argv array" },
   },
   async run({ args, values, cwd }) {
     if ((args[0] !== "ir" && args[0] !== "midi" && args[0] !== "stems" && args[0] !== "als" && args[0] !== "dawproject") || args.length !== 2 || !args[1])
       throw inputError("export requires: ir|midi|stems|als|dawproject <song.json>");
+    if (values["plugin-host"] !== undefined && values["allow-plugins"] !== true)
+      throw inputError("--plugin-host requires --allow-plugins");
+    if (values["plugin-host"] !== undefined) parseHostArgv(values["plugin-host"] as string);
     const midi = args[0] === "midi";
     const stems = args[0] === "stems";
     const als = args[0] === "als";
@@ -325,11 +355,13 @@ export const exportCommand: CommandSpec = {
       } finally { await rm(staged.temporary, { force: true }); }
       return { command: "export", data: { mid: output, format: 1, ppq: 960, tracks: projected.file.tracks.length,
         notes: projected.notes, channels: projected.channels, quantization: ir.quantization, dropped: projected.dropped },
-      artifacts: [output], warnings: [...kitWarnings, ...projected.warnings], text: `wrote ${output}` };
+      artifacts: [output], warnings: [...kitWarnings, ...projected.warnings,
+        ...(hasPlugins(song) ? [EDITABLE_PLUGIN_WARNING] : [])], text: `wrote ${output}` };
     }
     const formatted = JSON.stringify(ir, null, 2) + "\n";
     const warnings = ir.quantization.inexact > 0 ?
       [`${ir.quantization.inexact} inexact event(s); max error ${ir.quantization.maxErrorTicks} ticks`] : [];
+    if (hasPlugins(song)) warnings.push(EDITABLE_PLUGIN_WARNING);
     if (output === undefined) return { command: "export", data: { ir }, artifacts: [], warnings, text: formatted.trimEnd() };
     const staged = stage(output);
     try {

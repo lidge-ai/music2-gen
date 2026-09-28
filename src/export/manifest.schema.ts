@@ -11,7 +11,7 @@ export interface StemsManifest {
     bar: number; sourceBar: number; seconds: number }[];
   tracks: { id: string; file: string; type: "notes" | "drums" | "audio";
     instrument: string | null; gainDb: number; pan: number;
-    sends: { reverb: number; delay: number }; inserts: ResolvedInsert[] }[];
+    sends: { reverb: number; delay: number }; inserts: ResolvedInsert[]; automated?: true }[];
   returns: { id: "reverb" | "delay"; file: string; legacy: boolean;
     params: ReverbBusParams | DelayBusParams | null }[];
   master: { file: "master.wav"; ceilingDb: number;
@@ -49,13 +49,15 @@ export function validateStemsManifest(manifest: StemsManifest, files: ExportFile
       (marker.role !== null && typeof marker.role !== "string")) invalid("invalid stem marker metadata");
   }
   for (const track of manifest.tracks) {
-    keys(track, ["id", "file", "type", "instrument", "gainDb", "pan", "sends", "inserts"], "track");
+    keys(track, ["id", "file", "type", "instrument", "gainDb", "pan", "sends", "inserts",
+      ...(track.automated === undefined ? [] : ["automated"])], "track");
     keys(track.sends, ["reverb", "delay"], "sends");
     if (!/^[a-z][a-z0-9_-]{0,31}$/.test(track.id) || track.file !== `tracks/${track.id}.wav` ||
       !["notes", "drums", "audio"].includes(track.type) || !Number.isFinite(track.gainDb) ||
       !Number.isFinite(track.pan) || !Number.isFinite(track.sends.reverb) ||
       !Number.isFinite(track.sends.delay) || !Array.isArray(track.inserts) ||
-      (track.instrument !== null && typeof track.instrument !== "string")) invalid("invalid stem track metadata");
+      (track.instrument !== null && typeof track.instrument !== "string") ||
+      (track.automated !== undefined && track.automated !== true)) invalid("invalid stem track metadata");
   }
   for (const bus of manifest.returns) {
     keys(bus, ["id", "file", "legacy", "params"], "return");

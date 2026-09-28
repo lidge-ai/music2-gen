@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { main } from "../main.ts";
 import type { ProjectIR } from "../../project/index.ts";
 
@@ -326,5 +326,41 @@ test("dawproject confines original clip media before staging output", async () =
   } finally {
     await rm(dir, { recursive: true, force: true });
     await rm(outside, { recursive: true, force: true });
+  }
+});
+
+test("plugin-bearing audio exports require opt-in before artifact creation", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-export-plugin-"));
+  const previous = process.env["MUSIC2_HOME"];
+  process.env["MUSIC2_HOME"] = dir;
+  try {
+    const song = { ...source, tailSeconds: 0, tracks: [{ ...source.tracks[0]!, plugins: [{ id: "softclip" }] }] };
+    await writeFile(join(dir, "song.json"), JSON.stringify(song));
+    await writeFile(join(dir, "effect.vst3"), "stub");
+    await writeFile(join(dir, "plugins.json"), JSON.stringify({ version: 1,
+      plugins: { softclip: { path: join(dir, "effect.vst3") } } }));
+    const host = JSON.stringify([process.execPath, resolve("tests/fixtures/plugin-host/stub-host.mjs")]);
+    for (const [format, output] of [["stems", "stems"], ["als", "als"], ["dawproject", "song.dawproject"]]) {
+      const args = ["export", format!, "song.json", "-o", output!, "--json"];
+      const blocked = await invoke(args, dir);
+      assert.equal(blocked.exit, 3, blocked.stdout);
+      assert.equal(envelope(blocked.stdout).error.code, "E_CAPABILITY");
+      assert.match(blocked.stdout, /--allow-plugins/);
+      await assert.rejects(stat(join(dir, output!)), { code: "ENOENT" });
+      const allowed = await invoke([...args, "--allow-plugins", "--plugin-host", host], dir);
+      assert.equal(allowed.exit, 0, allowed.stdout);
+      const result = JSON.parse(allowed.stdout) as { data: { deterministic?: false }; warnings: string[] };
+      assert.equal(result.data.deterministic, false);
+      assert.ok(result.warnings.some((warning) => warning.includes("may vary")));
+    }
+    for (const format of ["als", "dawproject"]) {
+      const output = format === "als" ? "midi-only" : "midi-only.dawproject";
+      const result = await invoke(["export", format, "song.json", "-o", output, "--content", "midi", "--json"], dir);
+      assert.equal(result.exit, 0, result.stdout);
+      assert.ok((JSON.parse(result.stdout) as { warnings: string[] }).warnings.some((warning) => warning.includes("frozen audio")));
+    }
+  } finally {
+    if (previous === undefined) delete process.env["MUSIC2_HOME"]; else process.env["MUSIC2_HOME"] = previous;
+    await rm(dir, { recursive: true, force: true });
   }
 });

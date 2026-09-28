@@ -11,6 +11,40 @@ import { renderSong } from "./render.tool.ts";
 
 const drillPath = resolve("examples/drill-140.song.json");
 
+test("plugin insert requires injection and processes only its track before fader", async () => {
+  const song = validateSong({ version: 1, bpm: 120, sampleRate: 48000, tailSeconds: 0,
+    tracks: [{ id: "lead", kind: "notes", instrument: "lead", pattern: "c4 ~ ~ ~",
+      gain: -6, plugins: [{ id: "softclip" }] }],
+    sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] });
+  await assert.rejects(renderSong(song, "fixture.song.json"), { code: "E_CAPABILITY" });
+  let calls = 0;
+  const result = await renderSong(song, "fixture.song.json", { stems: true, external: {
+    warnings: [], async process(_id, _plugins, audio) {
+      calls++;
+      for (const channel of [audio.left, audio.right]) for (let i = 0; i < channel.length; i++) channel[i] = channel[i]! * .5;
+      return audio;
+    },
+  } });
+  assert.equal(calls, 1);
+  assert.equal(result.deterministic, false);
+  assert.ok(result.warnings?.some((warning) => warning.includes("may vary")));
+  assert.ok(result.stems[0]!.audio.left.some((sample) => sample !== 0));
+});
+
+test("automated ducking crop retains a trigger before the crop", async () => {
+  const song = validateSong({ version: 1, bpm: 120, sampleRate: 44100, tailSeconds: 0,
+    tracks: [
+      { id: "kick", kind: "drums", instrument: "drums", notes: [{ start: 3.99, length: .01, sample: "bd" }] },
+      { id: "lead", kind: "notes", instrument: "lead", pattern: "c4 c4 c4 c4",
+        duck: { by: "kick", amount: .8, releaseMs: 1000 },
+        automation: [{ target: "gain", points: [{ at: 0, value: 0 }] }] },
+    ], sections: [{ id: "one", bars: 2 }], arrangement: [{ section: "one" }] });
+  const full = await renderSong(song, "fixture.song.json", { stems: true });
+  const crop = await renderSong(song, "fixture.song.json", { stems: true, bars: { start: 1, end: 2 } });
+  const start = 88200;
+  assert.deepEqual(crop.stems[1]!.audio.left.subarray(0, 1000), full.stems[1]!.audio.left.subarray(start, start + 1000));
+});
+
 test("drill duration and crop preserve full-timeline event addressing", async () => {
   const song = await loadSong(drillPath);
   const timeline = buildTimeline(song);

@@ -60,6 +60,7 @@ export function planStems(song: ResolvedSong, timeline: Timeline, result: Render
     instrument: "instrument" in track ? track.instrument : null,
     gainDb: track.gain, pan: track.pan, sends: { reverb: track.sends.reverb, delay: track.sends.delay },
     inserts: track.fx ?? [],
+    ...(track.automation?.length ? { automated: true as const } : {}),
   }));
   const manifestReturns: StemsManifest["returns"] = [];
   for (const id of ["reverb", "delay"] as const) {

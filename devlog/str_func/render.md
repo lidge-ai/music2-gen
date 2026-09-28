@@ -1,6 +1,6 @@
 # Render — Structure & Functions
 
-Turn a resolved song and its timeline into deterministic stereo PCM and optional dry stems.
+Turn a resolved song and its timeline into stereo PCM and optional dry stems. Renders using external plugins carry `deterministic:false`.
 
 ## File Tree
 
@@ -13,6 +13,7 @@ src/render/
 ├── mixer.tool.ts               # instrument/audio summing, effects, mastering
 ├── mix-static.tool.ts          # unchanged legacy mono/stereo summing law
 ├── mix-automated.tool.ts       # smoothed fader/pan/send and insert curves
+├── plugin.tool.ts              # optional structural plugin processor seam and output checks
 ├── select.tool.ts              # legacy event-window selection
 ├── select.test.ts              # seeded selection and mono stop vectors
 ├── instrument.tool.ts          # kit/SFZ sample adapter
@@ -66,6 +67,10 @@ List-note tracks use Timeline events for PCM. Their invalid sample and MIDI
 issues identify the original `notes[k].sample` or `notes[k].pitch` field even
 after event sorting; pattern tracks keep their existing `.pattern` paths.
 `sfz:` notes load song-relative SFZ/WAV sources through the sampler and preserve stereo through inserts, pan, gain, ducking, sends and stems. `audioTracks` clip lanes enter after instrument tracks and before bus returns; insert chains and duck envelopes retain absolute song time for partial-bar crops. When clip songs have active sends, partial bus returns are cropped from a full-origin return render so stateful effects keep their history. Automated tracks process from song frame zero through the requested end, then crop after inserts and smoothing. Gain, pan and sends use per-frame controls; whitelisted inserts receive indexed parameter curves. Bass/pad cutoff and lead vibrato are sampled at note onset. `validateDawVoiceLanes` checks semantic
+
+`renderSong` creates one sampler decode budget per invocation and passes it to SFZ and audio clip loading, including recursive full-origin return mixing. The 512 MiB decoded PCM cap is shared across sources in that invocation. Automated ducking uses the source's absolute onset frames, then slices the envelope to the crop window. A send automation lane replaces its static send when deciding whether a return bus is active.
+
+For tracks with `plugins`, rendering requires `RenderOptions.external`; absence raises `E_CAPABILITY` before voice work. `processTrackPlugins` copies the post-insert source to stereo, calls the processor in chain order and checks rate, frame count and finite samples bounded by 64. The result enters the normal fader, pan, duck, sends and stem path. Tapestop crops process the full pre-roll before slicing. Songs without plugin stages retain their old arithmetic path.
 `param.*` opt-ins and point ranges at render and IR entry.
 It also checks effective timeline samples, MIDI ranges, and the mastering capability.
 `mixTracks` selects events for a zero-based half-open bar range, allocates

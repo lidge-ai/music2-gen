@@ -30,6 +30,33 @@ test("CommandSpec writes deterministic WAV bytes and reports JSON-ready data", a
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
+test("plugin CLI opt-in uses stub host and disabled render leaves no artifact", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-render-plugin-"));
+  const previous = process.env["MUSIC2_HOME"];
+  process.env["MUSIC2_HOME"] = dir;
+  try {
+    const path = join(dir, "song.json"), wav = join(dir, "plugin.wav");
+    await writeFile(path, JSON.stringify({ version: 1, bpm: 120, tailSeconds: 0,
+      tracks: [{ id: "lead", kind: "notes", instrument: "lead", pattern: "c4 ~ ~ ~", plugins: [{ id: "softclip" }] }],
+      sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] }));
+    await writeFile(join(dir, "effect.vst3"), "stub");
+    await writeFile(join(dir, "plugins.json"), JSON.stringify({ version: 1,
+      plugins: { softclip: { path: join(dir, "effect.vst3") } } }));
+    const context: CommandContext = { args: [path], values: { out: wav }, json: true, cwd: dir, stderr: process.stderr };
+    await assert.rejects(render.run(context), { code: "E_CAPABILITY" });
+    await assert.rejects(stat(wav), { code: "ENOENT" });
+    const host = JSON.stringify([process.execPath, resolve("tests/fixtures/plugin-host/stub-host.mjs")]);
+    const rendered = await render.run({ ...context, values: { out: wav, "allow-plugins": true, "plugin-host": host } });
+    assert.equal(rendered.data["deterministic"], false);
+    assert.ok((rendered.warnings ?? []).some((warning) => warning.includes("may vary")));
+    assert.ok((await readWav(wav)).left.some((sample) => sample !== 0));
+    await assert.rejects(render.run({ ...context, values: { out: join(dir, "bad.wav"), "plugin-host": host } }), { code: "E_INPUT" });
+  } finally {
+    if (previous === undefined) delete process.env["MUSIC2_HOME"]; else process.env["MUSIC2_HOME"] = previous;
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("crop and six stems use 24-bit WAV", async () => {
   const dir = await mkdtemp(join(tmpdir(), "music2-stems-test-"));
   try {

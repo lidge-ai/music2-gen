@@ -1,6 +1,7 @@
 import { createStereo } from "../audio-io/index.ts";
 import type { StereoBuffer } from "../audio-io/index.ts";
 import { loadClipSources, renderClips } from "../sampler/index.ts";
+import type { DecodeBudget } from "../sampler/index.ts";
 import { Music2Error } from "../shared/index.ts";
 import type { ResolvedSong, Timeline } from "../song/index.ts";
 import { duckEnvelope } from "./fx.tool.ts";
@@ -12,9 +13,9 @@ import { mixAutomated, prepareTrackCurves, sendActive } from "./mix-automated.to
 export async function mixAudioTracks(song: ResolvedSong, songPath: string,
   window: { startFrame: number; frames: number },
   buses: { master: StereoBuffer; reverb: StereoBuffer; delay: StereoBuffer }, stems: RenderStem[],
-  timeline?: Timeline, captureStems = false): Promise<{ reverbActive: boolean; delayActive: boolean }> {
+  timeline?: Timeline, captureStems = false, decodeBudget?: DecodeBudget): Promise<{ reverbActive: boolean; delayActive: boolean }> {
   let reverbActive = false; let delayActive = false;
-  const sources = await loadClipSources(songPath, (song.audioTracks ?? []).flatMap((track) => track.clips));
+  const sources = await loadClipSources(songPath, (song.audioTracks ?? []).flatMap((track) => track.clips), decodeBudget);
   for (const track of song.audioTracks ?? []) {
     const fullOrigin = window.startFrame > 0 && (track.fx.length > 0 || !!track.automation?.length);
     const renderStart = fullOrigin ? 0 : window.startFrame;
@@ -31,11 +32,11 @@ export async function mixAudioTracks(song: ResolvedSong, songPath: string,
     const duck = track.duck && sourceIndex >= 0 && timeline ? duckEnvelope(window.startFrame + window.frames,
       timeline.events.filter((event) => event.trackIndex === sourceIndex).map((event) =>
         Math.round(event.time * song.sampleRate)),
-      song.sampleRate, track.duck.amount, track.duck.releaseMs) : null;
+      song.sampleRate, track.duck.amount, track.duck.releaseMs).subarray(window.startFrame, window.startFrame + window.frames) : null;
     const stem = captureStems ? createStereo(song.sampleRate, window.frames) : null;
     if (curves) {
       mixAutomated(buses, rendered, offset, window.frames, track, curves,
-        duck?.subarray(window.startFrame, window.startFrame + window.frames) ?? null, stem);
+        duck, stem);
       if (stem) stems.push({ trackId: track.id, audio: stem });
       reverbActive ||= sendActive(track, "reverb"); delayActive ||= sendActive(track, "delay");
       continue;
@@ -43,7 +44,7 @@ export async function mixAudioTracks(song: ResolvedSong, songPath: string,
     const leftGain = 10 ** (track.gain / 20) * Math.cos((track.pan + 1) * Math.PI / 4) * Math.SQRT2;
     const rightGain = 10 ** (track.gain / 20) * Math.sin((track.pan + 1) * Math.PI / 4) * Math.SQRT2;
     for (let i = 0; i < window.frames; i++) {
-      const factor = duck?.[window.startFrame + i] ?? 1;
+      const factor = duck?.[i] ?? 1;
       const left = rendered.left[offset + i]! * leftGain * factor;
       const right = rendered.right[offset + i]! * rightGain * factor;
       if (!Number.isFinite(left) || !Number.isFinite(right)) throw new Music2Error("E_RENDER", `nonfinite audio track sample on ${track.id}`,

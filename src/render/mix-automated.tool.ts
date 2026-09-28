@@ -8,7 +8,8 @@ export interface PreparedCurves { gain?: Float32Array; pan?: Float32Array; rever
   delay?: Float32Array; inserts: Readonly<Record<number, Readonly<Record<string, Float32Array>>>> }
 
 export function sendActive(track: MixControls, bus: "reverb" | "delay"): boolean {
-  return track.sends[bus] > 0 || (findLane(track.automation, `send.${bus}`)?.points.some((point) => point.value > 0) ?? false);
+  const lane = findLane(track.automation, `send.${bus}`);
+  return lane ? lane.points.some((point) => point.value > 0) : track.sends[bus] > 0;
 }
 
 /** Prepare smoothed controls from song frame zero so partial renders retain filter and smoother history. */

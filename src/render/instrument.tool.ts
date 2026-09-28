@@ -1,7 +1,7 @@
 import { createStereo } from "../audio-io/index.ts";
 import type { StereoBuffer } from "../audio-io/index.ts";
 import { loadSfz, renderSfz } from "../sampler/index.ts";
-import type { LoadedSfz, SfzWarning } from "../sampler/index.ts";
+import type { DecodeBudget, LoadedSfz, SfzWarning } from "../sampler/index.ts";
 import { Music2Error } from "../shared/index.ts";
 import type { ResolvedTrack } from "../song/index.ts";
 import { loadKit, renderKit } from "./kit.tool.ts";
@@ -12,11 +12,11 @@ export type LoadedSampleInstrument = { kind: "kit"; resource: LoadedKit; warning
 export function isSampleInstrument(instrument: string): boolean {
   return instrument.startsWith("kit:") || instrument.startsWith("sfz:");
 }
-export async function loadSampleInstrument(songPath: string, track: ResolvedTrack, rate: number): Promise<LoadedSampleInstrument | null> {
+export async function loadSampleInstrument(songPath: string, track: ResolvedTrack, rate: number, budget?: DecodeBudget): Promise<LoadedSampleInstrument | null> {
   if (track.instrument.startsWith("kit:")) return { kind: "kit", resource: await loadKit(songPath, track.instrument, rate), warnings: [] };
   if (!track.instrument.startsWith("sfz:")) return null;
   if (track.kind !== "notes") throw new Music2Error("E_SCHEMA", "SFZ requires notes track");
-  const resource = await loadSfz(songPath, track.instrument.slice(4), rate);
+  const resource = await loadSfz(songPath, track.instrument.slice(4), rate, budget);
   return { kind: "sfz", resource, warnings: resource.instrument.warnings };
 }
 export function renderSampleInstrument(ctx: VoiceContext, loaded: LoadedSampleInstrument): StereoBuffer {

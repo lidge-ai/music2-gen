@@ -18,6 +18,27 @@ function has(input: unknown, path: string, message?: string): void {
   assert.ok(issues(input).some((issue) => issue.path === path && (message === undefined || issue.message === message)), path);
 }
 
+void test("plugin chains retain absence, explicit emptiness and sorted parameters", () => {
+  const raw = base();
+  assert.equal(Object.hasOwn(validateSong(raw).tracks[0]!, "plugins"), false);
+  assert.deepEqual(validateSong({ ...raw, tracks: [{ ...raw.tracks[0], plugins: [] }] }).tracks[0]!.plugins, []);
+  const plugins = validateSong({ ...raw, tracks: [{ ...raw.tracks[0], plugins: [
+    { id: "softclip", params: { z: true, a: .5 } },
+  ] }] }).tracks[0]!.plugins;
+  assert.deepEqual(Object.keys(plugins![0]!.params!), ["a", "z"]);
+});
+
+void test("plugin song fields reject executable authority and bounded parameter violations", () => {
+  const raw = base();
+  const track = raw.tracks[0];
+  const withPlugin = (plugins: unknown) => ({ ...raw, tracks: [{ ...track, plugins }] });
+  has(withPlugin([{ id: "SoftClip" }]), "$.tracks[0].plugins[0].id");
+  has(withPlugin([{ id: "softclip", command: ["/bin/sh"] }]), "$.tracks[0].plugins[0].command");
+  has(withPlugin([{ id: "softclip" }, { id: "softclip" }]), "$.tracks[0].plugins[1].id");
+  has(withPlugin([{ id: "softclip", params: { drive: "x".repeat(257) } }]), "$.tracks[0].plugins[0].params.drive");
+  has(withPlugin([{ id: "softclip", params: { drive: Number.NaN } }]), "$.tracks[0].plugins[0].params.drive");
+});
+
 void test("note list resolves ticks, transpose, velocity and absent fields", () => {
   const song = validateSong(base());
   assert.equal(song.tracks[0]?.notes?.[0]?.tick, 0);
