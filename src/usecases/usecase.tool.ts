@@ -93,6 +93,12 @@ function addStudyLayerChanges(song: Song, bars: number): void {
 }
 
 export function applyUseCase(song: Song, id: UseCaseId, opts: { seconds?: number; lockedBpm?: number } = {}): Song {
+  const features: string[] = [];
+  if (song.tracks.some((track) => track.notes !== undefined)) features.push("note lists");
+  if (song.audioTracks?.length) features.push("audioTracks");
+  if (song.tracks.some((track) => track.automation?.length) || song.audioTracks?.some((track) => track.automation?.length))
+    features.push("automation");
+  if (features.length) input(`use case cannot rearrange a song with ${features.join(", ")}`);
   const preset = USE_CASES.find((entry) => entry.id === id);
   if (!preset) input(`unknown preset ${id}; valid choices: ${USE_CASES.map((entry) => entry.id).join(", ")}`);
   const card = getRecipe(song.genre ?? "");

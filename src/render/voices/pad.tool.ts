@@ -5,6 +5,7 @@ const TAU = 2 * Math.PI;
 
 export const padVoice: VoiceSpec = {
   id: "pad", kind: "notes", monoDefault: false,
+  automatable: ["cutoffHz"],
   params: {
     detuneCents: { default: 11, min: 0, max: 50 },
     cutoffHz: { default: 1800, min: 80, max: 12000 },

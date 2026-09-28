@@ -54,6 +54,13 @@ FX additions: `fx/index.ts` dispatches in-place stereo insert processors and che
 `renderSong` validates instruments and voice parameters, then checks each built-in
 drum-kind voice's declared sample names in base and all section override
 patterns, including unplaced sections. User `kit:` names remain manifest-owned.
+List-note tracks use Timeline events for PCM. Their invalid sample and MIDI
+issues identify the original `notes[k].sample` or `notes[k].pitch` field even
+after event sorting; pattern tracks keep their existing `.pattern` paths.
+Nonempty `audioTracks`, `sfz:` instruments, and nonempty automation lanes raise
+`E_CAPABILITY` before mixing until their playback phases. Audio and SFZ are
+gated before built-in voice lookup. `validateDawVoiceLanes` checks semantic
+`param.*` opt-ins and point ranges at render and IR entry.
 It also checks effective timeline samples, MIDI ranges, and the mastering capability.
 `mixTracks` selects events for a zero-based half-open bar range, allocates
 stereo buffers including the song tail, renders each voice or kit, applies
@@ -87,6 +94,7 @@ re-exports only `renderSong`, `VOICES`, `RenderOptions`, `RenderResult`,
 | `export function resolveVoice(track: ResolvedTrack, index: number): VoiceSpec \| null` | `voices/registry.tool.ts` | Resolve built-in instrument; return null for kit. |
 | `export function mergeParams(spec: VoiceSpec, params: Readonly<Record<string, number>>): Record<string, number>` | `voices/registry.tool.ts` | Fill omitted parameters with defaults. |
 | `export function validateVoiceParams(song: ResolvedSong): void` | `voices/registry.tool.ts` | Reject unknown, mismatched, or invalid voices and parameters. |
+| `export function validateDawVoiceLanes(song: ResolvedSong): void` | `voices/registry.tool.ts` | Check built-in voice automation targets and point values. |
 | `export function declaredSampleNames(instrument: string): readonly string[] \| null` | `voices/registry.tool.ts` | Look up the built-in drum-kind voice vocabulary; return null for kits, notes, or unknown voices. |
 | `export const DRUM_NAMES: readonly string[]` | `voices/drums.tool.ts` | Valid synthetic drum sample names. |
 
@@ -119,6 +127,7 @@ is the voice contract; individual render methods are object members.
 | `VoiceContext` | `render.schema.ts` | Sample rate, frame count, resolved track, selected events. |
 | `ParamSpec` | `render.schema.ts` | Default, min, max, optional integer constraint. |
 | `VoiceSpec` | `render.schema.ts` | ID, track kind, mono default, optional declared sample names, parameter specs, render method. |
+| `VoiceSpec.automatable` | `render.schema.ts` | Optional names permitted for `param.*` lanes; pad/bass `cutoffHz` and lead `vibratoCents` opt in. |
 | `KitManifest` | `render.schema.ts` | Version 1, named sample arrays, optional gain dB/root MIDI. |
 | `LoadedKit` | `render.schema.ts` | Manifest, decoded mono variants, sample rate. |
 | `RenderData` | `render.schema.ts` | CLI output paths and render measurements, with optional `loopStartSample`/`loopEndSample`; imported directly by CLI. |

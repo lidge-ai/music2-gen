@@ -2,7 +2,7 @@
 
 **Summary.** [I] Add a 960-PPQ ProjectIR projection over the existing resolved song and timeline, plus optional Song v1 note lists, audio-track clips, automation lanes and `sfz:` references. Only note lists enter rendering in wp2; audio, SFZ and automation playback belong to 040/050. Add `music2 export ir` now as the inspection surface, and pin pre-change example digests before any implementation edit. Legacy songs must retain identical resolved JSON, event JSON, PCM, WAV, validate and lint bytes under the same Node major/platform (D1, D3, D10; `evidence/main-decisions.md:5,7,14`).
 
-**Depends on:** wp1 decisions and the pre-change HEAD `8d85e25`; baseline capture must precede source edits. Current float timing and event shape are at `src/song/timeline.tool.ts:8-15,45-77`; current resolution at `src/song/song.schema.ts:346-369`.
+**Depends on:** wp1 decisions and the pre-change HEAD `3355d53`; baseline capture must precede source edits. Current float timing and event shape are at `src/song/timeline.tool.ts:8-15,45-77`; current resolution at `src/song/song.schema.ts:346-369`.
 
 **Consumed by:** wp3 MIDI import/export, wp4 stems, wp5 sampler/audio, wp6 automation, wp7 ALS, wp8 DAWproject and wp9 plugin bridge. This doc advances `export ir` from architect F29's provisional wp3 placement to wp2 as explicitly delegated; other export subverbs remain later (D3; `evidence/architect-proposal.md` §F14, §F29).
 

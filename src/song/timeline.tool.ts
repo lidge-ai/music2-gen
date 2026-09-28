@@ -4,6 +4,7 @@ import type { Atom, Node, QueryCtx } from "../pattern/index.ts";
 import { arrange } from "./arrange.tool.ts";
 import type { Placement } from "./arrange.tool.ts";
 import type { ResolvedSong, ResolvedTrack } from "./song.schema.ts";
+import { appendListEvents } from "./timeline-notes.tool.ts";
 
 export interface TimedEvent {
   track: string; trackIndex: number; bar: number; time: number; duration: number; slot: number;
@@ -73,6 +74,7 @@ export function buildTimeline(song: ResolvedSong): Timeline {
       }
     });
   }
+  if (song.tracks.some((track) => track.notes !== undefined)) appendListEvents(song, events, counts);
   events.sort((a, b) => a.time - b.time || a.trackIndex - b.trackIndex || a.order - b.order);
   return { bars, secondsPerBar, durationSeconds: bars * secondsPerBar, placements, events };
 }

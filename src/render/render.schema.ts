@@ -7,7 +7,7 @@ export interface RenderResult { audio: StereoBuffer; stems: RenderStem[]; bars: 
 export interface VoiceEvent { midi: number | null; sample: { name: string; index: number } | null; velocity: number; startFrame: number; gateFrames: number; stopFrame: number; eventIndex: number; seed: number }
 export interface VoiceContext { sampleRate: number; frames: number; track: ResolvedTrack; events: VoiceEvent[] }
 export interface ParamSpec { default: number; min: number; max: number; integer?: boolean }
-export interface VoiceSpec { id: string; kind: "drums" | "notes"; monoDefault: boolean; sampleNames?: readonly string[]; params: Readonly<Record<string, ParamSpec>>; render(ctx: VoiceContext, params: Readonly<Record<string, number>>): Float32Array }
+export interface VoiceSpec { id: string; kind: "drums" | "notes"; monoDefault: boolean; sampleNames?: readonly string[]; automatable?: readonly string[]; params: Readonly<Record<string, ParamSpec>>; render(ctx: VoiceContext, params: Readonly<Record<string, number>>): Float32Array }
 export interface KitManifest { version: 1; samples: Record<string, string[]>; gainDb?: number; rootMidi?: number }
 export interface LoadedKit { manifest: KitManifest; samples: Readonly<Record<string, Float32Array[]>>; sampleRate: number }
 

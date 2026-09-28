@@ -44,3 +44,14 @@ test("SFX track IDs cannot create full-drum bars", () => {
     sections: [{ id: "hook", bars: 1, role: "hook" }], arrangement: [{ section: "hook" }] });
   assert.deepEqual(createGeometry(song, buildTimeline(song)).full, []);
 });
+
+test("list drum activity follows events in each repeated placement", () => {
+  const song = validateSong({ version: 1, bpm: 120,
+    tracks: [
+      { id: "kick", kind: "drums", instrument: "drums", notes: [
+        { start: 8, length: .25, sample: "bd" }] },
+      { id: "snare", kind: "drums", instrument: "drums", pattern: "sd" },
+    ], sections: [{ id: "hook", bars: 2, role: "hook" }], arrangement: [{ section: "hook", repeats: 3 }] });
+  const geometry = createGeometry(song, buildTimeline(song));
+  assert.deepEqual(geometry.full, [2, 3]);
+});

@@ -155,7 +155,11 @@ export function createGeometry(song: ResolvedSong, timeline: Timeline, genre: st
     if (placement.role === "hook" || placement.role === "groove") grooves.push(...bars);
     const section = song.sections.find((item) => item.id === placement.section)!;
     const effective = (id: string): string | null => Object.hasOwn(section.patterns, id) ? section.patterns[id] ?? null : song.tracks.find((track) => track.id === id)?.pattern ?? null;
-    const activeDrums = (ids: Set<string>): boolean => [...ids].some((id) => effective(id) !== null);
+    const activeDrums = (ids: Set<string>): boolean => [...ids].some((id) => {
+      const track = song.tracks.find((item) => item.id === id);
+      if (track?.notes !== undefined) return bars.some((bar) => eventsAt(geometry, bar).some((event) => event.track === id));
+      return effective(id) !== null;
+    });
     if (["hook", "verse", "groove", ...(genre === "techno" ? ["build"] : [])].includes(placement.role ?? "") && activeDrums(kickTracks) && activeDrums(snareTracks)) full.push(...bars);
   }
   return geometry;

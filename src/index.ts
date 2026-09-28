@@ -5,6 +5,9 @@ export { parseMini, queryArc, onsets, noteToMidi, midiToName, parseSampleRef } f
 export type { Atom, Node, Span, Hap, QueryCtx } from "./pattern/index.ts";
 export { SONG_JSON_SCHEMA, validateSong, loadSong, arrange, buildTimeline } from "./song/index.ts";
 export type { Song, Track, Section, ResolvedSong, ResolvedTrack, ResolvedSection, Placement, TimedEvent, Timeline } from "./song/index.ts";
+export { buildProject } from "./project/index.ts";
+export type { ProjectIR, ProjectMarker, ProjectBus, ProjectTrackBase, ProjectInstrument,
+  ProjectNoteTrack, ProjectAudioTrack, ProjectTrack, ProjectNote, ProjectClip, ProjectSample } from "./project/index.ts";
 export { createStereo, peakLinear, truePeakLinear, readWav, writeWav } from "./audio-io/index.ts";
 export type { StereoBuffer, WavInfo, WavWriteOptions } from "./audio-io/index.ts";
 export { renderSong, VOICES } from "./render/index.ts";

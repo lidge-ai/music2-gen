@@ -4,7 +4,7 @@ import { validateSong } from "../../song/index.ts";
 import { Music2Error } from "../../shared/index.ts";
 import type { ResolvedSong, ResolvedTrack } from "../../song/index.ts";
 import { DRUM_NAMES } from "./drums.tool.ts";
-import { declaredSampleNames, mergeParams, resolveVoice, validateVoiceParams, VOICES } from "./registry.tool.ts";
+import { declaredSampleNames, mergeParams, resolveVoice, validateDawVoiceLanes, validateVoiceParams, VOICES } from "./registry.tool.ts";
 
 function songWith(tracks: { id: string; kind: "drums" | "notes"; instrument: string;
   mono?: boolean; params?: Record<string, number> }[]): ResolvedSong {
@@ -104,6 +104,41 @@ void test("valid boundary values and omitted params pass", () => {
   assert.doesNotThrow(() => validateVoiceParams(song));
   const bass: ResolvedTrack = song.tracks[0]!;
   assert.equal(mergeParams(resolveVoice(bass, 0)!, bass.params)["releaseMs"], 80);
+});
+
+void test("voice automation accepts only opted-in numeric parameters and their ranges", () => {
+  assert.deepEqual(VOICES["pad"]?.automatable, ["cutoffHz"]);
+  assert.deepEqual(VOICES["bass"]?.automatable, ["cutoffHz"]);
+  assert.deepEqual(VOICES["lead"]?.automatable, ["vibratoCents"]);
+  for (const [instrument, target, value] of [
+    ["pad", "param.cutoffHz", 80], ["bass", "param.cutoffHz", 8000],
+    ["lead", "param.vibratoCents", 100],
+  ] as const) {
+    const song = validateSong({ version: 1, bpm: 120,
+      tracks: [{ id: "v", kind: "notes", instrument, notes: [{ start: 0, length: 1, pitch: 60 }],
+        automation: [{ target, points: [{ at: 0, value }] }] }],
+      sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] });
+    assert.doesNotThrow(() => validateDawVoiceLanes(song));
+  }
+  const rejected = validateSong({ version: 1, bpm: 120,
+    tracks: [
+      { id: "p", kind: "notes", instrument: "piano", pattern: "c4",
+        automation: [{ target: "param.decayMs", points: [{ at: 0, value: 500 }] }] },
+      { id: "k", kind: "notes", instrument: "pad", pattern: "c4",
+        automation: [{ target: "param.attackMs", points: [{ at: 0, value: 400 }] }] },
+      { id: "b", kind: "notes", instrument: "bass", pattern: "c2",
+        automation: [{ target: "param.cutoffHz", points: [{ at: 0, value: 39 }] }] },
+    ], sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] });
+  assert.throws(() => validateDawVoiceLanes(rejected), (error: unknown) => {
+    assert.deepEqual(issuePaths(error), ["$.tracks[0].automation[0].target",
+      "$.tracks[1].automation[0].target", "$.tracks[2].automation[0].points[0].value"]);
+    return true;
+  });
+  const sfz = validateSong({ version: 1, bpm: 120,
+    tracks: [{ id: "sampled", kind: "notes", instrument: "sfz:a.sfz", pattern: "c4",
+      automation: [{ target: "param.cutoffHz", points: [{ at: 0, value: 1200 }] }] }],
+    sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] });
+  assert.doesNotThrow(() => validateDawVoiceLanes(sfz));
 });
 
 void test("supersaw and expanded voice bounds validate", () => {

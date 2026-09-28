@@ -14,6 +14,24 @@ const base = () => ({ version: 1 as const, bpm: 140, genre: "drill_uk", key: "C 
   sections: [{ id: "hook", bars: 4, role: "hook", patterns: {} as Record<string, string | null> }], arrangement: [{ section: "hook" }] });
 const ids = (song: unknown, options?: { genre?: string }): string[] => lintSong(song, options).results.map((result) => result.id);
 
+test("list notes feed rhythm and pitch lint without pattern parse errors", () => {
+  const report = lintSong({ version: 1, bpm: 124, genre: "house", key: "C major",
+    tracks: [
+      { id: "kick", kind: "drums", instrument: "drums", notes: [0, 1, 2, 3].map((start) =>
+        ({ start, length: .25, sample: "bd" })) },
+      { id: "snare", kind: "drums", instrument: "drums", notes: [1, 3].map((start) =>
+        ({ start, length: .25, sample: "sd" })) },
+      { id: "lead", kind: "notes", instrument: "piano", notes: [
+        { start: 0, length: 1, pitch: 20 }, { start: 2, length: 1, pitch: 61 }] },
+    ], sections: [{ id: "groove", bars: 1, role: "groove" }], arrangement: [{ section: "groove" }] });
+  const found = report.results.map((result) => result.id);
+  assert.ok(!found.includes("generic/pattern_parse"));
+  assert.ok(found.includes("generic/out_of_key"));
+  assert.ok(found.includes("generic/sub_floor"));
+  assert.ok(!found.includes("house/2"));
+  assert.ok(!found.includes("house/3"));
+});
+
 test("layering findings are wired, sorted, and carry actionable fields", () => {
   const report = lintSong({ version: 1, bpm: 120, genre: "house", tracks: [
     { id: "drums", kind: "drums", instrument: "drums", pattern: "bd ~ ~ ~" },

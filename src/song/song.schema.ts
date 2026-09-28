@@ -3,6 +3,8 @@ import { noteToMidi, parseMini, parseNumber, parseSampleRef } from "../pattern/i
 import type { Node } from "../pattern/index.ts";
 import { DELAY_BUS_SPEC, INSERT_SPECS, MASTER_INSERT_TYPES, MAX_MASTER_INSERTS, MAX_TRACK_INSERTS, REVERB_SPEC } from "../render/fx/fx.schema.ts";
 import type { DelayBusParams, InsertInput, ResolvedInsert, ReverbBusParams, ParamSpec } from "../render/fx/fx.schema.ts";
+import { audioTracksRule, automationRule, notesRule, resolveAudioTracks, resolveDawTrack, validateDawFields } from "./song-daw.schema.ts";
+import type { AudioTrackInput, LaneInput, NoteInput, ResolvedAudioTrack, ResolvedLane, ResolvedNote } from "./song-daw.schema.ts";
 
 /** Delivery presets (devlog/_fin/260928_music2_flow_practice/020_real_world_checks.md). Owned here so song validation needs no usecases import. */
 export const USE_CASE_IDS = ["short_15", "short_30", "short_60", "vo_bed", "podcast_sting", "podcast_theme", "game_loop", "type_beat", "study_lofi"] as const;
@@ -17,6 +19,7 @@ export interface Song {
   master?: { gainDb?: number; ceilingDb?: number; targetLufs?: number; fx?: InsertInput[] };
   fx?: { reverb?: Partial<ReverbBusParams>; delay?: Partial<DelayBusParams> };
   tracks: Track[]; sections: Section[]; arrangement: { section: string; repeats?: number }[];
+  audioTracks?: AudioTrackInput[];
 }
 export interface Track {
   id: string; kind: "drums" | "notes"; instrument: string; pattern?: string;
@@ -26,6 +29,7 @@ export interface Track {
   fx?: InsertInput[];
   duck?: { by: string; amount: number; releaseMs?: number };
   params?: Record<string, number>;
+  notes?: NoteInput[]; automation?: LaneInput[];
 }
 export interface Section {
   id: string; bars: number;
@@ -40,6 +44,7 @@ export interface ResolvedTrack {
   fx?: ResolvedInsert[];
   duck: { by: string; amount: number; releaseMs: number } | null;
   params: Record<string, number>;
+  notes?: ResolvedNote[]; automation?: ResolvedLane[];
 }
 export interface ResolvedSection { id: string; bars: number; role: Section["role"] | null; patterns: Record<string, string | null> }
 export interface ResolvedSong {
@@ -50,6 +55,7 @@ export interface ResolvedSong {
   fx: { reverb: ReverbBusParams | null; delay: DelayBusParams | null } | null;
   tracks: ResolvedTrack[]; sections: ResolvedSection[];
   arrangement: { section: string; repeats: number }[];
+  audioTracks?: ResolvedAudioTrack[];
 }
 
 const id = { type: "string", pattern: "^[a-z][a-z0-9_-]{0,31}$" };
@@ -86,6 +92,7 @@ const trackProperties = {
   duck: { type: "object", required: ["by", "amount"], additionalProperties: false,
     properties: { by: id, amount: unit, releaseMs: { type: "number", minimum: 0 } } },
   params: { type: "object", additionalProperties: { type: "number" } },
+  notes: notesRule, automation: automationRule,
 };
 const sectionProperties = {
   id, bars: { type: "integer", minimum: 1, maximum: 256 },
@@ -119,6 +126,7 @@ const songProperties = {
   arrangement: { type: "array", minItems: 1, maxItems: 256, items: {
     type: "object", required: ["section"], additionalProperties: false, properties: arrangementProperties,
   } },
+  audioTracks: audioTracksRule(trackFxRule),
 };
 export const SONG_JSON_SCHEMA = {
   $schema: "https://json-schema.org/draft/2020-12/schema", title: "music2 song v1", type: "object",
@@ -170,7 +178,8 @@ function check(value: unknown, rule: Rule, path: string, issues: Issue[]): void 
   if (type === "array") {
     if (!Array.isArray(value)) { issues.push({ path, message: "must be an array" }); return; }
     if (value.length < Number(rule["minItems"]) || value.length > Number(rule["maxItems"])) {
-      issues.push({ path, message: `item count must be ${String(rule["minItems"])}..${String(rule["maxItems"])}` });
+      issues.push({ path, message: path.endsWith(".automation") && rule["maxItems"] === 32 ? "at most 32 lanes" :
+        `item count must be ${String(rule["minItems"])}..${String(rule["maxItems"])}` });
     }
     value.forEach((item: unknown, index) => check(item, rule["items"] as Rule, `${path}[${index}]`, issues));
     return;
@@ -187,6 +196,7 @@ function check(value: unknown, rule: Rule, path: string, issues: Issue[]): void 
       issues.push({ path, message: `must be a finite ${type}` }); return;
     }
     if (rule["minimum"] !== undefined && value < Number(rule["minimum"])) issues.push({ path, message: "below minimum" });
+    if (rule["exclusiveMinimum"] !== undefined && value <= Number(rule["exclusiveMinimum"])) issues.push({ path, message: "below minimum" });
     if (rule["maximum"] !== undefined && value > Number(rule["maximum"])) issues.push({ path, message: "above maximum" });
     return;
   }
@@ -201,6 +211,8 @@ function checkFxOrder(input: Record<string, unknown>, issues: Issue[]): void {
   };
   const tracks = Array.isArray(input["tracks"]) ? input["tracks"] : [];
   const chains = tracks.map((track: unknown, i: number) => ({ fx: object(track) ? track["fx"] : null, path: `$.tracks[${i}].fx` }));
+  if (Array.isArray(input["audioTracks"])) input["audioTracks"].forEach((track: unknown, i: number) =>
+    chains.push({ fx: object(track) ? track["fx"] : null, path: `$.audioTracks[${i}].fx` }));
   chains.push({ fx: object(input["master"]) ? input["master"]["fx"] : null, path: "$.master.fx" });
   for (const chain of chains) {
     if (!Array.isArray(chain.fx)) continue;
@@ -245,6 +257,9 @@ export function validateFxFields(input: unknown): void {
   const tracks = Array.isArray(input["tracks"]) ? input["tracks"] : [];
   tracks.forEach((track: unknown, i: number) => {
     if (object(track) && track["fx"] !== undefined) check(track["fx"], trackFxRule, `$.tracks[${i}].fx`, issues);
+  });
+  if (Array.isArray(input["audioTracks"])) input["audioTracks"].forEach((track: unknown, i: number) => {
+    if (object(track) && track["fx"] !== undefined) check(track["fx"], trackFxRule, `$.audioTracks[${i}].fx`, issues);
   });
   if (input["fx"] !== undefined && input["fx"] !== null) check(input["fx"], fxRule, "$.fx", issues);
   if (object(input["master"]) && input["master"]["fx"] !== undefined)
@@ -305,11 +320,11 @@ export function validateSong(input: unknown): ResolvedSong {
         if (trackIds.has(raw["id"])) issues.push({ path: `${path}.id`, message: "duplicate track id" });
         trackIds.add(raw["id"]);
       }
-      if (typeof raw["pattern"] === "string") {
+      if (typeof raw["pattern"] === "string" && raw["notes"] === undefined) {
         const kind = raw["kind"] === "drums" || raw["kind"] === "notes" ? raw["kind"] : null;
         checkPattern(raw["pattern"], kind, `${path}.pattern`, issues);
       }
-      if (typeof raw["velocity"] === "string") checkPattern(raw["velocity"], "velocity", `${path}.velocity`, issues);
+      if (typeof raw["velocity"] === "string" && raw["notes"] === undefined) checkPattern(raw["velocity"], "velocity", `${path}.velocity`, issues);
     });
     sections.forEach((raw: unknown, i) => {
       if (!object(raw)) return;
@@ -322,7 +337,7 @@ export function validateSong(input: unknown): ResolvedSong {
         const subpath = `${path}.patterns.${track}`;
         if (!trackIds.has(track)) issues.push({ path: subpath, message: "unknown track" });
         const found = tracks.find((candidate: unknown) => object(candidate) && candidate["id"] === track);
-        if (typeof patternValue === "string") {
+        if (typeof patternValue === "string" && !(object(found) && found["notes"] !== undefined)) {
           const kind = object(found) && (found["kind"] === "notes" || found["kind"] === "drums") ? found["kind"] : null;
           checkPattern(patternValue, kind, subpath, issues);
         }
@@ -340,6 +355,9 @@ export function validateSong(input: unknown): ResolvedSong {
         issues.push({ path: `$.arrangement[${i}].section`, message: "unknown section" });
       }
     });
+    if (issues.length === 0 && (input["audioTracks"] !== undefined || tracks.some((raw) => object(raw) &&
+      (raw["notes"] !== undefined || raw["automation"] !== undefined ||
+        (typeof raw["instrument"] === "string" && raw["instrument"].startsWith("sfz:")))))) validateDawFields(input, issues);
   }
   if (issues.length) throw new Music2Error("E_SCHEMA", `song has ${issues.length} issue(s)`, { details: { issues } });
   validateFxFields(input);
@@ -362,8 +380,10 @@ export function validateSong(input: unknown): ResolvedSong {
       fx: resolvedInserts(track.fx),
       duck: track.duck ? { by: track.duck.by, amount: track.duck.amount, releaseMs: track.duck.releaseMs ?? 180 } : null,
       params: { ...track.params },
+      ...(track.notes === undefined && track.automation === undefined ? {} : resolveDawTrack(track, song)),
     })),
     sections: song.sections.map((section) => ({ id: section.id, bars: section.bars, role: section.role ?? null, patterns: { ...section.patterns } })),
     arrangement: song.arrangement.map(({ section, repeats }) => ({ section, repeats: repeats ?? 1 })),
+    ...(song.audioTracks === undefined ? {} : { audioTracks: resolveAudioTracks(song)! }),
   };
 }

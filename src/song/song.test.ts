@@ -1,11 +1,24 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { packageRoot, Music2Error } from "../shared/index.ts";
 import { SONG_JSON_SCHEMA, validateSong } from "./song.schema.ts";
 
 const fixture = () => JSON.parse(readFileSync(join(packageRoot(), "examples/minimal.song.json"), "utf8")) as Record<string, unknown>;
+const preSchema = join(packageRoot(), "tests/fixtures/daw-legacy/song.v1.pre.json");
+function oldSchemaUnchanged(before: unknown, after: unknown, path = "$schema"): void {
+  if (Array.isArray(before)) { assert.deepEqual(after, before, path); return; }
+  if (typeof before === "object" && before !== null) {
+    assert.ok(typeof after === "object" && after !== null && !Array.isArray(after), path);
+    const previous = before as Record<string, unknown>;
+    const current = after as Record<string, unknown>;
+    if (!path.endsWith(".properties")) assert.deepEqual(Object.keys(current).sort(), Object.keys(previous).sort(), path);
+    for (const [key, value] of Object.entries(previous)) oldSchemaUnchanged(value, current[key], `${path}.${key}`);
+    return;
+  }
+  assert.deepEqual(after, before, path);
+}
 function issues(input: unknown): { path: string; message: string }[] {
   try { validateSong(input); assert.fail("expected E_SCHEMA"); }
   catch (error) {
@@ -17,6 +30,10 @@ function issues(input: unknown): { path: string; message: string }[] {
 
 void test("published schema bytes match the in-code draft 2020-12 contract", () => {
   assert.equal(readFileSync(join(packageRoot(), "schema/song.v1.json"), "utf8"), `${JSON.stringify(SONG_JSON_SCHEMA, null, 2)}\n`);
+});
+
+void test("pre-DAW JSON schema remains an exact subtree except added properties", { skip: !existsSync(preSchema) && "pre-DAW fixture owned by main lane" }, () => {
+  oldSchemaUnchanged(JSON.parse(readFileSync(preSchema, "utf8")) as unknown, SONG_JSON_SCHEMA);
 });
 
 void test("resolved defaults fill every optional output field", () => {
@@ -92,8 +109,19 @@ void test("each published top-level property is accepted by validation", () => {
   const song = fixture();
   Object.assign(song, { genre: "test", meter: { numerator: 4, denominator: 4 }, seed: 0, swing: 0.5,
     sampleRate: 48000, tailSeconds: 0, loop: true, useCase: "game_loop", master: { gainDb: 0, ceilingDb: -1, targetLufs: -14 } });
-  assert.deepEqual(Object.keys(SONG_JSON_SCHEMA.properties).sort(), [...Object.keys(song), "fx"].sort());
+  assert.deepEqual(Object.keys(SONG_JSON_SCHEMA.properties).sort(), [...Object.keys(song), "fx", "audioTracks"].sort());
   assert.equal(validateSong(song).sampleRate, 48000);
+});
+
+void test("new optional fields are absent from legacy resolved JSON", () => {
+  const song = validateSong(fixture());
+  assert.equal("audioTracks" in song, false);
+  for (const track of song.tracks) {
+    assert.equal("notes" in track, false);
+    assert.equal("automation" in track, false);
+  }
+  assert.ok("audioTracks" in SONG_JSON_SCHEMA.properties);
+  assert.ok("notes" in SONG_JSON_SCHEMA.properties.tracks.items.properties);
 });
 
 void test("effect defaults resolve while absent buses stay on legacy path", () => {

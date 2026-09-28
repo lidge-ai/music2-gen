@@ -14,6 +14,10 @@ src/usecases/
 
 Use cases turn a validated recipe song into a destination-specific source song. The tool clones the input, chooses exact bar/BPM/tail combinations against the renderer's `ceil` frame rule for duration presets, reshapes sections through the recipe builder, and sets `master`, `useCase`, and whole-song `loop` fields. It performs no I/O and adds no runtime dependency. `src/song/song.schema.ts` owns the canonical `UseCaseId` union so song validation does not import this feature.
 
+Before cloning, `applyUseCase` rejects note lists, nonempty `audioTracks`, and
+nonempty automation on music or audio tracks with `E_INPUT`. The error names
+present features in that order because rearrangement would move absolute media.
+
 ## Key Function Signatures
 
 | Export | Purpose |

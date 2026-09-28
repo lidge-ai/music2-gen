@@ -75,6 +75,44 @@ test("targetLufs no longer blocks render validation; bad drum names point to tra
       (error.details?.["issues"] as { path: string }[])[0]?.path === "tracks[0].pattern");
 });
 
+test("list notes render audible PCM and declared samples report their input index", async () => {
+  const source = (sample: string) => validateSong({ version: 1, bpm: 120, tailSeconds: 0,
+    tracks: [{ id: "beat", kind: "drums", instrument: "drums", notes: [
+      { start: 1, length: .25, sample: "bd" }, { start: 0, length: .25, sample }] }],
+    sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] });
+  const rendered = await renderSong(source("sd"), "fixture.song.json");
+  assert.equal(rendered.events, 2);
+  assert.ok(rendered.audio.left.some((sample) => sample !== 0));
+  await assert.rejects(renderSong(source("cowbell"), "fixture.song.json"), (error: unknown) =>
+    sampleIssue(error, "tracks[0].notes[1].sample"));
+});
+
+test("list pitch errors point to the note field after timeline sorting", async () => {
+  const song = validateSong({ version: 1, bpm: 120, tailSeconds: 0,
+    tracks: [{ id: "lead", kind: "notes", instrument: "piano", notes: [
+      { start: 1, length: 1, pitch: 64 }, { start: 0, length: 1, pitch: 60 }] }],
+    sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] });
+  song.tracks[0]!.notes!.find((note) => note.inputIndex === 0)!.pitch = 128;
+  await assert.rejects(renderSong(song, "fixture.song.json"), (error: unknown) =>
+    sampleIssue(error, "tracks[0].notes[0].pitch"));
+});
+
+test("declared audio, SFZ and automation fail before partial mixing", async () => {
+  const base = (instrument = "piano") => validateSong({ version: 1, bpm: 120,
+    tracks: [{ id: "lead", kind: "notes", instrument, pattern: "c4" }],
+    sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] });
+  const audio = validateSong({ version: 1, bpm: 120,
+    tracks: [{ id: "lead", kind: "notes", instrument: "piano", pattern: "c4" }],
+    audioTracks: [{ id: "vox", clips: [{ file: "vox.wav", start: 0, length: 1 }] }],
+    sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] });
+  const automation = base();
+  automation.tracks[0]!.automation = [{ target: "gain", points: [{ tick: 0, value: 0, curve: "linear" }] }];
+  for (const song of [audio, base("sfz:a.sfz"), automation]) {
+    await assert.rejects(renderSong(song, "fixture.song.json"), (error: unknown) =>
+      error instanceof Music2Error && error.code === "E_CAPABILITY" && error.exit === 3);
+  }
+});
+
 function sampleIssue(error: unknown, path: string): boolean {
   return error instanceof Music2Error && error.code === "E_SCHEMA" &&
     (error.details?.["issues"] as { path: string }[])[0]?.path === path;

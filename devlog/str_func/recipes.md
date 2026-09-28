@@ -119,6 +119,9 @@ optional. `LintOptions` contains optional `genre`. `LintResult` has `id`,
 
 ### Lint geometry
 
+- List tracks have no effective pattern text. Their drum activity comes from
+  Timeline events within each placement; pitch and rhythm rules use those same
+  events. The raw parse-only path still examines actual pattern strings.
 - `full` bars come from hook, verse, and groove placements with active kick
   and snare patterns; techno also admits build placements.
 - Kick, backbeat, and hat events count only parsed sample events on built-in

@@ -5,7 +5,7 @@ import { buildTimeline } from "../song/index.ts";
 import type { ResolvedSong } from "../song/index.ts";
 import { mixTracks } from "./mixer.tool.ts";
 import type { RenderOptions, RenderResult } from "./render.schema.ts";
-import { declaredSampleNames, validateVoiceParams } from "./voices/registry.tool.ts";
+import { declaredSampleNames, validateDawVoiceLanes, validateVoiceParams } from "./voices/registry.tool.ts";
 
 function visitAtoms(node: Node, visit: (raw: string) => void): void {
   switch (node.type) {
@@ -46,18 +46,27 @@ function validateDeclaredSamples(song: ResolvedSong): void {
 /** Render a validated, resolved song to deterministic stereo PCM. */
 export async function renderSong(song: ResolvedSong, songPath: string,
   options: RenderOptions = {}): Promise<RenderResult> {
+  if (song.audioTracks?.length) throw new Music2Error("E_CAPABILITY", "audioTracks rendering is not available");
+  if (song.tracks.some((track) => track.instrument.startsWith("sfz:")))
+    throw new Music2Error("E_CAPABILITY", "SFZ rendering is not available");
   validateVoiceParams(song);
+  validateDawVoiceLanes(song);
   validateDeclaredSamples(song);
   const timeline = buildTimeline(song);
   for (const event of timeline.events) {
     const track = song.tracks[event.trackIndex]!;
+    const sourcePath = track.notes === undefined ? `tracks[${event.trackIndex}].pattern` :
+      `tracks[${event.trackIndex}].notes[${event.order}]`;
     const names = declaredSampleNames(track.instrument);
-    if (names && event.sample) checkSample(event.sample.name, names, `tracks[${event.trackIndex}].pattern`);
+    if (names && event.sample) checkSample(event.sample.name, names,
+      track.notes === undefined ? sourcePath : `${sourcePath}.sample`);
     if (event.midi !== null && (!Number.isFinite(event.midi) || event.midi < 0 || event.midi > 127)) {
       throw new Music2Error("E_SCHEMA", `invalid MIDI on track ${track.id}`, {
-        details: { issues: [{ path: `tracks[${event.trackIndex}].pattern`, message: "MIDI must be 0..127" }] },
+        details: { issues: [{ path: track.notes === undefined ? sourcePath : `${sourcePath}.pitch`, message: "MIDI must be 0..127" }] },
       });
     }
   }
+  if (song.tracks.some((track) => track.automation?.length) || song.audioTracks?.some((track) => track.automation?.length))
+    throw new Music2Error("E_CAPABILITY", "automation rendering is not available");
   return mixTracks(song, timeline, songPath, options);
 }

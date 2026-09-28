@@ -1,5 +1,4 @@
-import { randomUUID } from "node:crypto";
-import { mkdir, realpath, rename, rm } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { writeWav } from "../../audio-io/index.ts";
 import { discoverFfmpeg, encodeAudio, loudnormWav } from "../../probe/index.ts";
@@ -7,6 +6,8 @@ import { renderSong } from "../../render/index.ts";
 import type { RenderData } from "../../render/render.schema.ts";
 import { fnv1a32, Music2Error, storageDir } from "../../shared/index.ts";
 import { loadSong } from "../../song/index.ts";
+import { assertDistinct, commitReplace, stage } from "../files.ts";
+import type { StagedFile } from "../files.ts";
 import type { CommandSpec } from "../registry.ts";
 
 function inputError(message: string): Music2Error { return new Music2Error("E_INPUT", message); }
@@ -34,22 +35,6 @@ function bars(value: unknown): { start: number; end: number } | undefined {
   }
   return { start, end };
 }
-function tempPath(finalPath: string): string {
-  const extension = extname(finalPath);
-  return join(dirname(finalPath), `.${basename(finalPath, extension)}.${randomUUID()}.tmp${extension}`);
-}
-async function identity(path: string): Promise<string> {
-  try { return await realpath(path); } catch { return path; }
-}
-async function checkCollisions(input: string, outputs: string[]): Promise<void> {
-  const seen = new Set<string>();
-  for (const path of [input, ...outputs]) {
-    const key = await identity(path);
-    if (seen.has(key)) throw inputError(`input/output path collision: ${path}`);
-    seen.add(key);
-  }
-}
-
 export const render: CommandSpec = {
   name: "render", summary: "Render a song to WAV and optional encoded copies",
   usage: "music2 render <song.json> [-o out.wav] [--bits 16|24] [--mp3] [--ogg] [--stems dir] [--bars a:b] [--loudnorm] [--json] (default output: $MUSIC2_HOME/renders/<song>.wav, home ~/.music2)",
@@ -78,7 +63,7 @@ export const render: CommandSpec = {
     const ogg = values["ogg"] === true ? wav.slice(0, -4) + ".ogg" : undefined;
     const stemPaths = stemDir ? song.tracks.map((track) => join(stemDir, `${track.id}.wav`)) : [];
     const outputPaths = [wav, ...(mp3 ? [mp3] : []), ...(ogg ? [ogg] : []), ...stemPaths];
-    await checkCollisions(songPath, outputPaths);
+    await assertDistinct([songPath], outputPaths);
     const needsFfmpeg = mp3 !== undefined || ogg !== undefined || values["loudnorm"] === true;
     const ffmpeg = needsFfmpeg ? await discoverFfmpeg() : null;
     if (needsFfmpeg && ffmpeg === null) throw new Music2Error("E_FFMPEG_MISSING", "ffmpeg executable not found");
@@ -88,36 +73,36 @@ export const render: CommandSpec = {
       ...(range ? { bars: range } : {}), stems: stemDir !== undefined,
       mastering: values["loudnorm"] === true ? "loudnorm" : song.master.targetLufs === null ? "peak" : "lufs",
     });
-    const pending: { temporary: string; final: string }[] = [];
+    const pending: StagedFile[] = [];
     const temporaryFiles: string[] = [];
-    const stage = (final: string): string => {
-      const temporary = tempPath(final);
-      temporaryFiles.push(temporary);
-      pending.push({ temporary, final });
-      return temporary;
+    const stageOutput = (final: string): string => {
+      const item = stage(final);
+      temporaryFiles.push(item.temporary);
+      pending.push(item);
+      return item.temporary;
     };
     try {
       if (explicitWav === undefined) await mkdir(dirname(wav), { recursive: true });
       if (stemDir) await mkdir(stemDir, { recursive: true });
-      let wavSource = stage(wav);
+      let wavSource = stageOutput(wav);
       await writeWav(wavSource, result.audio, { bits: bitDepth, seed: fnv1a32(song.seed, "master", "wav") });
       if (values["loudnorm"] === true) {
-        const normalized = tempPath(wav);
-        temporaryFiles.push(normalized);
-        await loudnormWav(wavSource, normalized, ffmpeg!, {
+        const normalized = stage(wav);
+        temporaryFiles.push(normalized.temporary);
+        await loudnormWav(wavSource, normalized.temporary, ffmpeg!, {
           targetLufs: song.master.targetLufs ?? -14, ceilingDb: song.master.ceilingDb,
         });
         await rm(wavSource, { force: true });
-        pending[0]!.temporary = normalized;
-        wavSource = normalized;
+        pending[0]!.temporary = normalized.temporary;
+        wavSource = normalized.temporary;
       }
       for (let i = 0; i < stemPaths.length; i++) {
-        await writeWav(stage(stemPaths[i]!), result.stems[i]!.audio,
+        await writeWav(stageOutput(stemPaths[i]!), result.stems[i]!.audio,
           { bits: bitDepth, seed: fnv1a32(song.seed, song.tracks[i]!.id, "wav") });
       }
-      if (mp3) await encodeAudio(wavSource, stage(mp3), ffmpeg!, { format: "mp3" });
-      if (ogg) await encodeAudio(wavSource, stage(ogg), ffmpeg!, { format: "ogg" });
-      for (const item of pending) await rename(item.temporary, item.final);
+      if (mp3) await encodeAudio(wavSource, stageOutput(mp3), ffmpeg!, { format: "mp3" });
+      if (ogg) await encodeAudio(wavSource, stageOutput(ogg), ffmpeg!, { format: "ogg" });
+      try { await commitReplace(pending); } catch (cause) { throw accessError(wav, cause); }
     } catch (cause) {
       if (cause instanceof Music2Error) throw cause;
       throw accessError(wav, cause);

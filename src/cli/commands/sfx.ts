@@ -1,10 +1,10 @@
-import { randomUUID } from "node:crypto";
-import { link, lstat, mkdir, rm, unlink, writeFile } from "node:fs/promises";
+import { lstat, mkdir, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { writeWav } from "../../audio-io/index.ts";
 import { fnv1a32, Music2Error, storageDir } from "../../shared/index.ts";
 import { generateSfx, parseParamsFlag, resolveSfx } from "../../sfx/index.ts";
 import type { ResolvedSfx } from "../../sfx/index.ts";
+import { commitNoReplace, stage } from "../files.ts";
 import type { CommandSpec } from "../registry.ts";
 
 function inputError(message: string): Music2Error { return new Music2Error("E_INPUT", message); }
@@ -33,15 +33,6 @@ function rateFlag(value: string | undefined): number | undefined {
   if (value === undefined) return undefined;
   if (value !== "44100" && value !== "48000") throw inputError("--sample-rate must be 44100 or 48000");
   return Number(value);
-}
-
-async function commit(temporary: string, final: string): Promise<void> {
-  try { await link(temporary, final); } catch (cause) {
-    if ((cause as NodeJS.ErrnoException).code === "EEXIST") {
-      throw new Music2Error("E_ACCESS", `output already exists: ${final}`, { details: { path: final }, cause });
-    }
-    throw cause;
-  }
 }
 
 async function exists(path: string): Promise<boolean> {
@@ -113,24 +104,20 @@ export const sfx: CommandSpec = {
       if (cause instanceof Music2Error) throw cause;
       throw new Music2Error("E_RENDER", `cannot synthesize ${resolved.preset}`, { cause });
     }
-    const tempWav = join(dirname(wav), `.${basename(wav, ".wav")}.${randomUUID()}.tmp.wav`);
-    const tempJson = join(dirname(wav), `.${basename(wav, ".wav")}.${randomUUID()}.tmp.json`);
+    const stagedWav = stage(wav);
+    const stagedJson = stage(sidecar);
     try {
-      await writeWav(tempWav, { sampleRate: resolved.sampleRate, left: stereo.left, right: stereo.right, sourceChannels: 2 },
+      await writeWav(stagedWav.temporary, { sampleRate: resolved.sampleRate, left: stereo.left, right: stereo.right, sourceChannels: 2 },
         { bits: 16, seed: fnv1a32(resolved.seed, resolved.preset, resolved.frames, "sfx-wav") });
-      await writeFile(tempJson, sidecarJson(resolved), { flag: "wx" });
+      await writeFile(stagedJson.temporary, sidecarJson(resolved), { flag: "wx" });
       // link() never replaces an existing path, so a destination created after the early check is refused, not overwritten.
-      await commit(tempWav, wav);
-      try { await commit(tempJson, sidecar); } catch (cause) {
-        await unlink(wav).catch(() => undefined);
-        throw cause;
-      }
+      await commitNoReplace([stagedWav, stagedJson]);
     } catch (cause) {
       if (cause instanceof Music2Error) throw cause;
       throw new Music2Error("E_ACCESS", `cannot write output: ${wav}`, { details: { path: wav }, cause });
     } finally {
-      await rm(tempWav, { force: true });
-      await rm(tempJson, { force: true });
+      await rm(stagedWav.temporary, { force: true });
+      await rm(stagedJson.temporary, { force: true });
     }
     return {
       command: "sfx",

@@ -13,11 +13,15 @@ src/song/
 ├── index.ts             # public song boundary
 ├── song.schema.ts       # song types, JSON Schema, validation, normalization
 ├── song.test.ts         # schema, cross-reference, pattern validation cases
+├── song-daw.schema.ts   # optional note lists, audio clips and automation contract
+├── song-daw.test.ts     # DAW field bounds, paths and resolved defaults
 ├── load.tool.ts         # JSON file loading and read/parse diagnostics
 ├── load.test.ts         # missing file and malformed JSON cases
 ├── arrange.tool.ts      # repeated-section placement expansion
 ├── arrange.test.ts      # ordinal, occurrence, and start-bar cases
 ├── timeline.tool.ts     # pattern evaluation and timed events
+├── timeline-notes.tool.ts # list notes projected to ordinary timed events
+├── timeline-notes.test.ts # list timing, ordering and cap vectors
 └── timeline.test.ts     # timing, swing, velocity, and determinism cases
 ```
 
@@ -26,6 +30,13 @@ src/song/
 FX additions: `song.schema.ts` imports only the declarative `render/fx/fx.schema.ts` contract, generates discriminated JSON Schema branches, validates exact effect paths and frequency ordering, and resolves missing insert/bus values. `validateFxFields(input)` is also available for direct resolved-song render validation. Absent track/master chains resolve to empty arrays; absent `song.fx` resolves to `null`.
 
 `src/song` owns the song v1 contract from raw input through a timed event list.
+The optional DAW fields keep version 1. A track note list is arrangement-absolute
+in beats and exclusive with its pattern. `song-daw.schema.ts` validates note,
+clip and automation boundaries, then resolves positions to 960-PPQ ticks.
+Absent `notes`, `automation` and `audioTracks` stay absent in resolved JSON.
+Audio clips and automation are retained as metadata for later render phases.
+`timeline-notes.tool.ts` appends list events only for tracks with a `notes`
+field; the legacy pattern loop and its sort comparator are unchanged.
 `song.schema.ts` publishes the JSON Schema, checks its structural constraints,
 validates cross-references and mini-notation atoms, and fills defaults into a
 `ResolvedSong`. It reports validation findings as paths rooted at `$`.
@@ -54,6 +65,12 @@ These signatures are the exact exported declarations in implementation files.
 | `export async function loadSong(path: string): Promise<ResolvedSong>` | `load.tool.ts` | Read, parse, and validate one song file. |
 | `export function arrange(song: ResolvedSong): Placement[]` | `arrange.tool.ts` | Expand entries and repeats to ordered placements. |
 | `export function buildTimeline(song: ResolvedSong): Timeline` | `timeline.tool.ts` | Produce placements and timed events. |
+| `export function appendListEvents(song: ResolvedSong, events: TimedEvent[], counts: Map<string, number>): void` | `timeline-notes.tool.ts` | Add absolute tick notes under the shared 20k event cap. |
+| `export function parseTarget(target: string): AutomationTarget` | `song-daw.schema.ts` | Parse the lane target grammar. |
+| `export function resolveLanes(input: LaneInput[] \| undefined, context: { path: string; bodyBeats: number; inserts: readonly ResolvedInsert[] }): ResolvedLane[] \| undefined` | `song-daw.schema.ts` | Resolve automation positions. |
+| `export function validateDawFields(input: unknown, issues: { path: string; message: string }[]): void` | `song-daw.schema.ts` | Add cross-field DAW diagnostics. |
+| `export function resolveDawTrack(input: Track, song: Song): Pick<ResolvedTrack, "notes" \| "automation">` | `song-daw.schema.ts` | Resolve optional music-track DAW fields. |
+| `export function resolveAudioTracks(input: Song): ResolvedAudioTrack[] \| undefined` | `song-daw.schema.ts` | Resolve optional audio tracks and clips. |
 
 ### Public data types and value
 
@@ -64,6 +81,7 @@ These signatures are the exact exported declarations in implementation files.
 | `Section` | `export interface Section` | Named bar span and optional per-track pattern overrides. |
 | `ResolvedSong` | `export interface ResolvedSong` | Normalized song with required fields. |
 | `ResolvedTrack` | `export interface ResolvedTrack` | Track defaults filled, including nullable pattern and duck. |
+| `ResolvedNote`, `ResolvedLane`, `ResolvedPoint`, `ResolvedAudioTrack`, `ResolvedClip` | Interfaces in `song-daw.schema.ts` | Tick-based DAW fields. |
 | `ResolvedSection` | `export interface ResolvedSection` | Section defaults filled, including nullable role. |
 | `Placement` | `export interface Placement` | One section occurrence at an absolute start bar. |
 | `TimedEvent` | `export interface TimedEvent` | One attack with position, duration, atom, and sound value. |

@@ -72,3 +72,16 @@ void test("SFX fills weighted slots regardless of gate while classic drums keep 
   assert.deepEqual(timeline.events.filter((event) => event.track === "kit").map((event) =>
     [event.slot, event.duration]), [[2, .1]]);
 });
+
+void test("mixed list and pattern tracks preserve legacy pattern event shape and absolute list time", () => {
+  const raw = { version: 1, bpm: 120, tracks: [
+    { id: "drum", kind: "drums", instrument: "drums", pattern: "bd" },
+    { id: "lead", kind: "notes", instrument: "piano", notes: [{ start: 4, length: 1, pitch: 64 }] },
+  ], sections: [{ id: "a", bars: 1 }], arrangement: [{ section: "a", repeats: 2 }] };
+  const legacy = validateSong({ ...raw, tracks: [raw.tracks[0]] });
+  const mixed = buildTimeline(validateSong(raw));
+  assert.equal(JSON.stringify(mixed.events.filter((event) => event.track === "drum")), JSON.stringify(buildTimeline(legacy).events));
+  assert.deepEqual(mixed.events.map((event) => [event.track, event.time, event.cycleBegin]),
+    [["drum", 0, "0"], ["drum", 2, "0"], ["lead", 2, "1"]]);
+  assert.equal(mixed.events[2]?.bar, 1);
+});

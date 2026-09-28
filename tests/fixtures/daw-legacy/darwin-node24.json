@@ -1,0 +1,418 @@
+{
+  "sourceSha": "3355d53ae42ea95b84070d1fbf7d017859053ae5",
+  "nodeMajor": 24,
+  "platform": "darwin",
+  "examples": {
+    "examples/boom-bap-90.song.json": {
+      "render": "2a402094bd8f9abfd7e266a1cfe2df975872eda0ba204a4cec4eca2022c45a0a",
+      "stems": {
+        "bass.wav": "332f20ba661a30bdfe311bd9305c70e0babc0600bca707269a7c8441f83dbf5c",
+        "hats.wav": "96c4a99d4d8b93b32408aea3729ab8ccfbe922fcbf55ff60bd7c6172c5e423a3",
+        "keys.wav": "7307fd46ef3064bfec02447b8220320c6c7ac05681d5967598100d2c60862526",
+        "kick.wav": "84e8e248c1a5c4e1a006d86a57fde90bf693af81014881363c8f804ed56bab9b",
+        "snare.wav": "7bc987198c15bd82b2165f32fd5767673ce2d783cf52486f8888bacfb4321283",
+        "stab.wav": "ed40ccbc61207b550ef0c97344a77ced7c02a81be805d62da36897703a616ae5"
+      },
+      "validate": {
+        "exit": 0,
+        "sha256": "14263ec17f9281967cb6bcbfa6e266c71323fefa4a553a56269321ef6f88b752"
+      },
+      "events": {
+        "exit": 0,
+        "sha256": "1d284e7905432b3d2540e5b393f06230faa8d272344947f2cbcec6dad81c1b18"
+      },
+      "lint": {
+        "exit": 0,
+        "sha256": "faef56d9dac1eeecf1f26571a652b450924456671098d87a766726f3eaf2c95d"
+      }
+    },
+    "examples/boom-bap-verse-led-90.song.json": {
+      "render": "49387bcad8c733276b28e3c8c4576b36b4036d7dd83cb02febde35f2e5ae0462",
+      "stems": {
+        "bass.wav": "ab2299fe2d30c2ca793a30cccb0dc19e572f93ecf4e199eb2a07f610c53896b3",
+        "hats.wav": "249e0d217980406937e288a32613d86f8fbb086026be798b3c3a2e3f2dccc2d9",
+        "kick.wav": "c6eba75a1bbbe6cecb79066b60c783c4fd90c3657aa1cc0e5645ae071cba42cc",
+        "melody.wav": "26c811551ac884af3621a4337591f9a82ccb3fe268cf4ed5c3931773305ace2e",
+        "snare.wav": "bc10279f97105868363e153532f2dd9b0a2de7c975bc899596878e20cb57f00a"
+      },
+      "validate": {
+        "exit": 0,
+        "sha256": "8558982028d16bb29b4baa60b3cf2bd3037ad14820da5dc848e377552da54ae0"
+      },
+      "events": {
+        "exit": 0,
+        "sha256": "da77dbf0c98cc318fc63f2dbf633d71cdf48aa6a374d2c8e33e570b621d06cbb"
+      },
+      "lint": {
+        "exit": 0,
+        "sha256": "787c2724dbdbd79f81ab65d1b702e18843a4a23a4d711d483ceb790b9f3ebac9"
+      }
+    },
+    "examples/cinematic-cue.song.json": {
+      "render": "645598d75280fb41ec54719dfc27f4d1bf018161f35fd3d42558d0f88c64e756",
+      "stems": {
+        "brass.wav": "85e26fb29d0f5df9ba1731d708fb206e86519e65255e54fdb8eabfa997607963",
+        "cello.wav": "0106b6c868291bb460e45f8ab94aeda0999fb848a898171a6b1b297917b4478a",
+        "choir.wav": "6379cc5d97f3b54230d5730fd13cd61c7e6001d92749e294fd5cea61eb9c4107",
+        "fx.wav": "d5ff4432454ab63b313b48a2d35b9d677eea25e3d96432de22652dc29822ff81",
+        "glock.wav": "d9c550909a26dc9cba418d534398991c60f1d4aa397b15446fe62c76de580a42",
+        "perc.wav": "dc74bd32ce2118d9ef0b476a22d336f7ec7ed9f5d710a8159da2cc56ef01d552",
+        "strings.wav": "0a51b07245a9c9110c0c8c7c6f2b13b8fd6ff5782aeea5c4409f1f8b4f64d863",
+        "timpani.wav": "3d38a7c61f090dadefd3602a5bf580c91c9ceb658830eea19c1517b0fb3ed8e5"
+      },
+      "validate": {
+        "exit": 0,
+        "sha256": "3adab84cd6f7d3defeaa6c7e16ac41214c8b22b8e9c34c379e80c370c3a78473"
+      },
+      "events": {
+        "exit": 0,
+        "sha256": "5fe606b71e8a932784d32ee84ef9d9418640c519250c6981d2cd059357e7fb2d"
+      },
+      "lint": {
+        "exit": 0,
+        "sha256": "bd79c8232e3b0ee16e1ac03ce04b029815fa37b97da5d5edd0def88d49023786"
+      }
+    },
+    "examples/dogfood/boom-bap-dogfood.song.json": {
+      "render": "94f8d1a433c5f8fe85c35c98580540b8f3c708a7f264c3529bece44dfe9e8647",
+      "stems": {
+        "bass.wav": "762741cf02429045c4299d2e50ae29bf041baa9171d63dad04de33de9d94665c",
+        "hats.wav": "8d7e0f1d20b4f22fcd2e0ba6133e2cc56d89b9997ea4b5d6d209f60200d8fb4c",
+        "keys.wav": "5e16738c0a9ce62cd9f173f8d094b6e796c386ab293cc9b70fa23fef95298c9f",
+        "kick.wav": "6386b9f65cf506702e9f8df63e232ac2b0d0aa768a8273fbcfdcdf2d496333b7",
+        "rim.wav": "4c5fb3065141a18deffa6f64d062303da3c8238b168a92f5d01fa38007fe8db4",
+        "snare.wav": "b488118cac2f37a6b9575883d0d05743f96be8f3f7995986232635c3c4044498"
+      },
+      "validate": {
+        "exit": 0,
+        "sha256": "66e625872503a1a6e2ab7c6f5204c35446940e114ab90364b4d36d9a67c2af24"
+      },
+      "events": {
+        "exit": 0,
+        "sha256": "b043f4eddbe7408ef691c03be3e5b32b9356dd0cd2bfca8206b6b70091a9eef5"
+      },
+      "lint": {
+        "exit": 0,
+        "sha256": "78b02735ba7d53475c3cf325c42ad453e0f4ed6590f402cde81e2a38bd58dc9a"
+      }
+    },
+    "examples/drill-140.song.json": {
+      "render": "3170c6f0981f68875dce2e972b46f49f5d7063c25d229867aa8069c23cceca33",
+      "stems": {
+        "bell.wav": "ed0cea3753f87620f8843f4173ba478bf7fdc976944cbff7e893db85e8274f16",
+        "hats.wav": "1e519aead3eb14e539bb6ba171689d7a709698e1e69a3420b8ca8f1df78cbf3b",
+        "kick.wav": "e62817b4952297ae3ecf8a0f0eff8e967c9ab2f2aec56b9a5836cee5ec1c24ae",
+        "pad.wav": "d15bb1d88dac49c973e115f92d3a3c37069f6f7c3c421bc0d862a4c8bd7aac48",
+        "snare.wav": "af12e9a8516cd3583a0d9a59364e19333d00a6c16c55cec178eaa9f15804a922",
+        "sub.wav": "f15e58152aa3f53e0daf12a13c24d51c750c3f37a24e0b352506f73ec5103349"
+      },
+      "validate": {
+        "exit": 0,
+        "sha256": "b978ecb218683afd53b49626a345aa07e1992b61cbfd8d286fa5a2bb7b90f6ea"
+      },
+      "events": {
+        "exit": 0,
+        "sha256": "4d1891e022cbecb6fd96db65093f201c82687ee4910b68e07359dcb098cf646d"
+      },
+      "lint": {
+        "exit": 0,
+        "sha256": "2ac2bb99bf1a6192764985ddbbdbe32d3665223aa590502dd08f70202d6303bb"
+      }
+    },
+    "examples/drill-uk-moving-snare-144.song.json": {
+      "render": "78bb3ac965908c384dd63b112cecb9a0e5b06865597145245828be5448f5907e",
+      "stems": {
+        "bass.wav": "bf7df96db59996ebd850491f8179c963eb895cb42ca70e89468c15a61dad4247",
+        "hats.wav": "5aee44b3fb053e0eb8854f081f09a45156d2c944c1dc8fe97664a0d873113bdc",
+        "kick.wav": "7fc934a41df59e985655ad1bcd05691ecc1fad327f9b42670a22c23115d3c298",
+        "melody.wav": "c390cfb15829e694ec1e19f2385ce5fd1746518ac2ac8fa9473db452d209e850",
+        "snare.wav": "ad15f394484e8fe00a2ec9da954b9e3e8e4acdabf667d778af85d134fa5a99c7"
+      },
+      "validate": {
+        "exit": 0,
+        "sha256": "241321512807854b074cf1f23b8d2926b8d0ac89855e907089132973011aba13"
+      },
+      "events": {
+        "exit": 0,
+        "sha256": "b7df9a863b29b444c4cf17615647d53e6b7675e298907d47c1431ec30aa87184"
+      },
+      "lint": {
+        "exit": 0,
+        "sha256": "29908d2577573b1c6c48782f4e0511e6b9bf7e98c9794608649954d3817f97ec"
+      }
+    },
+    "examples/game-loop-16bar.song.json": {
+      "render": "e589f8abe4e818992f1ea31b70293110a5af5f336e7b9999c118996bc49ddab3",
+      "stems": {
+        "bass.wav": "1fc39fcba0c63137643ad20d5a7279c7ef99a02987576a9e66f161ab896d853b",
+        "hats.wav": "f2061bca93e25ccb69885152c40fea3ed5e2f957b3cc624b3169ab21587bc1a5",
+        "kick.wav": "ad2a3339a2c6d9d23bf3f326f39915913f4ad307495ff94af96fbff87989b16a",
+        "melody.wav": "445c7a713617b5999c4858df192a7c0d636a5c9782e9788caea284bfc1181e16",
+        "seam_motif.wav": "330fa10a8a19ed3dbeca1f8b97b2d9d2ef24a646a00aae40ce3d360c5d9af31d",
+        "snare.wav": "25554ac7558d9f5c1bf5f71acd764dddb03eb1eba0f88bc1b6231df857cdd81c"
+      },
+      "validate": {
+        "exit": 0,
+        "sha256": "c009775c0a848485169a3f9dbd958d0a13ea38f55433e066f1ffa6c162683713"
+      },
+      "events": {
+        "exit": 0,
+        "sha256": "e99b182a7e53c5f94eb7e8c4d0f4ac923c811eab047938113c30b218be5d54b3"
+      },
+      "lint": {
+        "exit": 0,
+        "sha256": "ac163982a01538fe75aecfb54533d9f0e56d46d362743e84c6f530314ed562ab"
+      }
+    },
+    "examples/game-spark-loop.song.json": {
+      "render": "9c68ee31d8ddfe15da0b3c131889b11a11b14f442652face28c26cbc2efe7cba",
+      "stems": {
+        "bass.wav": "35524d440cda84b0f27c83672a03b1400a0cce9b0868ac70c4c3b254c7e1ffa5",
+        "fx.wav": "97cd3b53def1aeb7eaddf8d9e3fbb5b03b9356cf1d9edda0892b8ccfee869ec8",
+        "hats.wav": "fd5d04b49049838fc14c0672310e2209beff6e96ec64182809c032df53ae0660",
+        "kalimba.wav": "b6e43f67872ee7547a6a106b7139f565c022549d733126fce9512a44f62fff1e",
+        "kick.wav": "9811725d59169c70d6e0466e89211d63bf3a667fae75396bba62e9abe65ea132",
+        "marimba.wav": "1b005fa9379aea4bb4353ab896c7b82e0678b1cc082526de4ea4edcfb15e0b66",
+        "organ.wav": "dc7a909c7b1d883a200127a41e33b9c6da5ac125515e1c113d02baf87426b95b",
+        "snare.wav": "9ec5863b3b22e953c10cc704b66a47b06a87ff83cee6ccb08359e15746f5d423"
+      },
+      "validate": {
+        "exit": 0,
+        "sha256": "25165fda8dd1225915237b7e3b9d004bc77d666ba06744b47a4b8164a6b5e534"
+      },
+      "events": {
+        "exit": 0,
+        "sha256": "6086f78e5e263148cde404151d07b13d225fa4aa5f650ec341aa30eb84eeaa5b"
+      },
+      "lint": {
+        "exit": 0,
+        "sha256": "69d35c591d7f608c14c2bbee2a742e491516930bfa36e2c05d9a0126f3d8f798"
+      }
+    },
+    "examples/house-124.song.json": {
+      "render": "80b0eb982f4437d711de690b74f6320b55c2f7687248f88a810ba9646e99be58",
+      "stems": {
+        "bass.wav": "88f07230665a8e72d50dc41fea30044e18526890e29dfc78ac321928000d151e",
+        "clap.wav": "45e87fbf57a4f7c3a6c30f46644b2316eb64a82070a70965cca7978489b3abee",
+        "hats.wav": "6bbc4fb8437add72072efd567faebd120d247ce35297dadce962eca9cd883b70",
+        "kick.wav": "a6d14b02c48fe612c65d1f7bf2f6071b39ea3dc975ee02c3ed26df9b0d8bdb89",
+        "lead.wav": "91340f075ba78cccd2018a8415333c47a94d7db3a1fa056531b06d03fc6da1cc",
+        "pad.wav": "7d577891779a8a9093ae6174ee79e83ebd5d5c43bc83958caf6b4d448f9f748b"
+      },
+      "validate": {
+        "exit": 0,
+        "sha256": "819fa00cb55ef9fc19951725b598a031f83099b560c8801a48b0c4e398f9e0a8"
+      },
+      "events": {
+        "exit": 0,
+        "sha256": "6b1f29c5747f8c09392e75ac232e016cf364ca02b8e17f8fd8e5d9e89db63b3e"
+      },
+      "lint": {
+        "exit": 0,
+        "sha256": "03a8d4f81649d33185fc768285e111e7eeb2c3d5881be6623ecf5032f653426f"
+      }
+    },
+    "examples/lofi-75.song.json": {
+      "render": "4e96c598a9a5c2dc415cccc191e1f21a55aaa111380b88e801701dd4076db8d6",
+      "stems": {
+        "bass.wav": "b75ce5f9989f5937c7750526e425b87a375f687e535c460dcc63e5d2b81411b0",
+        "hats.wav": "c243b7df2ac1dcdf5202bacafaeea06ec53ddeef5dc5b43ebdf14fac223bdb64",
+        "keys.wav": "74ae459c81eb4ee8882e71fabf1174a9c860f10ebb0c342fb000cbe49db9ec2a",
+        "kick.wav": "231fa8fd80af06fcaf8a873a160817c0a05ce24c14474591e41a0b0f9d8fd892",
+        "snare.wav": "7d1a152523140acadd682ec99ae836108f567fd9e1dd12ffc55b41f17199f266"
+      },
+      "validate": {
+        "exit": 0,
+        "sha256": "1ff8b5e8e3cb775f3d3e499facda5fbe01b2f738d69954de815796fc9c610e1a"
+      },
+      "events": {
+        "exit": 0,
+        "sha256": "7c3b1a8d555e363ddf5ce72c0642713bd6bbab855f39d3f15ba40fe60388a0dd"
+      },
+      "lint": {
+        "exit": 0,
+        "sha256": "4da640323b236739ecc50756c858d62bd1095e96d2e92db1aed17dea9bd46c1d"
+      }
+    },
+    "examples/lofi-textures.song.json": {
+      "render": "bfd8c19abfdde6587eb27b86cf0e37eda4ed5c8c2c3f674ce81eb6bf44dd545e",
+      "stems": {
+        "bass.wav": "c21ff15e533faddd902523396ea7374da2cb7066ad5acc6fcf9f9989ca42b172",
+        "hats.wav": "4c7340c3c1c8398f8ddb966f5bc5c11326bdd66a02a33ec53f792982675de00d",
+        "kick.wav": "1a8ecd497d346071ff281f032872bf0a972465f8b293c5d502cf29004ce6bf5d",
+        "rhodes.wav": "16983f5a0bee655a9e359af23869efb3ebe7c089fe6537a19cc59101135c4f72",
+        "snare.wav": "006fceaf583f7c03078beb1ac92a80b56a10615cb02fe898c87a463104ebf59c",
+        "vibes.wav": "63e6ab0721f94a5cf32606e6b2d52ab63f537de69f6713d4b81bf67db4c322fe",
+        "vinyl.wav": "6c44bdca2968c13f3db76a4912bbc0d127fb321ceb438110236fb3f017abe8d9"
+      },
+      "validate": {
+        "exit": 0,
+        "sha256": "4fc1943a9c2f8131e6469101ab913b839b647701fa00b5a59ce026a2a5a59ffa"
+      },
+      "events": {
+        "exit": 0,
+        "sha256": "0676fe6c53cb02045f096c30d045c231b3cc5f5ff1827bfc1c52240c12a33e4e"
+      },
+      "lint": {
+        "exit": 0,
+        "sha256": "afbb401f2305efba9dadefd9a47d544f7fd6afc1052d1aa79504363b770a09c9"
+      }
+    },
+    "examples/minimal.song.json": {
+      "render": "01d0b1afab455207a8fd7f90b5a356df3661dc7dc38e8ea285b1cf6fea59f4f3",
+      "stems": {
+        "drums.wav": "d275bc55c327f43f5a0f3929ae05bbf246809e6c39e0d4ae93e3a3fb763bbbba",
+        "sub.wav": "8c6a1d2f42fa48bdc3d0655b2f3770afe73311c328d8cff531979f78df18bece"
+      },
+      "validate": {
+        "exit": 0,
+        "sha256": "96951122b77544d5d41e85326af386d7692abaef45a8d6f813d81b52658dde55"
+      },
+      "events": {
+        "exit": 0,
+        "sha256": "c976d22513cf8e1f51d06cc06326e59299df18dbff32737ea6130cc86f4571ec"
+      },
+      "lint": {
+        "exit": 0,
+        "sha256": "fbcdfd45e8ec3617548d04d1c97f9bb2a15ad284861c65a88fe2d4580950381e"
+      }
+    },
+    "examples/pop-transition.song.json": {
+      "render": "446f78e2efb5e67117696c3f8de7928c9b16b3acfdd853dc150dee482f63fc8c",
+      "stems": {
+        "bass.wav": "4b18b25d114f17e65d2c87432d2d5082b9d090090d74accaba554385c5a12402",
+        "hats.wav": "efd74b7b3d78eadc644ed52305a8e07a78a307fbcfef664033b8c1b57f445cca",
+        "kick.wav": "5240ea92cc9e7587b7edd9971eb6e939c962ec8562498b8bb2e8b707fa2bf086",
+        "lift.wav": "04583cfc7f1d33499da2f65bff49ed4fae2afec7aa6721e8868bb7fa9ca0aeb4",
+        "piano.wav": "fb058738960506f055f2bb1c5cb2b380efc36e676bbd67bb7005fa62c487dd53",
+        "riser.wav": "e749f103dd69da9d9245c9403b4457cc3128e98bd8f26f7d48bdaff0c059038c",
+        "snare.wav": "2fedac51fd1645e2c1d79573b50d0781d0d9edb3aa128c58f13c82316ac65a8c",
+        "strings.wav": "9aa42783b152f11a1d93d013bf7ab030b305bee547f5c2c78f944feaa21480a2"
+      },
+      "validate": {
+        "exit": 0,
+        "sha256": "beb852e251a8949612e1c498e26b0fe208f4a30b235e0bdae7608306ba11e57f"
+      },
+      "events": {
+        "exit": 0,
+        "sha256": "88a65804b586893741d03c2ff94fec741ff432dfd2444c5accfc7e8df3ee6ec7"
+      },
+      "lint": {
+        "exit": 0,
+        "sha256": "57cd6c379a1a1ae65d9e9a77afff29a5665cf97aa7f98c59b0c49c4331926d03"
+      }
+    },
+    "examples/short-30-bed.song.json": {
+      "render": "2d6e24c9f12f4c20c9fcc26c91ba027deb7f60567e32926138ed2b096e3ef549",
+      "stems": {
+        "bass.wav": "af6c9a4b8efb7f894758b3bf5c8c2965170b6137ade2bea85a8d24749e74574d",
+        "hats.wav": "c45c2c251f252a01e6d49a5ccd4659423f97244657ffb6dc353539319f6b3a07",
+        "kick.wav": "ab98b766b40dae5720f0025e250ea161bc62a63327220eb8f8edb19668fed60f",
+        "pad.wav": "a6a0543fd7ba7f4de2d758ab6c0aded4b9befc6d82b5fa0180945ef1c28e009b",
+        "snare.wav": "333b26f3ee4252b1070f446d3d23bca96b0c839ed34a54b0c1384528f2bb4d30"
+      },
+      "validate": {
+        "exit": 0,
+        "sha256": "fe1d58a1348b50d5aec85d443437afd2610814d9dc41f172206901c523b4a050"
+      },
+      "events": {
+        "exit": 0,
+        "sha256": "d88bfa56085b41b2ff87e443ef34c388e83c16e119a8b7851cb794271b9ec733"
+      },
+      "lint": {
+        "exit": 0,
+        "sha256": "7e3837200796184876bf4a2289994748ed5b04afcf10712dd2df04e0653f9faf"
+      }
+    },
+    "examples/trap-150.song.json": {
+      "render": "f53ee82fdabf7f333618607135f94f2c66135d4d13eb51400959b1acec3d4c40",
+      "stems": {
+        "hats.wav": "3e5d475743e8ed14fb2b0ea0d12c26832bd741cc16f43848a68c867d3c74cdd3",
+        "kick.wav": "f3014460efd4ed72714096c58186180d4e4e549e3227c95a68980b0070f952d6",
+        "pad.wav": "b7954dc966b4644be88afd99af3660e87ebd4c052a7552cfcd0a6bf3066ce911",
+        "pluck.wav": "fee48043925932f5e68765c8d17db03484e299d71afc3dabede499ce2f5dcf1e",
+        "snare.wav": "a65331aaa32a3fb563095e05ea34f323908263e57a1c1f71b52e1add63b5b77a",
+        "sub.wav": "1b660412b24fcfe1e329ca3584024c2215d5ede72efcaa40488dcc0cde0bdc5f"
+      },
+      "validate": {
+        "exit": 0,
+        "sha256": "2f6ac7ce0f0bd937a67800bf06c5fd3dc57692f68ee183daa81081a6103993d4"
+      },
+      "events": {
+        "exit": 0,
+        "sha256": "5631cc40c01f22e008ca715e80377853b3c00d6733f79dbf9b939516bec7ed63"
+      },
+      "lint": {
+        "exit": 0,
+        "sha256": "624bf6e2fe39ec9953bd722e47a05db28c017c2692aa59ad48faf6055e4f4724"
+      }
+    },
+    "examples/trap-hook-first-142.song.json": {
+      "render": "6433fd39eb3476963145a4420a76fca7cd43ccbee8bd5e21f76d64f63715c208",
+      "stems": {
+        "bass.wav": "ee9c8388dd475ef1ac47fd5c5841fbac2db4e6b5756da61a4c926ccd42286619",
+        "hats.wav": "19259167d6202061fa536f2019a3a917b325cdcb3436af4b772a8c21305f4561",
+        "kick.wav": "91d3425d2c0c25c8417c36789db68fe3c6764646cbbebc3f79434811efbf9c78",
+        "melody.wav": "9eb891f383b83b5a81533cf69265234bd9e674b5797201e9e680548c64c23ed0",
+        "snare.wav": "95c9cc273550d7b7efff5e218300001d65b2df0c6c2dd552746e0611468d61ea"
+      },
+      "validate": {
+        "exit": 0,
+        "sha256": "27f78ea337b03a98123a0d246af0ddd8ad42a8db5edfccc793fa5914efc9901b"
+      },
+      "events": {
+        "exit": 0,
+        "sha256": "1aa2fb7b286cd0ddbc6aee06ae1ee274183061faaee6476e50a7928507ab33f8"
+      },
+      "lint": {
+        "exit": 0,
+        "sha256": "46c9297d350f82f5140f08e3b057c8d83cfbd2f38c9b1b3d92c05f87f6dc5ff4"
+      }
+    },
+    "examples/type-beat-trap-140.song.json": {
+      "render": "68e54d8828f3a5083656432a158ee2670a5762086cfc9b0137fd775daa6d4c0f",
+      "stems": {
+        "bass.wav": "8970809614c85d02897b9f10565d7bd9c87ab45ead36bbba52b8e30c3ad83a4a",
+        "hats.wav": "92c5e90067efdc661a789cbd67984eb4a69d885d50652ef718f5f9fc1eb5c82b",
+        "kick.wav": "cd9a83f0d8966f9cef4d757f7b682ab0ecdd108560526c2778c42c7a0de379f9",
+        "melody.wav": "a7b91bc528229740505656ecfa27d389d5d1258e4d54a58af5e331671349ca18",
+        "open_hat.wav": "3e8feff578b7ec3e43c74a31aef26be3dcd573fc668d355ccb84c5d4030fd3ba",
+        "snare.wav": "ee19de5a8e235da98f014a3679f72854bde2a41e81a16ef063fb34461ea7f053"
+      },
+      "validate": {
+        "exit": 0,
+        "sha256": "3b8c0ddb40fe59a00c4e53816cb0c46f2af303a8c3ba3d88a6199c37f6146969"
+      },
+      "events": {
+        "exit": 0,
+        "sha256": "9c7f5b40334c7bcbcf7bf02560c9af8a738a84279d4728b7d8974cee106637b0"
+      },
+      "lint": {
+        "exit": 0,
+        "sha256": "bcb04947d11fcda795bf91eb190be40578d7abd0466447a3817faf06ddee120b"
+      }
+    },
+    "examples/wrong-genre.song.json": {
+      "render": "aa3e0059698be930651a59084ab51f26fcb00b087af3d5962f50e3eae2eb09cc",
+      "stems": {
+        "bass.wav": "8e2d2d18f1b22a23929c3881c266c1d75be8ed1414e44e92970f6b4fbcb0cebf",
+        "hats.wav": "2b3422d862489eed97aabe5cfe7e7699cec037981a084b02581f9f16eede88d6",
+        "kick.wav": "11a6fe60ce38f2bdda0804221b3f959c9dff9b3e2fb315010c06b14af4b74c27",
+        "melody.wav": "420f81411a0b8bab37afa0889cf3baf9659f0b79a0350304148f6282045e86e6",
+        "snare.wav": "9e4a0c89cd9d474a3c0d78e290bf3ec2246e5bf1fcd6e88756189d8e036cbb90"
+      },
+      "validate": {
+        "exit": 0,
+        "sha256": "dd0313b190466b4b4ea3d4ab386bb12b963cdb869e3581c75c650e0b4309f758"
+      },
+      "events": {
+        "exit": 0,
+        "sha256": "e4855a2f4434d28989aab84fd63ee6264d82a56ac51ec6f292f4ef4ae94ed3a1"
+      },
+      "lint": {
+        "exit": 0,
+        "sha256": "5edcd58a9fcf4cd4da27b4ab082f35042a32d1f3f838797ca0e772928fb7c8c5"
+      }
+    }
+  }
+}

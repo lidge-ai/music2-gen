@@ -32,6 +32,10 @@ export const INSERT_SPECS = {
   delay: { time: e<NoteDivision>("1/8d", NOTE_DIVISIONS), feedback: n(0.35, 0, 0.95), pingPong: b(false), lowCutHz: n(20, 20, 1000), highCutHz: n(18000, 1000, 18000), mix: n(0.35, 0, 1) },
   tapestop: { startBar: n(1, 1, 1024, true), beats: n(2, 0.25, 16) },
 } as const satisfies Record<string, Record<string, ParamSpec>>;
+export const AUTOMATABLE_INSERT_PARAMS = {
+  filter: ["cutoffHz"], eq: ["lowGainDb", "midGainDb", "highGainDb"],
+  drive: ["amount"], tremolo: ["depth"], delay: ["mix"], width: ["amount"],
+} as const;
 export type InsertType = keyof typeof INSERT_SPECS;
 export const INSERT_TYPES = Object.keys(INSERT_SPECS) as InsertType[];
 /** Master inserts are a subset, applied after the dry+wet sum and before loudness targeting and limiting. */

@@ -28,7 +28,7 @@ interface Issue { path: string; message: string }
 
 export const VOICES: Readonly<Record<string, VoiceSpec>> = Object.freeze({
   drums: drumsVoice, "808": eightOhEightVoice, bass: bassVoice, bell: bellVoice,
-  keys: keysVoice, pluck: pluckVoice, pad: padVoice, lead: leadVoice, supersaw: supersawVoice, sfx: sfxVoice,
+  keys: keysVoice, pluck: pluckVoice, pad: padVoice, lead: { ...leadVoice, automatable: ["vibratoCents"] }, supersaw: supersawVoice, sfx: sfxVoice,
   piano: pianoVoice, epiano: epianoVoice, organ: organVoice, strings: stringsVoice, brass: brassVoice,
   flute: fluteVoice, choir: choirVoice, marimba: marimbaVoice, vibraphone: vibraphoneVoice,
   glockenspiel: glockenspielVoice, kalimba: kalimbaVoice, guitar: guitarVoice,
@@ -93,6 +93,35 @@ export function validateVoiceParams(song: ResolvedSong): void {
     }
   });
   if (issues.length) throw new Music2Error("E_SCHEMA", `song has ${issues.length} voice issue(s)`, {
+    details: { issues },
+  });
+}
+
+/** Check semantic voice opt-ins after Song has resolved structural lane targets. */
+export function validateDawVoiceLanes(song: ResolvedSong): void {
+  const issues: Issue[] = [];
+  song.tracks.forEach((track, trackIndex) => {
+    if (track.instrument.startsWith("sfz:")) return;
+    track.automation?.forEach((lane, laneIndex) => {
+      if (!lane.target.startsWith("param.")) return;
+      const name = lane.target.slice("param.".length);
+      const spec = track.instrument.startsWith("kit:") ? undefined : voiceFor(track.instrument);
+      const rule = spec && Object.hasOwn(spec.params, name) ? spec.params[name] : undefined;
+      const path = `$.tracks[${trackIndex}].automation[${laneIndex}]`;
+      if (!rule || !spec?.automatable?.includes(name)) {
+        issues.push({ path: `${path}.target`, message: "voice parameter is not automatable" });
+        return;
+      }
+      lane.points.forEach((point, pointIndex) => {
+        if (!Number.isFinite(point.value) || point.value < rule.min || point.value > rule.max ||
+          (rule.integer && !Number.isInteger(point.value))) {
+          issues.push({ path: `${path}.points[${pointIndex}].value`,
+            message: rule.integer ? `must be an integer in [${rule.min},${rule.max}]` : `must be in [${rule.min},${rule.max}]` });
+        }
+      });
+    });
+  });
+  if (issues.length) throw new Music2Error("E_SCHEMA", `song has ${issues.length} voice lane issue(s)`, {
     details: { issues },
   });
 }

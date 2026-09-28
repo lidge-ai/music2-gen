@@ -11,6 +11,8 @@ src/shared/
 ├── errors.test.ts       # mapping and error metadata
 ├── rational.tool.ts     # exact fractions for pattern time
 ├── rational.test.ts     # arithmetic, ordering, negative floor, failures
+├── ticks.tool.ts        # 960-PPQ conversion and rational quantization
+├── ticks.test.ts        # half-up, exactness, overflow and round-trip vectors
 ├── prng.tool.ts         # stable hash and seeded random draws
 ├── prng.test.ts         # vectors, bounds, address stability
 ├── paths.tool.ts        # user home and installed package discovery
@@ -25,6 +27,11 @@ pattern times exact as reduced fractions. `prng.tool.ts` provides deterministic
 addressed choice without ambient randomness. `paths.tool.ts` locates the package
 and the optional user data directory. `index.ts` exposes these as the feature's
 public boundary; sibling implementations import each other directly where needed.
+
+`ticks.tool.ts` converts beats, seconds and exact bar fractions to 960-PPQ ticks.
+It rounds nonnegative positions half up, checks safe-integer output and reports
+programmer misuse as `E_INTERNAL`. Pattern timing remains in rational bars and
+float seconds; tick conversion does not alter existing pattern rendering.
 
 The module has no music parsing or command-dispatch logic. Its error categories
 are consumed by those boundaries, while `Fraction` and `unitHash` underpin
@@ -46,6 +53,11 @@ re-exports all listed public members.
 | `export function fnv1a32(...parts: (string | number)[]): number` | `prng.tool.ts` | Stable 32-bit hash of NUL-separated parts. |
 | `export function mulberry32(seed: number): () => number` | `prng.tool.ts` | Seeded stateful generator in `[0, 1)`. |
 | `export function unitHash(...parts: (string | number)[]): number` | `prng.tool.ts` | First draw at a stable address. |
+| `export function barTicks(numerator: number): number` | `ticks.tool.ts` | Quarter-note meter length at 960 PPQ. |
+| `export function beatsToTicks(beats: number): number` | `ticks.tool.ts` | Nonnegative beats, rounded half up. |
+| `export function ticksToSeconds(ticks: number, bpm: number): number` | `ticks.tool.ts` | Tick position to seconds. |
+| `export function secondsToTicks(seconds: number, bpm: number): number` | `ticks.tool.ts` | Seconds to safe integer ticks. |
+| `export function fractionToTicks(bars: Fraction, numerator: number): { ticks: number; exact: boolean }` | `ticks.tool.ts` | Rational bar position and exactness. |
 | `export function music2Home(): string` | `paths.tool.ts` | Resolve user data directory. |
 | `export function storageDir(kind: StorageKind): string` | `paths.tool.ts` | Default folder for `renders`, `analysis`, `sfx` or `projects` inside the home. |
 | `export function packageRoot(): string` | `paths.tool.ts` | Find `music2-gen` package root. |
@@ -82,6 +94,7 @@ re-exports all listed public members.
 | `Music2ErrorOptions` | `export interface Music2ErrorOptions` | Optional `details`, `retryable`, `fix`, `cause`. |
 | `Music2Error` | `export class Music2Error extends Error` | Typed, status-bearing error. |
 | `FRACTION_LIMIT` | `export const FRACTION_LIMIT = 2 ** 40` | Maximum reduced part magnitude. |
+| `PPQ` | `export const PPQ = 960` | Ticks per quarter note. |
 | `Fraction` | `export class Fraction` | Reduced `n`, `d`, with `d > 0`. |
 
 ### Error and time behavior
@@ -119,7 +132,7 @@ re-exports all listed public members.
 | Shared error implementation | `./errors.tool.ts` | `rational.tool.ts` reports internal arithmetic failures. |
 
 No runtime package dependency is imported by these files.
-The four colocated tests use `node:test` and `node:assert/strict`.
+The colocated tests use `node:test` and `node:assert/strict`.
 
 ## Dependents
 

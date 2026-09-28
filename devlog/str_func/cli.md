@@ -8,6 +8,8 @@ Dispatch music2 commands and render one structured result or error per invocatio
 src/cli/
 ├── index.ts             # executable source entry point
 ├── args.ts              # command discovery and strict option parsing
+├── files.ts             # path identity, destination-local staging, transactional commits
+├── files.test.ts        # alias, late collision, rollback, replacement tests
 ├── main.ts              # invocation, command execution, output channel
 ├── main.test.ts         # JSON, status, help, version, source-bin checks
 ├── output.ts            # success and failure formatting
@@ -19,6 +21,8 @@ src/cli/
     ├── validate.ts      # validate song and summarize timeline
     ├── events.ts        # list filtered timed song events
     ├── render.ts        # WAV, optional stems, encoding, and loudnorm
+    ├── export.ts        # ProjectIR JSON export with optional staged output
+    ├── export.test.ts   # stdout, staged file and error-envelope cases
     ├── render.test.ts   # render command output and failure cases
     ├── analyze.ts       # WAV/song analysis and artifacts
     ├── analyze.test.ts  # analysis command and output cases
@@ -65,6 +69,11 @@ The signatures below come from exported declarations in the current source.
 | `export function renderSuccess(result: CommandResult, json: boolean): string` | `output.ts` | Format successful result. |
 | `export function renderFailure(error: unknown, json: boolean, command = "unknown"): { text: string; exit: number }` | `output.ts` | Format failure and status. |
 | `export function register(spec: CommandSpec): void` | `registry.ts` | Add a uniquely named command. |
+| `export interface StagedFile { temporary: string; final: string }` | `files.ts` | One destination-local staged output. |
+| `export function assertDistinct(inputs: string[], outputs: string[]): Promise<void>` | `files.ts` | Reject realpath and symlink-parent input/output aliases with `E_INPUT`. |
+| `export function stage(final: string): StagedFile` | `files.ts` | Name a temporary file beside its destination; the caller writes and cleans it. |
+| `export function commitNoReplace(staged: StagedFile[]): Promise<void>` | `files.ts` | Publish with `link()`, preserving existing outputs and rolling back files this call linked on failure. |
+| `export function commitReplace(staged: StagedFile[]): Promise<void>` | `files.ts` | Publish with `rename()`, restoring prior destinations if a later batch rename fails. |
 | `export function resolveSkillDir(root: string): string` | `commands/skill-path.ts` | Return the packaged skill directory after verifying its `SKILL.md` is a regular file. |
 | `export const sfx: CommandSpec` | `commands/sfx.ts` | Parse `--preset`, optional `-o` (default first free `$MUSIC2_HOME/sfx/<preset>-<seed>[-n].wav`), `--seed`, `--seconds`, `--sample-rate`, `--params`; resolve and synthesize through `src/sfx`; commit WAV then `<basename>.sfx.json` with no-replace `link()` (existing output → `E_ACCESS`). |
 | `export function sidecarJson(resolved: ResolvedSfx): string` | `commands/sfx.ts` | Stable sidecar key order: generatorVersion, preset, seed, seconds, frames, sampleRate, params. |
@@ -149,6 +158,7 @@ they have no separately exported `run` function.
 | `validate` | `commands/validate.ts` | One song path; returns title, BPM, bars, duration seconds, and per-track event counts. |
 | `events` | `commands/events.ts` | One song path; optional `--bars start:end` and `--track id`; returns selected timed events. |
 | `render` | `commands/render.ts` | One song path; WAV plus optional MP3, Ogg, and stems; returns `RenderData` and artifact paths. |
+| `export` | `commands/export.ts` | `ir <song.json>` only; formatted IR on stdout or staged `.json` output with no-replace default and `--force` replacement. JSON mode returns one envelope. |
 | `doctor` | `commands/doctor.ts` | No positional args; returns `DoctorData` for ffmpeg and required encoders. |
 | `analyze` | `commands/analyze.ts` | One WAV or song JSON path; optional `--song` and `--out`; returns artifacts and summary. |
 | `recipes` | `commands/recipes.ts` | Zero or one recipe ID; returns summaries or a full card. |

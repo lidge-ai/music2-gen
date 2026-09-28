@@ -83,6 +83,7 @@ function renderEnhancedBass(ctx: VoiceContext, params: Readonly<Record<string, n
 
 export const bassVoice: VoiceSpec = {
   id: "bass", kind: "notes", monoDefault: true,
+  automatable: ["cutoffHz"],
   params: {
     wave: { default: 0, min: 0, max: 1, integer: true },
     cutoffHz: { default: 600, min: 40, max: 8000 },

@@ -36,6 +36,40 @@ test("explicit BPM and impossible durations reject as input", () => {
     (error: unknown) => error instanceof Music2Error && error.exit === 2);
 });
 
+test("use cases reject absolute DAW features in a fixed order before changing input", () => {
+  const base = () => newSong({ genre: "drill_uk" });
+  const cases = [
+    { name: "note lists", change: (song: ReturnType<typeof base>) => {
+      delete song.tracks[0]!.pattern;
+      song.tracks[0]!.notes = [{ start: 0, length: 1, sample: "bd" }];
+    } },
+    { name: "audioTracks", change: (song: ReturnType<typeof base>) => {
+      song.audioTracks = [{ id: "vox", clips: [{ file: "vox.wav", start: 0, length: 1 }] }];
+    } },
+    { name: "automation", change: (song: ReturnType<typeof base>) => {
+      song.tracks[0]!.automation = [{ target: "gain", points: [{ at: 0, value: 0 }] }];
+    } },
+  ];
+  for (const entry of cases) {
+    const song = base(); entry.change(song);
+    const snapshot = structuredClone(song);
+    assert.throws(() => applyUseCase(song, "short_30"), (error: unknown) =>
+      error instanceof Music2Error && error.code === "E_INPUT" &&
+      error.message === `use case cannot rearrange a song with ${entry.name}`);
+    assert.deepEqual(song, snapshot);
+  }
+  const all = base();
+  cases.forEach((entry) => entry.change(all));
+  assert.throws(() => applyUseCase(all, "short_30"), (error: unknown) =>
+    error instanceof Music2Error && error.message ===
+      "use case cannot rearrange a song with note lists, audioTracks, automation");
+  all.tracks[0]!.automation = [];
+  all.audioTracks![0]!.automation = [{ target: "gain", points: [{ at: 0, value: 0 }] }];
+  assert.throws(() => applyUseCase(all, "short_30"), (error: unknown) =>
+    error instanceof Music2Error && error.message ===
+      "use case cannot rearrange a song with note lists, audioTracks, automation");
+});
+
 test("15 and 60 second shorts also meet the exact frame equation", () => {
   for (const [id, seconds] of [["short_15", 15], ["short_60", 60]] as const) {
     const song = applyUseCase(newSong({ genre: "drill_uk" }), id);
