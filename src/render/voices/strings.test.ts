@@ -26,6 +26,17 @@ function checkBounds(audio: Float32Array): void {
   for (const sample of audio) { assert.ok(Number.isFinite(sample)); peak = Math.max(peak, Math.abs(sample)); }
   assert.ok(peak <= 1, `peak ${peak}`);
 }
+/** Range of the 300 ms-smoothed 20 ms level (dB) over a held note: the slow ensemble swell heard as "wow-wow". */
+function slowSwingDb(audio: Float32Array, rate: number, from: number, to: number): number {
+  const window = Math.round(0.02 * rate), levels: number[] = [];
+  for (let start = Math.round(from * rate); start + window <= to * rate; start += window) {
+    let energy = 0;
+    for (let i = start; i < start + window; i++) energy += audio[i]! ** 2;
+    levels.push(10 * Math.log10(energy / window));
+  }
+  const smoothed = levels.slice(14).map((_, i) => levels.slice(i, i + 15).reduce((a, b) => a + b) / 15);
+  return Math.max(...smoothed) - Math.min(...smoothed);
+}
 
 for (const rate of [44100, 48000]) {
   void test(`strings ${rate}: attack, level, release, seed and PCM bounds`, () => {
@@ -61,6 +72,17 @@ for (const rate of [44100, 48000]) {
       const ratio = rms(stringsVoice.render(ctx, defaults), rate, 0.55, 0.85) /
         rms(padVoice.render(ctx, padDefaults), rate, 0.55, 0.85);
       assert.ok(ratio >= 10 ** (-3 / 20) && ratio <= 10 ** (3 / 20), `seed ${seed}: ${ratio}`);
+    }
+  });
+  void test(`strings ${rate}: a held note and chord stay steady instead of swelling`, () => {
+    for (const seed of [1, 7, 42, 99]) {
+      for (const midis of [[45], [57], [57, 60, 64]]) {
+        const events: VoiceEvent[] = midis.map((midi, i) => ({ midi, sample: null, velocity: 0.7, startFrame: 0,
+          gateFrames: 4 * rate, stopFrame: 5 * rate, eventIndex: i, seed: seed + i }));
+        const audio = stringsVoice.render({ sampleRate: rate, frames: 5 * rate, track, events }, defaults);
+        const swing = slowSwingDb(audio, rate, 1, 4);
+        assert.ok(swing < 3, `seed ${seed} notes ${midis.join(",")}: ${swing.toFixed(2)} dB`);
+      }
     }
   });
 }

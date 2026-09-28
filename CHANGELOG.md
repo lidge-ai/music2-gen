@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix the `strings` voice swelling in and out ("wow-wow") on held notes: its five saws started almost in phase with evenly spaced detune, so a sustained A3 swung about 11 dB in level every couple of seconds. An in-tune principal now carries the fundamental, five unevenly detuned players with their own light vibrato are high-passed above it, and the chorus reads an interpolated 0.7 ms delay instead of a stepped 3 ms one. The slow level swing on a held note or triad is now under 2 dB. Defaults change to `detuneCents` 10 and `releaseMs` 500, so songs using `strings` render differently.
+- Accept `lovel=0` in SFZ regions (written by libraries such as VSCO-2-CE); it selects the same notes as `lovel=1`.
 - Extend Song v1 with optional absolute note lists, SFZ instruments, audio clips and automation while retaining legacy render behavior for songs that omit them.
 - Add ProjectIR, MIDI import/export, aligned track and bus-return stems, sample slicing, and experimental Ableton Live 12 and DAWproject exports. MIDI and frozen-audio routes have documented loss boundaries; generated ALS files still require a manual Live-open check.
 - Add an optional out-of-process plugin bridge with explicit render/audio-export opt-in, plus DAW examples, deterministic sample-fixture generation and user/agent guidance.

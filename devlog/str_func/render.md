@@ -43,7 +43,7 @@ src/render/
     ├── piano.tool.ts           # stiff-string partial bank with hammer noise
     ├── epiano.tool.ts          # two-branch FM tine piano
     ├── organ.tool.ts           # nine-drawbar additive organ with key click
-    ├── strings.tool.ts         # detuned saw ensemble with chorus
+    ├── strings.tool.ts         # in-tune principal + high-passed detuned section, vibrato, interpolated chorus
     ├── brass.tool.ts           # envelope-opened resonant saw with pitch scoop
     ├── flute.tool.ts           # near-sine with breath and delayed vibrato
     ├── choir.tool.ts           # parallel vowel formants over a detuned voiced ensemble

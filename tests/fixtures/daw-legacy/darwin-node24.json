@@ -49,15 +49,15 @@
       }
     },
     "examples/cinematic-cue.song.json": {
-      "render": "645598d75280fb41ec54719dfc27f4d1bf018161f35fd3d42558d0f88c64e756",
+      "render": "9100a6e8faea57e4dcd4034a9fabbfc98c43e8bba284c79f6e0c889aff81b4b3",
       "stems": {
         "brass.wav": "85e26fb29d0f5df9ba1731d708fb206e86519e65255e54fdb8eabfa997607963",
-        "cello.wav": "0106b6c868291bb460e45f8ab94aeda0999fb848a898171a6b1b297917b4478a",
+        "cello.wav": "10252a1aba72250c1d9e8f9589190443326dfaa54bacb3a910bf3de214fa669a",
         "choir.wav": "6379cc5d97f3b54230d5730fd13cd61c7e6001d92749e294fd5cea61eb9c4107",
         "fx.wav": "d5ff4432454ab63b313b48a2d35b9d677eea25e3d96432de22652dc29822ff81",
         "glock.wav": "d9c550909a26dc9cba418d534398991c60f1d4aa397b15446fe62c76de580a42",
         "perc.wav": "dc74bd32ce2118d9ef0b476a22d336f7ec7ed9f5d710a8159da2cc56ef01d552",
-        "strings.wav": "0a51b07245a9c9110c0c8c7c6f2b13b8fd6ff5782aeea5c4409f1f8b4f64d863",
+        "strings.wav": "579d7dfbfcc627cbea5f8f647b82c671f3ca67ac40067dbacb9587a154060bd3",
         "timpani.wav": "3d38a7c61f090dadefd3602a5bf580c91c9ceb658830eea19c1517b0fb3ed8e5"
       },
       "validate": {
@@ -278,7 +278,7 @@
       }
     },
     "examples/pop-transition.song.json": {
-      "render": "446f78e2efb5e67117696c3f8de7928c9b16b3acfdd853dc150dee482f63fc8c",
+      "render": "139588b2cac930c4783d08ddd11607b331bb31df7c747737838c7e457c21fc2b",
       "stems": {
         "bass.wav": "4b18b25d114f17e65d2c87432d2d5082b9d090090d74accaba554385c5a12402",
         "hats.wav": "efd74b7b3d78eadc644ed52305a8e07a78a307fbcfef664033b8c1b57f445cca",
@@ -287,7 +287,7 @@
         "piano.wav": "fb058738960506f055f2bb1c5cb2b380efc36e676bbd67bb7005fa62c487dd53",
         "riser.wav": "e749f103dd69da9d9245c9403b4457cc3128e98bd8f26f7d48bdaff0c059038c",
         "snare.wav": "2fedac51fd1645e2c1d79573b50d0781d0d9edb3aa128c58f13c82316ac65a8c",
-        "strings.wav": "9aa42783b152f11a1d93d013bf7ab030b305bee547f5c2c78f944feaa21480a2"
+        "strings.wav": "3402282f7499a7bc2d2a2794566cdfdf3249779492dad3b9c512e42ccc31da75"
       },
       "validate": {
         "exit": 0,

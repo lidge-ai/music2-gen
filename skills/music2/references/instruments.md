@@ -17,7 +17,7 @@ Each track needs a unique `id`, a `kind`, an `instrument`, and usually a one-bar
 | `piano` | `notes` | notes or integer MIDI | `inharmonicity`: 0.0002 [0.0001, 0.0004]; `hammer`: 0.5 [0, 1]; `releaseMs`: 200 [80, 400] |
 | `epiano` | `notes` | notes or integer MIDI | `bodyIndex`: 2 [1, 4]; `tineIndex`: 0.5 [0.1, 1.2]; `releaseMs`: 180 [80, 400] |
 | `organ` | `notes` | notes or integer MIDI | `d16`: 8 [0, 8] **integer**; `d513`: 8 [0, 8] **integer**; `d8`: 8 [0, 8] **integer**; `d4`: 0 [0, 8] **integer**; `d223`: 0 [0, 8] **integer**; `d2`: 0 [0, 8] **integer**; `d135`: 0 [0, 8] **integer**; `d113`: 0 [0, 8] **integer**; `d1`: 0 [0, 8] **integer**; `releaseMs`: 80 [30, 150] |
-| `strings` | `notes` | notes or integer MIDI | `detuneCents`: 7 [3, 12]; `attackMs`: 300 [120, 800]; `releaseMs`: 700 [200, 1500]; `chorusMix`: 0.2 [0, 0.35] |
+| `strings` | `notes` | notes or integer MIDI | `detuneCents`: 10 [3, 12]; `attackMs`: 300 [120, 800]; `releaseMs`: 500 [200, 1500]; `chorusMix`: 0.2 [0, 0.35] |
 | `brass` | `notes` | notes or integer MIDI | `cutoffHz`: 600 [350, 1000]; `peakHz`: 4000 [2000, 8000]; `q`: 1 [0.6, 2]; `scoopCents`: 35 [10, 70]; `releaseMs`: 250 [100, 400] |
 | `flute` | `notes` | notes or integer MIDI | `breath`: 0.1 [0.03, 0.15]; `attackMs`: 80 [40, 200]; `releaseMs`: 180 [80, 300]; `vibratoCents`: 16 [8, 25] |
 | `choir` | `notes` | notes or integer MIDI | `vowel`: 0 [0, 4] **integer**; `attackMs`: 300 [100, 500]; `releaseMs`: 600 [200, 1000]; `detuneCents`: 8 [4, 12] |
@@ -109,7 +109,7 @@ These twelve voices are synthesized approximations of acoustic and electric inst
 | `piano` | Hammered stiff string: slightly sharp upper partials (`inharmonicity`), brighter at higher velocity, a short hammer thump (`hammer`). Chords, ballads, pop verses. |
 | `epiano` | Two-operator FM tine piano: a warm body (`bodyIndex`) and a bell-like tine attack (`tineIndex`) that fades faster. Lo-fi, neo-soul, R&B chords. |
 | `organ` | Nine drawbars (`d16` 16', `d513` 5⅓', `d8` 8', `d4` 4', `d223` 2⅔', `d2` 2', `d135` 1⅗', `d113` 1⅓', `d1` 1'), each 0–8, with a short key click and no decay. `8,8,8,0,...` is the classic full-bodied registration; add `d4`/`d2` for brightness. |
-| `strings` | Detuned saw ensemble with a slow bow attack (`attackMs`) and optional chorus (`chorusMix`). Pads, swells, cinematic beds; voice chords in the middle register. |
+| `strings` | An in-tune principal saw carries the fundamental; five unevenly detuned players with their own light vibrato add width above it, so a held chord stays steady instead of swelling. Slow bow attack (`attackMs`), spread (`detuneCents`) and optional chorus (`chorusMix`). Pads, swells, cinematic beds; voice chords in the middle register, and keep `releaseMs` shorter than the gap to the next chord to avoid smear. |
 | `brass` | Saw through a resonant low-pass that opens with each note; a small pitch scoop (`scoopCents`) at the start; velocity makes it brighter. Stabs and fanfares. |
 | `flute` | Near-sine tone with breath noise (`breath`) on the attack and a delayed vibrato (`vibratoCents`). Airy leads and counter-melodies above the vocal range. |
 | `choir` | Voiced source through three parallel vowel formants (`vowel`: 0 "a", 1 "e", 2 "i", 3 "o", 4 "u"; approximate English vowel labels), several detuned voices. "Ooh/aah" beds. |
@@ -132,7 +132,7 @@ These twelve voices are synthesized approximations of acoustic and electric inst
 ```
 
 ```json
-{ "id": "strings", "kind": "notes", "instrument": "strings", "pattern": "c4,eb4,g4", "gain": -6, "params": { "detuneCents": 7, "attackMs": 300, "releaseMs": 700, "chorusMix": 0.2 } }
+{ "id": "strings", "kind": "notes", "instrument": "strings", "pattern": "c4,eb4,g4", "gain": -6, "params": { "detuneCents": 10, "attackMs": 300, "releaseMs": 500, "chorusMix": 0.2 } }
 ```
 
 ```json
