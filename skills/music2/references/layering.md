@@ -72,3 +72,7 @@ Each row is an **I music2 warning response**, grounded in the arrangement and fr
 | `LOW_MID_BUILDUP` | Revoice low keys/pad chords upward, shorten overlapping notes, or lower the contributing part's `gain`; remeasure `lowMid`. |
 | `SUB_WITHOUT_BODY` | Try more 808 `params.drive` or a bass part voiced above the sub, while retaining one low owner; remeasure `sub` versus `low`. |
 | `HIGH_END_THIN` | Restore quiet `hh`/`oh` events or a higher lead/bell response, or raise their velocity/gain; remeasure `presence+air`. |
+
+## Automation lanes replace static levels
+
+Automation lanes are absolute: while a lane is active its value replaces the track's static `gain` or send; it is not added to it. A track with `"gain": -27` that should dip 8 dB into a build uses points like `-27 → -35 → -27`; writing `0 → -8 → 0` plays it 27 dB above its static level. `music2 lint` reports `generic/automation_gain_jump` when a gain lane rises more than 12 dB above the static gain and `generic/automation_send_jump` when a send lane rises more than 12 dB above a nonzero static send.

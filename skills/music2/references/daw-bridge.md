@@ -47,3 +47,7 @@ node bin/music2.js slice /tmp/music2-daw-example/assets/clip.wav -o /tmp/music2-
 Audio modes can include source sample media and frozen stems; inspect the returned artifacts before sharing. `--content` defaults to `both` for ALS and DAWproject. Stems default to 24-bit WAV and include a master unless `--no-master` is passed. New outputs refuse replacement with `E_ACCESS`; `--force` replaces planned files only.
 
 Plugin inserts use an optional separate-process GPLv3 pedalboard bridge (`scripts/music2-plugin-bridge.py`). For songs with plugin inserts, render with `render --allow-plugins --plugin-host '<JSON argv>'`; audio export modes need the same opt-in. MIDI/IR and MIDI-only exports do not run the host. Keep a no-plugin version when portability matters.
+
+## Automation lanes replace static levels
+
+Automation lanes are absolute: while a lane is active its value replaces the track's static `gain` or send; it is not added to it. A track with `"gain": -27` that should dip 8 dB into a build uses points like `-27 → -35 → -27`; writing `0 → -8 → 0` plays it 27 dB above its static level. `music2 lint` reports `generic/automation_gain_jump` when a gain lane rises more than 12 dB above the static gain and `generic/automation_send_jump` when a send lane rises more than 12 dB above a nonzero static send.

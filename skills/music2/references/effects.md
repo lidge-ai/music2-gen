@@ -54,3 +54,7 @@ These are listening starting points, not universal targets. Source notes: [EQ an
 | Boom bap | Drums: gentle EQ → compressor → mild drive. Bass: centered EQ/drive. Keys: highpass → slow chorus. | Short room on snare/keys, limited delay, gentle master compression. |
 
 Render, listen, and compare `analyze` measurements against the preceding version. `generic/clipping_risk` is a static onset warning; it does not model compression, limiting, or bus processing.
+
+## Automation lanes replace static levels
+
+Automation lanes are absolute: while a lane is active its value replaces the track's static `gain` or send; it is not added to it. A track with `"gain": -27` that should dip 8 dB into a build uses points like `-27 → -35 → -27`; writing `0 → -8 → 0` plays it 27 dB above its static level. `music2 lint` reports `generic/automation_gain_jump` when a gain lane rises more than 12 dB above the static gain and `generic/automation_send_jump` when a send lane rises more than 12 dB above a nonzero static send.

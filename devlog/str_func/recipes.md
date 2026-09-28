@@ -28,6 +28,8 @@ src/recipes/
 ├── lint-rules.test.ts          # genre rule vectors
 ├── lint-rules-dance.tool.ts    # house and techno rules
 ├── lint-rules-dance.test.ts    # dance rule vectors
+├── lint-automation.tool.ts     # gain/send lane jump warnings
+├── lint-automation.test.ts     # issue #2 lane vectors
 ├── lint-roles.tool.ts          # focal, bed and bass voice roles; melody track selection
 ├── lint-roles.test.ts          # role and order-independence vectors
 ├── lint-rules-phrase.tool.ts   # motif, density, and section helpers
@@ -157,6 +159,8 @@ and generic findings are warnings unless noted otherwise.
 | `generic/low_chord_spacing` | Simultaneous same-track 1–11 semitone chord pairs below the interval-specific lower-MIDI floor (52, 51, 48, 46, 46, 47, 34, 43, 41, 41, 41); bass/808 excluded. |
 | `generic/low_pan` | Bass/808, or a pitched track with ≥25% MIDI ≤46 notes, has `abs(pan)>0.1`. |
 | `generic/kick_bass_unducked` | In house/techno, ≥50% of actual `bd` onsets coincide with a bass/808 note sounding or attacking within ±30 ms, without duck by a `bd` source of amount ≥0.1. A mixed drum source ducks on every event. |
+| `generic/automation_gain_jump` | A music or audio track gain lane point is more than 12 dB (`GAIN_LANE_MARGIN_DB`) above the static `gain`; lanes replace the static value. |
+| `generic/automation_send_jump` | A send lane point is more than 12 dB (`SEND_LANE_MARGIN_DB`) above a nonzero static send. |
 | `generic/register_collision` | Two focal tracks (lead/bell/pluck/keys/piano/epiano/guitar/flute/brass/marimba/vibraphone/glockenspiel/kalimba) in a ≥2-bar placement have median MIDI distance ≤7 and ≥75% of the sparser track's unique 16th-note onsets shared (a chord counts once). Strings, choir, and organ remain bed voices outside this check. |
 | `generic/sub_floor` | A pitched note at MIDI ≤22 occurs. |
 | `drill_uk/1` | BPM must be 138..146. |
