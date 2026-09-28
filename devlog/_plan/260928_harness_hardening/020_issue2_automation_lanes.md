@@ -77,3 +77,8 @@ Deferred (non-goal): `"mode": "offset"` lanes; analyze per-track bed-vs-focal lo
 
 Verification: hosted CI only (see 010 "Verification constraint"); local evidence is the CLI repro.
 
+
+## wp2 P entry (stale check)
+
+Previous D (wp1): issue #1 fixed at `17ffc89`, CI run 36440032722 8/8 green; direction unchanged. Stale check: wp1 did not touch `src/recipes/lint.tool.ts`, `lint-fx.tool.ts`, `src/song/*` or `src/render/mix-automated.tool.ts` (`git diff 084c1c0 17ffc89 --stat` lists none of them), so 020's citations hold. wp1 changed `docs/cli.md:19` (lint row) and `devlog/str_func/recipes.md`; wp2 appends to those same rows. Architect consultation reused (no design decision changed).
+
