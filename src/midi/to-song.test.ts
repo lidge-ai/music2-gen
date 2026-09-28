@@ -50,6 +50,24 @@ test("FIFO pairing, channel split, hanging notes and static CC clamps", () => {
   validateSong(converted.song);
 });
 
+test("CC7/CC10 changes import as hold lanes, same-tick last value wins and clamps warn", () => {
+  const converted = smfToSong(file([
+    { tick: 0, kind: "cc", channel: 0, controller: 7, value: 64 },
+    { tick: 0, kind: "cc", channel: 0, controller: 10, value: 64 },
+    { tick: 960, kind: "cc", channel: 0, controller: 7, value: 3 },
+    { tick: 960, kind: "cc", channel: 0, controller: 7, value: 127 },
+    { tick: 960, kind: "cc", channel: 0, controller: 10, value: 0 },
+  ], 3840));
+  const lanes = converted.song.tracks[0]!.automation!;
+  assert.deepEqual(lanes.map((lane) => [lane.target, lane.points.length]), [["gain", 2], ["pan", 2]]);
+  assert.equal(lanes[0]!.points[0]!.value, 40 * Math.log10(64 / 127));
+  assert.deepEqual(lanes[0]!.points[1], { at: 1, value: 0, curve: "hold" });
+  assert.deepEqual(lanes[1]!.points[1], { at: 1, value: -1, curve: "hold" });
+  assert.ok(converted.warnings.includes("MIDI_CC_CLAMPED:track_1.10@960=0"));
+  assert.ok(!converted.warnings.some((warning) => warning.startsWith("CC_AUTOMATION_DROPPED")));
+  validateSong(converted.song);
+});
+
 test("6/8 rewrites to 3/4, aligned markers form sections, unaligned marker falls back", () => {
   const source = file([meta(0, 0x58, 6, 3, 24, 8), meta(0, 6, 65), meta(2880, 6, 66)], 5760);
   const aligned = smfToSong(source);

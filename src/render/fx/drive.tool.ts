@@ -13,7 +13,7 @@ for (let j = 0; j < TAPS.length; j++) {
 for (let j = 0; j < TAPS.length; j++) TAPS[j] = TAPS[j]! / (2 * tapSum);
 
 /** 2x interpolation and decimation, with 15 original-frame latency. */
-function driveChannel(samples: Float32Array, amount: number, toneHz: number, mix: number, rate: number): void {
+function driveChannel(samples: Float32Array, amount: number, toneHz: number, mix: number, rate: number, curve?: Float32Array): void {
   const history = new Float64Array(16);
   const even = new Float64Array(16);
   const odd = new Float64Array(16);
@@ -23,14 +23,16 @@ function driveChannel(samples: Float32Array, amount: number, toneHz: number, mix
   let toneState = 0;
   let pos = 0;
   for (let i = 0; i < samples.length; i++) {
+    const frameAmount = curve?.[i] ?? amount;
+    const frameNorm = curve ? Math.tanh(frameAmount) : norm;
     const dry = samples[i]!;
     history[pos] = dry;
     dryLine[pos] = dry;
     let upEven = 0;
     for (let j = 0; j < 16; j++) upEven += 2 * TAPS[j]! * history[(pos - j + 16) & 15]!;
     const upOdd = history[(pos - 7 + 16) & 15]!;
-    even[pos] = Math.tanh(amount * upEven) / norm;
-    odd[pos] = Math.tanh(amount * upOdd) / norm;
+    even[pos] = Math.tanh(frameAmount * upEven) / frameNorm;
+    odd[pos] = Math.tanh(frameAmount * upOdd) / frameNorm;
     let down = .5 * odd[(pos - 8 + 16) & 15]!;
     for (let j = 0; j < 16; j++) down += TAPS[j]! * even[(pos - j + 16) & 15]!;
     toneState += lpGain * (down - toneState);
@@ -41,6 +43,6 @@ function driveChannel(samples: Float32Array, amount: number, toneHz: number, mix
 
 export const processDrive: InsertProcessor<"drive"> = (buffer, params, ctx) => {
   if (params.mix === 0) return;
-  driveChannel(buffer.left, params.amount, params.toneHz, params.mix, ctx.sampleRate);
-  driveChannel(buffer.right, params.amount, params.toneHz, params.mix, ctx.sampleRate);
+  driveChannel(buffer.left, params.amount, params.toneHz, params.mix, ctx.sampleRate, ctx.curves?.["amount"]);
+  driveChannel(buffer.right, params.amount, params.toneHz, params.mix, ctx.sampleRate, ctx.curves?.["amount"]);
 };

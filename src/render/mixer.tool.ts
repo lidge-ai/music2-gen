@@ -12,52 +12,16 @@ import { mixAudioTracks } from "./audio-tracks.tool.ts";
 import type { RenderOptions, RenderResult, RenderStem } from "./render.schema.ts";
 import { mergeParams, resolveVoice } from "./voices/registry.tool.ts";
 import { selectEvents } from "./select.tool.ts";
+import { mixDry, mixStereo } from "./mix-static.tool.ts";
+import { mixAutomated, prepareTrackCurves, sendActive } from "./mix-automated.tool.ts";
 const RIFF_LIMIT = 0xffffffff;
 const SOFT_DRIVE = 1.2;
 const SOFT_NORM = Math.tanh(SOFT_DRIVE);
-const PAN_SCALE = Math.SQRT2;
 const LOOKAHEAD_MS = 5;
 const RELEASE_MS = 50;
 function db(linear: number): number { return linear === 0 ? -Infinity : 20 * Math.log10(linear); }
 function renderError(message: string, frame?: number): Music2Error {
   return new Music2Error("E_RENDER", message, frame === undefined ? {} : { details: { frame } });
-}
-
-function mixDry(master: StereoBuffer, reverb: StereoBuffer, delay: StereoBuffer,
-  mono: Float32Array, gain: number, pan: number, duck: Float32Array | null,
-  reverbSend: number, delaySend: number, stem: StereoBuffer | null): void {
-  const leftGain = gain * Math.cos((pan + 1) * Math.PI / 4) * PAN_SCALE;
-  const rightGain = gain * Math.sin((pan + 1) * Math.PI / 4) * PAN_SCALE;
-  for (let i = 0; i < mono.length; i++) {
-    const sample = mono[i]!;
-    if (!Number.isFinite(sample)) throw renderError("nonfinite voice sample", i);
-    const factor = duck?.[i] ?? 1;
-    const left = sample * leftGain * factor;
-    const right = sample * rightGain * factor;
-    if (!Number.isFinite(left) || !Number.isFinite(right)) throw renderError("nonfinite track sample", i);
-    master.left[i]! += left; master.right[i]! += right;
-    if (reverbSend !== 0) { reverb.left[i]! += left * reverbSend; reverb.right[i]! += right * reverbSend; }
-    if (delaySend !== 0) { delay.left[i]! += left * delaySend; delay.right[i]! += right * delaySend; }
-    if (stem) { stem.left[i] = left; stem.right[i] = right; }
-  }
-}
-
-function mixStereo(master: StereoBuffer, reverb: StereoBuffer, delay: StereoBuffer,
-  stereo: StereoBuffer, gain: number, pan: number, duck: Float32Array | null,
-  reverbSend: number, delaySend: number, stem: StereoBuffer | null, track: string): void {
-  const leftGain = gain * Math.cos((pan + 1) * Math.PI / 4) * PAN_SCALE;
-  const rightGain = gain * Math.sin((pan + 1) * Math.PI / 4) * PAN_SCALE;
-  for (let i = 0; i < stereo.left.length; i++) {
-    const factor = duck?.[i] ?? 1;
-    const left = stereo.left[i]! * leftGain * factor;
-    const right = stereo.right[i]! * rightGain * factor;
-    if (!Number.isFinite(left) || !Number.isFinite(right))
-      throw new Music2Error("E_RENDER", `nonfinite track sample on ${track} at frame ${i}`, { details: { track, frame: i } });
-    master.left[i]! += left; master.right[i]! += right;
-    if (reverbSend !== 0) { reverb.left[i]! += left * reverbSend; reverb.right[i]! += right * reverbSend; }
-    if (delaySend !== 0) { delay.left[i]! += left * delaySend; delay.right[i]! += right * delaySend; }
-    if (stem) { stem.left[i] = left; stem.right[i] = right; }
-  }
 }
 
 /** Monotone deque gives the maximum sample magnitude in the next 5 ms without per-frame allocations. */
@@ -223,7 +187,7 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
     throw renderError("render exceeds 24-bit RIFF size limit");
   }
   const selected = selectEvents(song, timeline, start, end, frames);
-  const needsPreRoll = start > 0 && song.tracks.some((track) => track.fx?.some((fx) => fx.type === "tapestop"));
+  const needsPreRoll = start > 0 && song.tracks.some((track) => track.fx?.some((fx) => fx.type === "tapestop") || track.automation?.length);
   const preRollFrames = needsPreRoll ? Math.max(
     Math.ceil((end * timeline.secondsPerBar + song.tailSeconds) * song.sampleRate),
     Math.round(start * timeline.secondsPerBar * song.sampleRate) + frames) : 0;
@@ -243,6 +207,33 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
   for (let index = 0; index < song.tracks.length; index++) {
     const track = song.tracks[index]!;
     const events = selected[index]!;
+    if (track.automation?.length) {
+      const total = preRollEvents ? preRollFrames : frames;
+      const fullEvents = preRollEvents?.[index] ?? events;
+      const kit = kits[index];
+      const voice = kit ? null : resolveVoice(track, index);
+      const ctx = { sampleRate: song.sampleRate, frames: total, track, events: fullEvents };
+      const rendered = kit ? renderSampleInstrument(ctx, kit) : voice!.render(ctx, mergeParams(voice!, track.params));
+      const curves = prepareTrackCurves(track, total, song.sampleRate, song.bpm);
+      let processed: StereoBuffer | Float32Array = rendered;
+      if (track.fx?.length && rendered instanceof Float32Array) {
+        const stereo = createStereo(song.sampleRate, total);
+        stereo.left.set(rendered); stereo.right.set(rendered);
+        processed = stereo;
+      }
+      if (track.fx?.length && !(processed instanceof Float32Array)) applyInsertChain(processed, track.fx,
+        { sampleRate: song.sampleRate, bpm: song.bpm, startSeconds: 0,
+          secondsPerBar: timeline.secondsPerBar, insertCurves: curves.inserts }, track.id);
+      const sourceIndex = track.duck ? song.tracks.findIndex((candidate) => candidate.id === track.duck!.by) : -1;
+      const duck = track.duck && sourceIndex >= 0 ? duckEnvelope(frames,
+        selected[sourceIndex]!.map((event) => event.startFrame), song.sampleRate,
+        track.duck.amount, track.duck.releaseMs) : null;
+      const stem = options.stems ? createStereo(song.sampleRate, frames) : null;
+      mixAutomated({ master: audio, reverb: reverbSend, delay: delaySend }, processed,
+        Math.round(start * timeline.secondsPerBar * song.sampleRate), frames, track, curves, duck, stem);
+      if (stem) stems.push({ trackId: track.id, audio: stem });
+      continue;
+    }
     const tapePreRoll = preRollEvents !== null && track.fx?.some((fx) => fx.type === "tapestop");
     if (tapePreRoll) {
       const kit = kits[index];
@@ -318,8 +309,8 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
   const audioFlags = song.audioTracks?.length ? await mixAudioTracks(song, songPath,
     { startFrame: Math.round(start * timeline.secondsPerBar * song.sampleRate), frames },
     { master: audio, reverb: reverbSend, delay: delaySend }, stems, timeline, options.stems === true) : null;
-  const fullReturns = start > 0 && song.audioTracks?.length &&
-    (song.tracks.some((track) => track.sends.reverb > 0 || track.sends.delay > 0) || audioFlags?.reverbActive || audioFlags?.delayActive)
+  const fullReturns = start > 0 && (song.audioTracks?.length || song.tracks.some((track) => track.automation?.length)) &&
+    (song.tracks.some((track) => sendActive(track, "reverb") || sendActive(track, "delay")) || audioFlags?.reverbActive || audioFlags?.delayActive)
     ? (await mixTracks(song, timeline, songPath, { bars: { start: 0, end }, returns: true, ...(options.mastering ? { mastering: options.mastering } : {}) })).returns : null;
   const cropReturn = (wet: StereoBuffer): StereoBuffer => {
     const crop = createStereo(song.sampleRate, frames);
@@ -327,13 +318,13 @@ export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath
     crop.left.set(wet.left.subarray(offset, offset + frames)); crop.right.set(wet.right.subarray(offset, offset + frames));
     return crop;
   };
-  if (song.tracks.some((track) => track.sends.reverb > 0) || audioFlags?.reverbActive) {
+  if (song.tracks.some((track) => sendActive(track, "reverb")) || audioFlags?.reverbActive) {
     const wet = fullReturns?.reverb ? cropReturn(fullReturns.reverb) : song.fx?.reverb ? renderReverbBus(reverbSend, song.fx.reverb,
       { sampleRate: song.sampleRate, bpm: song.bpm }) : applyReverb(reverbSend);
     if (returns) returns.reverb = wet;
     for (let i = 0; i < frames; i++) { audio.left[i]! += wet.left[i]!; audio.right[i]! += wet.right[i]!; }
   }
-  if (song.tracks.some((track) => track.sends.delay > 0) || audioFlags?.delayActive) {
+  if (song.tracks.some((track) => sendActive(track, "delay")) || audioFlags?.delayActive) {
     const wet = fullReturns?.delay ? cropReturn(fullReturns.delay) : song.fx?.delay ? renderDelayBus(delaySend, song.fx.delay,
       { sampleRate: song.sampleRate, bpm: song.bpm }) : applyDelay(delaySend, song.bpm);
     if (returns) returns.delay = wet;

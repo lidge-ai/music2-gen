@@ -63,7 +63,5 @@ export async function renderSong(song: ResolvedSong, songPath: string,
       });
     }
   }
-  if (song.tracks.some((track) => track.automation?.length) || song.audioTracks?.some((track) => track.automation?.length))
-    throw new Music2Error("E_CAPABILITY", "automation rendering is not available");
   return mixTracks(song, timeline, songPath, options);
 }

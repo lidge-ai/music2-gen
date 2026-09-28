@@ -40,6 +40,16 @@ function delayWet(input: StereoBuffer, params: DelayBusParams, ctx: FxContext): 
 }
 
 export const processDelay: InsertProcessor<"delay"> = (buffer, params, ctx) => {
+  const curve = ctx.curves?.["mix"];
+  if (curve) {
+    const wet = delayWet(buffer, { ...params, mix: 1 }, ctx);
+    for (let i = 0; i < buffer.left.length; i++) {
+      const mix = curve[i]!;
+      buffer.left[i] = (1 - mix) * buffer.left[i]! + mix * wet.left[i]!;
+      buffer.right[i] = (1 - mix) * buffer.right[i]! + mix * wet.right[i]!;
+    }
+    return;
+  }
   if (params.mix === 0) return;
   const wet = delayWet(buffer, params, ctx);
   const dry = 1 - params.mix;

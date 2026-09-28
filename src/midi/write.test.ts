@@ -59,6 +59,16 @@ test("same-tick note off sorts before note on; CC sorts by controller", () => {
     4D 54 72 6B 00 00 00 15 00 B0 07 7F 00 B0 0A 40 87 40 80 3C 40 00 90 3C 64 00 FF 2F 00`));
 });
 
+test("CC7/CC10 ticks write explicit Bn statuses and 960-tick delta VLQ", () => {
+  const file: SmfFile = { format: 1, ppq: 960, warnings: [], tracks: [{ sourceIndex: 0, endTick: 960, events: [
+    { tick: 0, kind: "cc", channel: 0, controller: 10, value: 64 },
+    { tick: 0, kind: "cc", channel: 0, controller: 7, value: 64 },
+    { tick: 960, kind: "cc", channel: 0, controller: 7, value: 127 },
+    { tick: 960, kind: "cc", channel: 0, controller: 10, value: 1 },
+  ] }] };
+  assert.deepEqual(writeSmf(file).slice(22), bytes("00 B0 07 40 00 B0 0A 40 87 40 B0 07 7F 00 B0 0A 01 00 FF 2F 00"));
+});
+
 test("maximum VLQ EOT and out-of-range delta", () => {
   const file: SmfFile = { format: 1, ppq: 960, warnings: [], tracks: [{ sourceIndex: 0, endTick: 0x0fffffff, events: [] }] };
   assert.deepEqual(writeSmf(file).slice(-7), bytes("FF FF FF 7F FF 2F 00"));

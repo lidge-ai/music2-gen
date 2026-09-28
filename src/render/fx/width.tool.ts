@@ -4,6 +4,7 @@ import { createBiquadState, designBiquad, processBiquadSample } from "./biquad.t
 /** Matched Linkwitz-Riley fourth-order low/high side split; their sum is allpass. */
 export const processWidth: InsertProcessor<"width"> = (buffer, params, ctx) => {
   const { amount, monoBelowHz } = params;
+  const curve = ctx.curves?.["amount"];
   const low = designBiquad("lowpass", monoBelowHz, ctx.sampleRate);
   const high = designBiquad("highpass", monoBelowHz, ctx.sampleRate);
   const low1 = createBiquadState(); const low2 = createBiquadState();
@@ -16,7 +17,7 @@ export const processWidth: InsertProcessor<"width"> = (buffer, params, ctx) => {
     const sideLow = processBiquadSample(processBiquadSample(side, low, low1), low, low2);
     const sideHigh = processBiquadSample(processBiquadSample(side, high, high1), high, high2);
     const sideAllpass = sideLow + sideHigh;
-    const scaled = amount * (sideAllpass - sideLow);
+    const scaled = (curve?.[i] ?? amount) * (sideAllpass - sideLow);
     buffer.left[i] = mid + scaled;
     buffer.right[i] = mid - scaled;
   }

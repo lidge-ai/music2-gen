@@ -26,7 +26,8 @@ export function applyInsertChain(buffer: StereoBuffer, inserts: readonly Resolve
   for (let effect = 0; effect < inserts.length; effect++) {
     const insert = inserts[effect]!;
     // The discriminant selects the matching processor and parameter shape.
-    processors[insert.type](buffer, insert as never, ctx);
+    const curves = ctx.insertCurves?.[effect];
+    processors[insert.type](buffer, insert as never, curves ? { ...ctx, curves } : ctx);
     for (let frame = 0; frame < buffer.left.length; frame++) {
       if (!Number.isFinite(buffer.left[frame]) || !Number.isFinite(buffer.right[frame])) {
         throw new Music2Error("E_RENDER", `nonfinite ${insert.type} output on ${track} at frame ${frame}`, {

@@ -24,6 +24,8 @@ export const padVoice: VoiceSpec = {
     const detune = 2 ** (params["detuneCents"]! / 1200);
     for (const event of ctx.events) {
       if (event.midi === null) continue;
+      const eventFilterGain = event.params?.["cutoffHz"] === undefined ? filterGain :
+        1 - Math.exp(-TAU * event.params["cutoffHz"] / ctx.sampleRate);
       const start = Math.max(0, event.startFrame);
       const end = Math.min(ctx.frames, event.stopFrame);
       const frequency = 440 * 2 ** ((event.midi - 69) / 12);
@@ -37,7 +39,7 @@ export const padVoice: VoiceSpec = {
       for (let frame = start; frame < end; frame++) {
         const age = frame - event.startFrame;
         const raw = (2 * (low - Math.floor(low)) + 2 * (mid - Math.floor(mid)) + 2 * (high - Math.floor(high)) - 3) / 3;
-        filtered += filterGain * (raw - filtered);
+        filtered += eventFilterGain * (raw - filtered);
         const attack = 1 - Math.exp(-3 * (age + 1) / attackFrames);
         const release = age < event.gateFrames ? 1 : Math.exp(-6.9 * (age - event.gateFrames) / releaseFrames);
         output[frame]! += 0.55 * event.velocity * filtered * attack * release;
@@ -59,7 +61,7 @@ function renderEnhancedPad(ctx: Parameters<VoiceSpec["render"]>[0], params: Read
     const frequency = 440 * 2 ** ((event.midi - 69) / 12);
     const oscillator = new UnisonOscillator(params["unison"]!, params["detuneCents"]!, event.seed);
     const filter = new VoiceLowpass(0);
-    const filterEnvelope = new FilterEnvelope(params["cutoffHz"]!, params["filterEnvAmount"]!, decayFrames, rate);
+    const filterEnvelope = new FilterEnvelope(event.params?.["cutoffHz"] ?? params["cutoffHz"]!, params["filterEnvAmount"]!, decayFrames, rate);
     const end = Math.min(ctx.frames, event.stopFrame);
     for (let frame = Math.max(0, event.startFrame); frame < end; frame++) {
       const age = frame - event.startFrame;

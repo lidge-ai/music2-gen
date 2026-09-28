@@ -11,6 +11,8 @@ src/render/
 ├── render.tool.ts              # validation and render entry point
 ├── render.test.ts              # end-to-end PCM and render validation
 ├── mixer.tool.ts               # instrument/audio summing, effects, mastering
+├── mix-static.tool.ts          # unchanged legacy mono/stereo summing law
+├── mix-automated.tool.ts       # smoothed fader/pan/send and insert curves
 ├── select.tool.ts              # legacy event-window selection
 ├── select.test.ts              # seeded selection and mono stop vectors
 ├── instrument.tool.ts          # kit/SFZ sample adapter
@@ -63,7 +65,7 @@ patterns, including unplaced sections. User `kit:` names remain manifest-owned.
 List-note tracks use Timeline events for PCM. Their invalid sample and MIDI
 issues identify the original `notes[k].sample` or `notes[k].pitch` field even
 after event sorting; pattern tracks keep their existing `.pattern` paths.
-`sfz:` notes load song-relative SFZ/WAV sources through the sampler and preserve stereo through inserts, pan, gain, ducking, sends and stems. `audioTracks` clip lanes enter after instrument tracks and before bus returns; insert chains and duck envelopes retain absolute song time for partial-bar crops. When clip songs have active sends, partial bus returns are cropped from a full-origin return render so stateful effects keep their history. Nonempty automation lanes still raise `E_CAPABILITY` pending wp6. `validateDawVoiceLanes` checks semantic
+`sfz:` notes load song-relative SFZ/WAV sources through the sampler and preserve stereo through inserts, pan, gain, ducking, sends and stems. `audioTracks` clip lanes enter after instrument tracks and before bus returns; insert chains and duck envelopes retain absolute song time for partial-bar crops. When clip songs have active sends, partial bus returns are cropped from a full-origin return render so stateful effects keep their history. Automated tracks process from song frame zero through the requested end, then crop after inserts and smoothing. Gain, pan and sends use per-frame controls; whitelisted inserts receive indexed parameter curves. Bass/pad cutoff and lead vibrato are sampled at note onset. `validateDawVoiceLanes` checks semantic
 `param.*` opt-ins and point ranges at render and IR entry.
 It also checks effective timeline samples, MIDI ranges, and the mastering capability.
 `mixTracks` selects events for a zero-based half-open bar range, allocates
@@ -88,6 +90,9 @@ re-exports only `renderSong`, `VOICES`, `RenderOptions`, `RenderResult`,
 |---|---|---|
 | `export async function renderSong(song: ResolvedSong, songPath: string, options: RenderOptions = {}): Promise<RenderResult>` | `render.tool.ts` | Validate and render a resolved song. |
 | `export async function mixTracks(song: ResolvedSong, timeline: Timeline, songPath: string, options: RenderOptions = {}): Promise<RenderResult>` | `mixer.tool.ts` | Select events and create mastered PCM and stems. |
+| `prepareTrackCurves(track, frames, sampleRate, bpm): PreparedCurves` | `mix-automated.tool.ts` | Causal controls from absolute frame zero. |
+| `mixAutomated(buses, source, offset, frames, track, curves, duck, stem): void` | `mix-automated.tool.ts` | Mix processed source with automated dry and wet sends. |
+| `sendActive(track, bus): boolean` | `mix-automated.tool.ts` | Detect a static or rising send lane. |
 | `export function applyReverb(send: StereoBuffer): StereoBuffer` | `fx.tool.ts` | Return wet-only stereo reverb. |
 | `export function applyDelay(send: StereoBuffer, bpm: number): StereoBuffer` | `fx.tool.ts` | Return dotted-eighth cross-channel delay. |
 | `export function duckEnvelope(frames: number, onsets: readonly number[], sampleRate: number, amount: number, releaseMs = 180): Float32Array` | `fx.tool.ts` | Build a per-frame gain envelope. |
@@ -201,7 +206,7 @@ overrides the voice's mono default.
   keys are absent without their options. When stems and returns are requested,
   the renderer checks every Float32 frame/channel against the pre-master sum at
   `1e-6 * max(1, sum(abs(components)))`. Loop exports fold each captured stem
-  and return tail; legacy `render --stems` keeps its original truncation.
+  and return tail; legacy `render --stems` keeps its original truncation. Premaster, stem and return windows match the full render within `1e-6`, while final `--bars` PCM is mastered per window as in legacy behavior and is not compared.
 - `lufs` measures pre-master PCM with `measureLoudness`, adds the difference
   from `master.targetLufs` to master gain, and uses a milder soft-saturation
   normalization without peak scaling. Silence or a null target adds no LUFS gain.

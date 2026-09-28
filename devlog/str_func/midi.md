@@ -1,6 +1,6 @@
 # MIDI — Structure & Functions
 
-Pure Standard MIDI File interchange. The writer emits format 1 at 960 PPQ; the bounded reader accepts format 0/1 with PPQ timing. `projectToSmf` projects ProjectIR events without changing render timing. `smfToSong` produces Song v1 absolute note lists; CLI validates and writes them.
+Pure Standard MIDI File interchange. The writer emits format 1 at 960 PPQ; the bounded reader accepts format 0/1 with PPQ timing. `projectToSmf` projects ProjectIR events without changing render timing. Gain/pan lanes become CC7/CC10 at tick zero, changed 120-tick grid values, and exact point ticks. `smfToSong` imports multiple retained CC changes as Song v1 hold lanes; a sole tick-zero CC stays static. CLI validates and writes the result.
 
 ## File Tree
 
@@ -25,8 +25,8 @@ Every tool and schema has a colocated test file. All feature files import only l
 | `writeSmf(file: SmfFile): Uint8Array` | Write deterministic type-1 SMF with explicit EOT and statuses. |
 | `readSmf(bytes: Uint8Array): SmfFile` | Read format-0/1 SMF with 16 MiB input bound and chunk-local cursors. |
 | `writeVlq(value: number): Uint8Array` / `readVlq(bytes, offset, end)` | Encode/decode MIDI VLQ up to `0x0FFFFFFF`. |
-| `projectToSmf(project: ProjectIR, options?: { kitMaps? }): MidiProjection` | Project conductor, track identities, programs, static CC and notes. |
-| `smfToSong(file: SmfFile, options?: { title?; strict?; kitMaps? }): MidiImport` | Pair notes, convert PPQ, reconstruct Song sections and warnings. |
+| `projectToSmf(project: ProjectIR, options?: { kitMaps? }): MidiProjection` | Project conductor, track identities, programs, static and automated CC7/CC10, and notes. |
+| `smfToSong(file: SmfFile, options?: { title?; strict?; kitMaps? }): MidiImport` | Pair notes, convert PPQ, reconstruct Song sections, hold CC lanes and warnings. |
 | `kitMidiMap(names, explicit?): { byName; warnings }` | Deterministic kit note assignment. |
 | `keyToSmf(key)` / `smfToKey(sf, mi)` | Circle-of-fifths key-signature mapping. |
 
@@ -35,3 +35,5 @@ Every tool and schema has a colocated test file. All feature files import only l
 ## Dependents and Sync Checklist
 
 `src/cli/commands/export.ts` consumes `projectToSmf` and `writeSmf`; `src/cli/commands/import.ts` consumes `readSmf` and `smfToSong`. `src/index.ts` exposes the feature boundary. When changing byte layouts or warning IDs, update `devlog/_plan/260928_music2_daw_bridge/020_midi.md` and the colocated fixtures. When changing kit mapping, keep `src/render/kit.tool.ts`'s optional manifest validation and both CLI directions synchronized. Legacy rendering must remain independent of MIDI and ProjectIR.
+
+CC7 uses `round(127×10^(dB/40))`; CC10 uses `round(64+63×pan)`. Incoming CC7 0..3 and CC10 0 clamp to Song bounds with `MIDI_CC_CLAMPED`. Positive gain saturates CC7 and emits `gainCcClipped`. Send, insert and voice lanes retain named MIDI omission warnings. Only the first shared channel-10 drum track emits independent CCs.

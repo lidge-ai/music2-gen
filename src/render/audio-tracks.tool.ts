@@ -6,6 +6,7 @@ import type { ResolvedSong, Timeline } from "../song/index.ts";
 import { duckEnvelope } from "./fx.tool.ts";
 import { applyInsertChain } from "./fx/index.ts";
 import type { RenderStem } from "./render.schema.ts";
+import { mixAutomated, prepareTrackCurves, sendActive } from "./mix-automated.tool.ts";
 
 /** Mix resolved audio lanes after instrument lanes, before bus returns. */
 export async function mixAudioTracks(song: ResolvedSong, songPath: string,
@@ -15,14 +16,16 @@ export async function mixAudioTracks(song: ResolvedSong, songPath: string,
   let reverbActive = false; let delayActive = false;
   const sources = await loadClipSources(songPath, (song.audioTracks ?? []).flatMap((track) => track.clips));
   for (const track of song.audioTracks ?? []) {
-    const fullOrigin = window.startFrame > 0 && track.fx.length > 0;
+    const fullOrigin = window.startFrame > 0 && (track.fx.length > 0 || !!track.automation?.length);
     const renderStart = fullOrigin ? 0 : window.startFrame;
     const renderFrames = fullOrigin ? window.startFrame + window.frames : window.frames;
     const rendered = renderClips(track, sources, { sampleRate: song.sampleRate, bpm: song.bpm,
       startFrame: renderStart, frames: renderFrames });
+    const curves = track.automation?.length ? prepareTrackCurves(track, renderFrames, song.sampleRate, song.bpm) : null;
     if (track.fx.length) applyInsertChain(rendered, track.fx, { sampleRate: song.sampleRate, bpm: song.bpm,
       startSeconds: renderStart / song.sampleRate,
-      ...(timeline ? { secondsPerBar: timeline.secondsPerBar } : {}) }, track.id);
+      ...(timeline ? { secondsPerBar: timeline.secondsPerBar } : {}),
+      ...(curves ? { insertCurves: curves.inserts } : {}) }, track.id);
     const offset = window.startFrame - renderStart;
     const sourceIndex = track.duck ? song.tracks.findIndex((candidate) => candidate.id === track.duck!.by) : -1;
     const duck = track.duck && sourceIndex >= 0 && timeline ? duckEnvelope(window.startFrame + window.frames,
@@ -30,6 +33,13 @@ export async function mixAudioTracks(song: ResolvedSong, songPath: string,
         Math.round(event.time * song.sampleRate)),
       song.sampleRate, track.duck.amount, track.duck.releaseMs) : null;
     const stem = captureStems ? createStereo(song.sampleRate, window.frames) : null;
+    if (curves) {
+      mixAutomated(buses, rendered, offset, window.frames, track, curves,
+        duck?.subarray(window.startFrame, window.startFrame + window.frames) ?? null, stem);
+      if (stem) stems.push({ trackId: track.id, audio: stem });
+      reverbActive ||= sendActive(track, "reverb"); delayActive ||= sendActive(track, "delay");
+      continue;
+    }
     const leftGain = 10 ** (track.gain / 20) * Math.cos((track.pan + 1) * Math.PI / 4) * Math.SQRT2;
     const rightGain = 10 ** (track.gain / 20) * Math.sin((track.pan + 1) * Math.PI / 4) * Math.SQRT2;
     for (let i = 0; i < window.frames; i++) {

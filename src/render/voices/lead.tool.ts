@@ -24,6 +24,7 @@ export const leadVoice: VoiceSpec = {
     for (let eventIndex = 0; eventIndex < ctx.events.length; eventIndex++) {
       const event = ctx.events[eventIndex]!;
       if (event.midi === null) continue;
+      const vibratoCents = event.params?.["vibratoCents"] ?? params["vibratoCents"]!;
       const next = ctx.track.mono ? ctx.events[eventIndex + 1] : undefined;
       const end = Math.min(ctx.frames, event.stopFrame, next?.startFrame ?? ctx.frames);
       const start = Math.max(0, event.startFrame);
@@ -32,7 +33,7 @@ export const leadVoice: VoiceSpec = {
       for (let frame = event.startFrame; frame < end; frame++) {
         const age = frame - event.startFrame;
         const vibratoAge = Math.max(0, age - onsetFrames) / ctx.sampleRate;
-        const vibrato = age < onsetFrames ? 0 : params["vibratoCents"]! * Math.sin(TAU * params["vibratoHz"]! * vibratoAge);
+        const vibrato = age < onsetFrames ? 0 : vibratoCents * Math.sin(TAU * params["vibratoHz"]! * vibratoAge);
         phase += frequency * 2 ** (vibrato / 1200) / ctx.sampleRate;
         phase -= Math.floor(phase);
         if (frame < start) continue;
@@ -55,6 +56,7 @@ function renderEnhancedLead(ctx: Parameters<VoiceSpec["render"]>[0], params: Rea
   for (let index = 0; index < ctx.events.length; index++) {
     const event = ctx.events[index]!;
     if (event.midi === null) continue;
+    const vibratoCents = event.params?.["vibratoCents"] ?? params["vibratoCents"]!;
     const next = ctx.track.mono ? ctx.events[index + 1] : undefined;
     const end = Math.min(ctx.frames, event.stopFrame, next?.startFrame ?? ctx.frames);
     const oscillator = new UnisonOscillator(params["unison"]!, params["detuneCents"]!, event.seed);
@@ -64,7 +66,7 @@ function renderEnhancedLead(ctx: Parameters<VoiceSpec["render"]>[0], params: Rea
     for (let frame = event.startFrame; frame < end; frame++) {
       const age = frame - event.startFrame;
       const vibratoAge = Math.max(0, age - onsetFrames) / rate;
-      const vibrato = age < onsetFrames ? 0 : params["vibratoCents"]! * Math.sin(TAU * params["vibratoHz"]! * vibratoAge);
+      const vibrato = age < onsetFrames ? 0 : vibratoCents * Math.sin(TAU * params["vibratoHz"]! * vibratoAge);
       const raw = oscillator.sample(frequency * 2 ** (vibrato / 1200), rate, params["wave"] === 1);
       if (frame < 0) continue;
       const g = filterEnvelope.value(age);

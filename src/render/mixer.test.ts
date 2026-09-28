@@ -72,6 +72,22 @@ test("center pan retains insert stereo while hard pan attenuates the opposite si
   assert.ok(rms(b.stems[0]!.audio.right) < 1e-6);
 });
 
+test("automated filter, gain and pan keep dry PCM crop equal to the full-origin window", async () => {
+  const song = validateSong(fixture({ tracks: [{ id: "lead", kind: "notes", instrument: "lead",
+    notes: [{ start: 0, length: 4, pitch: 60 }, { start: 4, length: 4, pitch: 60 }],
+    fx: [{ type: "filter", cutoffHz: 800 }], automation: [
+      { target: "gain", points: [{ at: 0, value: -6 }, { at: 8, value: -18 }] },
+      { target: "pan", points: [{ at: 0, value: -1 }, { at: 8, value: 1 }] },
+      { target: "fx.0.cutoffHz", points: [{ at: 0, value: 300 }, { at: 8, value: 3000 }] },
+    ] }], sections: [{ id: "one", bars: 2 }] }));
+  const timeline = buildTimeline(song);
+  const full = await mixTracks(song, timeline, "fixture.song.json", { stems: true });
+  const crop = await mixTracks(song, timeline, "fixture.song.json", { bars: { start: 1, end: 2 }, stems: true });
+  const offset = 88200;
+  assert.deepEqual(crop.stems[0]!.audio.left, full.stems[0]!.audio.left.subarray(offset));
+  assert.deepEqual(crop.stems[0]!.audio.right, full.stems[0]!.audio.right.subarray(offset));
+});
+
 test("empty song.fx preserves both legacy send processors", async () => {
   const source = fixture({ tracks: [{ id: "lead", kind: "notes", instrument: "lead", pattern: "c4 ~ ~ ~",
     sends: { reverb: 0.2, delay: 0.2 } }] });

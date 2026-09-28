@@ -2,6 +2,18 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readSmf } from "./read.tool.ts";
 
+test("running-status CC7/CC10 retains ordered repeated values at a tick", () => {
+  const bytes = Uint8Array.from([0x4d,0x54,0x68,0x64,0,0,0,6,0,0,0,1,3,0xc0,
+    0x4d,0x54,0x72,0x6b,0,0,0,18,
+    0,0xb0,7,64, 0,10,64, 0,7,127, 0x87,0x40,10,1, 0,0xff,0x2f,0]);
+  assert.deepEqual(readSmf(bytes).tracks[0]!.events.filter((event) => event.kind === "cc"), [
+    { tick: 0, kind: "cc", channel: 0, controller: 7, value: 64 },
+    { tick: 0, kind: "cc", channel: 0, controller: 10, value: 64 },
+    { tick: 0, kind: "cc", channel: 0, controller: 7, value: 127 },
+    { tick: 960, kind: "cc", channel: 0, controller: 10, value: 1 },
+  ]);
+});
+
 function bytes(hex: string): Uint8Array { return Uint8Array.from(hex.trim().split(/\s+/).map((part) => parseInt(part, 16))); }
 
 const f5 = bytes(`4D 54 68 64 00 00 00 06 00 00 00 01 00 60

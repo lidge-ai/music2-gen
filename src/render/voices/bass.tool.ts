@@ -24,6 +24,8 @@ function renderMono(ctx: VoiceContext, wave: number, cutoffHz: number,
   let previousHz: number | null = null;
   for (let eventIndex = 0; eventIndex < ctx.events.length; eventIndex++) {
     const event = ctx.events[eventIndex]!;
+    const eventAlpha = event.params?.["cutoffHz"] === undefined ? alpha :
+      1 - Math.exp(-2 * Math.PI * event.params["cutoffHz"] / rate);
     const next = ctx.events[eventIndex + 1];
     if (next?.startFrame === event.startFrame) continue;
     const targetHz = frequency(ctx, event);
@@ -38,7 +40,7 @@ function renderMono(ctx: VoiceContext, wave: number, cutoffHz: number,
       const oscillator = wave === 0 ? 2 * phase - 1 : phase < .5 ? 1 : -1;
       // The bounded feedback cannot drive the one-pole state outside a finite range.
       const feedback = Math.max(-.9, Math.min(.9, filtered * resonance));
-      filtered += alpha * (oscillator - feedback - filtered);
+      filtered += eventAlpha * (oscillator - feedback - filtered);
       const attack = Math.min(1, (offset + 1) / (rate * .003));
       const release = offset < event.gateFrames ? 1 :
         Math.exp(-6.907755 * (offset - event.gateFrames) / releaseFrames);
@@ -66,7 +68,7 @@ function renderEnhancedBass(ctx: VoiceContext, params: Readonly<Record<string, n
     const fromHz = previousHz ?? targetHz;
     const end = Math.min(ctx.frames, event.stopFrame, next?.startFrame ?? ctx.frames);
     oscillator ??= new UnisonOscillator(params["unison"]!, params["detuneCents"]!, event.seed);
-    const filterEnvelope = new FilterEnvelope(params["cutoffHz"]!, params["filterEnvAmount"]!, decayFrames, rate);
+    const filterEnvelope = new FilterEnvelope(event.params?.["cutoffHz"] ?? params["cutoffHz"]!, params["filterEnvAmount"]!, decayFrames, rate);
     for (let frame = Math.max(0, event.startFrame); frame < end; frame++) {
       const age = frame - event.startFrame;
       const hz = glideFrames > 0 ? targetHz + (fromHz - targetHz) * Math.exp(-age / glideFrames) : targetHz;

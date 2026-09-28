@@ -1,4 +1,7 @@
 import { Music2Error } from "../shared/index.ts";
+import { ccEventsToLane, ccImportClampWarning } from "../automation/index.ts";
+import type { CcEvent } from "../automation/index.ts";
+import type { LaneInput } from "../song/song-daw.schema.ts";
 import { drumNameFor, instrumentForProgram, sfxNameFor, smfToKey, GM_PROGRAMS } from "./gm.tool.ts";
 import type { SmfFile, SmfTrack } from "./smf.schema.ts";
 
@@ -7,18 +10,17 @@ export interface ImportedSong {
   tracks: { id: string; kind: "notes" | "drums"; instrument: string;
     notes: ({ start: number; length: number; pitch: number; velocity: number } |
       { start: number; length: number; sample: string; velocity: number })[];
-    gain?: number; pan?: number; mono?: boolean }[];
+    gain?: number; pan?: number; mono?: boolean; automation?: LaneInput[] }[];
   sections: { id: string; bars: number }[];
   arrangement: { section: string; repeats?: number }[];
 }
 export interface MidiImport { song: ImportedSong; warnings: string[]; dropped: Record<string, number>; notes: number; bars: number }
 interface Paired { start: number; end: number; key: number; velocity: number; source: number; event: number }
 interface Group { track: SmfTrack; channel: number; name: string; identity: string | undefined;
-  program?: number; cc7?: number; cc10?: number; pairs: Paired[] }
+  program?: number; cc: CcEvent[]; pairs: Paired[] }
 const text = (bytes: Uint8Array): string => String.fromCharCode(...bytes);
 const fail = (message: string): never => { throw new Music2Error("E_CAPABILITY", message); };
 const count = (dropped: Record<string, number>, key: string): void => { dropped[key] = (dropped[key] ?? 0) + 1; };
-const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
 const voices = new Set([...Object.keys(GM_PROGRAMS), "sfx", "drums"]);
 const drumVoices = new Set(["drums", "sfx"]);
 function safeId(value: string, fallback: string, used: Set<string>): string {
@@ -58,18 +60,12 @@ function pair(file: SmfFile, warnings: string[], dropped: Record<string, number>
       let group = byChannel.get(event.channel);
       if (!group) {
         group = { track, channel: event.channel, name: name?.kind === "meta" ? text(name.data) : "",
-          identity: identity?.kind === "meta" ? text(identity.data).slice(7) : undefined, pairs: [] };
+          identity: identity?.kind === "meta" ? text(identity.data).slice(7) : undefined, cc: [], pairs: [] };
         byChannel.set(event.channel, group); groups.push(group);
       }
       if (event.kind === "program" && event.tick === 0) group.program ??= event.value;
-      if (event.kind === "cc") {
-        if (event.tick === 0 && event.controller === 7) group.cc7 ??= event.value;
-        if (event.tick === 0 && event.controller === 10) group.cc10 ??= event.value;
-        if (event.tick > 0 && (event.controller === 7 || event.controller === 10)) {
-          warnings.push(`CC_AUTOMATION_DROPPED:${group.name || track.sourceIndex}.${event.controller}@${event.tick}`);
-          count(dropped, "ccAutomationDropped");
-        }
-      }
+      if (event.kind === "cc" && (event.controller === 7 || event.controller === 10))
+        group.cc.push({ tick: event.tick, controller: event.controller, value: event.value });
       if (event.kind !== "noteOn" && event.kind !== "noteOff") continue;
       const key = `${event.channel}:${event.key}`;
       const queue = open.get(key) ?? [];
@@ -180,13 +176,25 @@ export function smfToSong(file: SmfFile, options: { title?: string; strict?: boo
     totalNotes += notes.length;
     const result: ImportedSong["tracks"][number] = { id, kind: drum ? "drums" : "notes", instrument, notes };
     if (instrument === "bass" || instrument === "808") result.mono = true;
-  if (group.cc7 !== undefined) {
-      result.gain = group.cc7 === 0 ? -60 : clamp(40 * Math.log10(group.cc7 / 127), -60, 12);
-      if (group.cc7 < 4) warnings.push(`MIDI_CC_CLAMPED:${id}.7@0=${group.cc7}`);
-    }
-    if (group.cc10 !== undefined) {
-      result.pan = clamp((group.cc10 - 64) / 63, -1, 1);
-      if (group.cc10 === 0) warnings.push(`MIDI_CC_CLAMPED:${id}.10@0=0`);
+    for (const [controller, target] of [[7, "gain"], [10, "pan"]] as const) {
+      const byTick = new Map<number, CcEvent>();
+      for (const event of group.cc) if (event.controller === controller) {
+        const tick = convert(event.tick, file.ppq, quant);
+        byTick.set(tick, { ...event, tick });
+      }
+      const retained = [...byTick.values()].sort((a, b) => a.tick - b.tick);
+      if (!retained.length) continue;
+      if (retained.length > 4096) fail("more than 4096 CC points on a track");
+      for (const event of retained) {
+        const warning = ccImportClampWarning(id, event);
+        if (warning) warnings.push(warning);
+        furthest = Math.max(furthest, event.tick * file.ppq / 960);
+      }
+      const decoded = ccEventsToLane(target, retained);
+      if (decoded.lane) (result.automation ??= []).push({ target, points: decoded.lane.points.map((point) =>
+        ({ at: point.tick / 960, value: point.value, curve: "hold" })) });
+      else if (target === "gain") result.gain = decoded.staticValue;
+      else result.pan = decoded.staticValue;
     }
     return result;
   });

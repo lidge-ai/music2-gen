@@ -35,7 +35,7 @@ test("projection writes placement marker, identity, static CC and exact note tic
   assert.ok(writeSmf(result.file).length > 101); // one required FF 06 placement marker
 });
 
-test("unrepresentable key, quantization and first automation points warn without mutating IR", () => {
+test("unrepresentable key and non-MIDI lanes warn while gain/pan curves emit CCs", () => {
   const ir = project();
   ir.key = { tonic: "Fb", mode: "major" };
   ir.quantization = { events: 3, inexact: 1, maxErrorTicks: 0.4 };
@@ -51,13 +51,27 @@ test("unrepresentable key, quantization and first automation points warn without
   assert.ok(result.warnings.includes("KEY_SIGNATURE_OMITTED:Fb major"));
   assert.ok(result.warnings.includes("QUANTIZED_PATTERN_EVENTS: inexact=1, maxErrorTicks=0.4"));
   assert.deepEqual(result.warnings.filter((w) => w.startsWith("MIDI_AUTOMATION_OMITTED:")), [
-    "MIDI_AUTOMATION_OMITTED:p.gain", "MIDI_AUTOMATION_OMITTED:p.pan", "MIDI_AUTOMATION_OMITTED:p.send.reverb",
+    "MIDI_AUTOMATION_OMITTED:p.send.reverb",
   ]);
-  assert.deepEqual(result.file.tracks[1]!.events.filter((e) => e.kind === "cc"), [
+  const cc = result.file.tracks[1]!.events.filter((e) => e.kind === "cc");
+  assert.deepEqual(cc.filter((e) => e.tick === 0), [
     { tick: 0, kind: "cc", channel: 0, controller: 7, value: 90 },
     { tick: 0, kind: "cc", channel: 0, controller: 10, value: 1 },
   ]);
+  assert.ok(cc.some((e) => e.kind === "cc" && e.tick === 1920 && e.controller === 7 && e.value === 127));
+  assert.ok(cc.some((e) => e.kind === "cc" && e.tick === 960 && e.controller === 10 && e.value === 127));
   assert.equal(track.gainDb, -12);
+});
+
+test("hold gain step emits only endpoints and duplicate tick keeps the effective value", () => {
+  const ir = project();
+  const track = ir.tracks[0] as ProjectNoteTrack;
+  track.automation = [{ target: "gain", points: [
+    { tick: 0, value: -12, curve: "hold" }, { tick: 960, value: -12, curve: "linear" },
+    { tick: 960, value: 0, curve: "hold" },
+  ] }];
+  const cc7 = events(ir).filter((e): e is Extract<typeof e, { kind: "cc" }> => e.kind === "cc" && e.controller === 7);
+  assert.deepEqual(cc7.map((e) => [e.tick, e.value]), [[0, 64], [960, 127]]);
 });
 
 test("same-pitch overlaps clip and channel allocation reuses the first pitched channel", () => {

@@ -4,7 +4,7 @@ import type { StereoBuffer } from "../audio-io/index.ts";
 export interface RenderOptions { bars?: { start: number; end: number }; stems?: boolean; returns?: boolean; premaster?: boolean; mastering?: "peak" | "loudnorm" | "lufs" }
 export interface RenderStem { trackId: string; audio: StereoBuffer }
 export interface RenderResult { warnings?: readonly string[]; audio: StereoBuffer; stems: RenderStem[]; returns?: { reverb: StereoBuffer | null; delay: StereoBuffer | null }; premaster?: StereoBuffer; bars: number; durationSeconds: number; peakDbfs: number; truePeakDbtp: number; ceilingDb: number; events: number; loop: { startSample: 0; endSample: number } | null }
-export interface VoiceEvent { midi: number | null; sample: { name: string; index: number } | null; velocity: number; startFrame: number; gateFrames: number; stopFrame: number; eventIndex: number; seed: number }
+export interface VoiceEvent { midi: number | null; sample: { name: string; index: number } | null; velocity: number; startFrame: number; gateFrames: number; stopFrame: number; eventIndex: number; seed: number; params?: Readonly<Record<string, number>> }
 export interface VoiceContext { sampleRate: number; frames: number; track: ResolvedTrack; events: VoiceEvent[] }
 export interface ParamSpec { default: number; min: number; max: number; integer?: boolean }
 export interface VoiceSpec { id: string; kind: "drums" | "notes"; monoDefault: boolean; sampleNames?: readonly string[]; automatable?: readonly string[]; params: Readonly<Record<string, ParamSpec>>; render(ctx: VoiceContext, params: Readonly<Record<string, number>>): Float32Array }

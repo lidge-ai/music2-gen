@@ -63,7 +63,9 @@ export type DelayBusParams = Params<typeof DELAY_BUS_SPEC>;
 export type InsertInput = { [T in InsertType]: { type: T } & Partial<InsertParams<T>> }[InsertType];
 
 /** Context every processor receives. */
-export interface FxContext { sampleRate: number; bpm: number; startSeconds?: number; secondsPerBar?: number }
+export interface FxContext { sampleRate: number; bpm: number; startSeconds?: number; secondsPerBar?: number;
+  curves?: Readonly<Record<string, Float32Array>>;
+  insertCurves?: Readonly<Record<number, Readonly<Record<string, Float32Array>>>> }
 /** In-place stereo processor contract shared by all insert effects. */
 export type InsertProcessor<T extends InsertType> = (buffer: StereoBuffer, params: InsertParams<T>, ctx: FxContext) => void;
 

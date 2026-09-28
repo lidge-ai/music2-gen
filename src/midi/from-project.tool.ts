@@ -1,5 +1,7 @@
 import type { ProjectIR, ProjectNote, ProjectNoteTrack } from "../project/index.ts";
 import { Music2Error } from "../shared/index.ts";
+import { gainDbToCc7, panToCc10, laneToCcEvents, gainCcClippedWarning,
+  midiAutomationOmittedWarning } from "../automation/index.ts";
 import { drumNoteFor, keyToSmf, kitMidiMap, programForInstrument, sfxNoteFor } from "./gm.tool.ts";
 import type { SmfEvent, SmfFile, SmfTrack } from "./smf.schema.ts";
 
@@ -129,7 +131,8 @@ export function projectToSmf(project: ProjectIR, options: { kitMaps?: Readonly<R
   const channels: Record<string, number> = {}; let melodicIndex = 0; let drumMix: { gain: number; pan: number } | undefined;
   let notes = 0;
   for (const track of project.tracks) {
-    for (const lane of track.automation) warnings.push(`MIDI_AUTOMATION_OMITTED:${track.id}.${lane.target}`);
+    for (const lane of track.automation) if (track.type === "audio" || (lane.target !== "gain" && lane.target !== "pan"))
+      warnings.push(midiAutomationOmittedWarning(track.id, lane));
     if (track.type === "audio") { count(dropped, "audioTracksDropped"); warnings.push(`AUDIO_TRACK_DROPPED:${track.id}`); continue; }
     const id = instrumentId(track);
     if (track.instrument.kind === "voice" && Object.keys(track.instrument.params).length > 0) {
@@ -148,12 +151,22 @@ export function projectToSmf(project: ProjectIR, options: { kitMaps?: Readonly<R
       if (program !== undefined) events.push({ tick: 0, kind: "program", channel, value: program });
       else warnings.push(`PROGRAM_FALLBACK:${track.id}`);
     }
-    const gain = track.automation.find((lane) => lane.target === "gain")?.points[0]?.value ?? track.gainDb;
-    const pan = track.automation.find((lane) => lane.target === "pan")?.points[0]?.value ?? track.pan;
+    const gainLane = track.automation.find((lane) => lane.target === "gain");
+    const panLane = track.automation.find((lane) => lane.target === "pan");
+    const gain = gainLane?.points[0]?.value ?? track.gainDb;
+    const pan = panLane?.points[0]?.value ?? track.pan;
     if (!drum || !drumMix) {
-      events.push({ tick: 0, kind: "cc", channel, controller: 7, value: clamp(Math.round(127 * 10 ** (gain / 40)), 0, 127) },
-        { tick: 0, kind: "cc", channel, controller: 10, value: clamp(Math.round(64 + 63 * pan), 0, 127) });
-    } else if (drumMix.gain !== gain || drumMix.pan !== pan) warnings.push(`DRUM_MIX_LOSS:${track.id}`);
+      const clipped = gainCcClippedWarning(track.id, gainLane ?? gain);
+      if (clipped) warnings.push(clipped);
+      for (const cc of gainLane ? laneToCcEvents(gainLane, project.lengthTicks) : [{ tick: 0, controller: 7 as const, value: gainDbToCc7(gain) }])
+        events.push({ ...cc, kind: "cc", channel });
+      for (const cc of panLane ? laneToCcEvents(panLane, project.lengthTicks) : [{ tick: 0, controller: 10 as const, value: panToCc10(pan) }])
+        events.push({ ...cc, kind: "cc", channel });
+    } else {
+      if (drumMix.gain !== gain || drumMix.pan !== pan || gainLane || panLane) warnings.push(`DRUM_MIX_LOSS:${track.id}`);
+      if (gainLane) warnings.push(midiAutomationOmittedWarning(track.id, gainLane));
+      if (panLane) warnings.push(midiAutomationOmittedWarning(track.id, panLane));
+    }
     if (drum && !drumMix) drumMix = { gain, pan };
     let kit: Record<string, number> | undefined;
     if (track.instrument.kind === "kit") {

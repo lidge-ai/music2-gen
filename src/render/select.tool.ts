@@ -1,4 +1,5 @@
-import { fnv1a32 } from "../shared/index.ts";
+import { fnv1a32, secondsToTicks } from "../shared/index.ts";
+import { valueAt } from "../automation/index.ts";
 import type { ResolvedSong, Timeline } from "../song/index.ts";
 import type { VoiceEvent } from "./render.schema.ts";
 import { mergeParams, resolveVoice } from "./voices/registry.tool.ts";
@@ -15,10 +16,14 @@ export function selectEvents(song: ResolvedSong, timeline: Timeline, start: numb
     const track = song.tracks[event.trackIndex]!;
     const startFrame = Math.round((event.time - offset) * rate);
     if (startFrame < 0 || startFrame >= frames) continue;
+    const voiceLanes = track.automation?.filter((lane) => lane.target.startsWith("param."));
+    const onsetParams = voiceLanes?.length ? Object.fromEntries(voiceLanes.map((lane) =>
+      [lane.target.slice(6), valueAt(lane, secondsToTicks(event.time, song.bpm))])) : undefined;
     selected[event.trackIndex]!.push({
       midi: event.midi, sample: event.sample, velocity: event.velocity,
       startFrame, gateFrames: Math.max(0, Math.round(event.duration * rate)),
       stopFrame: frames, eventIndex, seed: fnv1a32(song.seed, track.id, eventIndex),
+      ...(onsetParams ? { params: onsetParams } : {}),
     });
   }
   for (let index = 0; index < selected.length; index++) {
