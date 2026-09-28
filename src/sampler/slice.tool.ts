@@ -51,8 +51,8 @@ function materialize(audio: StereoBuffer, boundaries: readonly number[], fadeOut
     for (let j = 0; j < fadeFrames; j++) {
       const position = left.length - fadeFrames + j;
       const gain = fadeFrames === 1 ? 0 : 0.5 * (1 + Math.cos(Math.PI * j / (fadeFrames - 1)));
-      left[position] = left[position]! * gain;
-      right[position] = right[position]! * gain;
+      left[position] = gain === 0 ? 0 : left[position]! * gain;
+      right[position] = gain === 0 ? 0 : right[position]! * gain;
     }
     slices.push({ index, name: `slice-${String(index).padStart(2, "0")}.wav`, startSample, endSample,
       audio: { sampleRate: audio.sampleRate, sourceChannels: audio.sourceChannels, left, right } });

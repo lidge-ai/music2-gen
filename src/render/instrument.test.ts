@@ -19,7 +19,7 @@ test("sample adapter preserves SFZ stereo and rejects escaped sources", async ()
   try {
     const audio = createStereo(44100, 44100);
     for (let i = 0; i < audio.left.length; i++) audio.left[i] = Math.sin(2 * Math.PI * 440 * i / 44100) * .5;
-    await writeWav(join(dir, "tone.wav"), audio, { bits: 16, seed: 1 });
+    await writeWav(join(dir, "tone.wav"), audio, { bits: 24, seed: 1 });
     await writeFile(join(dir, "tone.sfz"), "<region> sample=tone.wav key=69 pitch_keycenter=69\n");
     assert.equal(isSampleInstrument("sfz:tone.sfz"), true);
     assert.equal(isSampleInstrument("kit:drums"), true);

@@ -25,9 +25,13 @@ function track(...clips: ResolvedClip[]): ResolvedAudioTrack {
   return { id: "audio", gain: 0, pan: 0, sends: { reverb: 0, delay: 0 }, fx: [], duck: null, clips };
 }
 function frequency(audio: Float32Array, start: number, end: number): number {
-  let crossings = 0;
-  for (let i = start + 1; i < end; i++) if (audio[i - 1]! <= 0 && audio[i]! > 0) crossings++;
-  return crossings * RATE / (end - start);
+  const crossings: number[] = [];
+  for (let i = start + 1; i < end; i++) {
+    const previous = audio[i - 1]!;
+    const current = audio[i]!;
+    if (previous < 0 && current >= 0) crossings.push(i - 1 - previous / (current - previous));
+  }
+  return (crossings.length - 1) * RATE / (crossings.at(-1)! - crossings[0]!);
 }
 
 test("tempo 120 to 150 contracts two seconds to 1.6 seconds without repitching", () => {

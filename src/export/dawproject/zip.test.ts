@@ -104,13 +104,15 @@ test("unsafe, duplicate and non-normalized entry names are rejected", () => {
 test("ZIP32 size, UTF-8 name and count limits fail before output allocation", () => {
   const bytes = new Uint8Array();
   expectError(() => writeStoreZip([{ path: "é".repeat(32768), bytes }]), "E_CAPABILITY");
-  const huge = Object.create(Uint8Array.prototype, {
-    byteLength: { value: 0x1_0000_0000 },
-  }) as Uint8Array;
+  class OversizedBytes extends Uint8Array {
+    override get byteLength(): number { return 0x1_0000_0000; }
+  }
+  const huge = new OversizedBytes();
   expectError(() => writeStoreZip([{ path: "a", bytes: huge }]), "E_CAPABILITY");
-  const aggregateOverflow = Object.create(Uint8Array.prototype, {
-    byteLength: { value: 0xffff_ff00 },
-  }) as Uint8Array;
+  class AggregateOverflowBytes extends Uint8Array {
+    override get byteLength(): number { return 0xffff_ffd0; }
+  }
+  const aggregateOverflow = new AggregateOverflowBytes();
   expectError(() => writeStoreZip([{ path: "a", bytes: aggregateOverflow }]), "E_CAPABILITY");
   const repeated = { path: "a", bytes };
   expectError(() => writeStoreZip(Array(65536).fill(repeated) as typeof repeated[]), "E_CAPABILITY");
@@ -128,7 +130,7 @@ test("system unzip checks CRC and extracts all entries when available", (t) => {
   const entries = [
     { path: "metadata.xml", bytes: utf8.encode("<MetaData/>") },
     { path: "project.xml", bytes: utf8.encode("<Project/>") },
-    { path: "audio/한.wav", bytes: Uint8Array.of(0, 255) },
+    { path: "audio/tone.wav", bytes: Uint8Array.of(0, 255) },
   ];
   writeFileSync(archive, writeStoreZip(entries));
   const checked = spawnSync("unzip", ["-t", archive], { encoding: "utf8" });

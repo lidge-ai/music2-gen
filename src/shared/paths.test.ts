@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { mkdtemp, mkdir, symlink, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, realpath, symlink, writeFile, rm } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -22,7 +22,7 @@ test("confinedRealpath rejects lexical and symlink escapes", async () => {
     await writeFile(join(root, "in.wav"), "in");
     await writeFile(join(sibling, "out.wav"), "out");
     await symlink(join(sibling, "out.wav"), join(root, "link.wav"));
-    assert.equal(await confinedRealpath(root, "in.wav"), join(root, "in.wav"));
+    assert.equal(await confinedRealpath(root, "in.wav"), await realpath(join(root, "in.wav")));
     for (const candidate of ["../bank-copy/out.wav", join(sibling, "out.wav"), "link.wav", "missing.wav"]) {
       await assert.rejects(confinedRealpath(root, candidate), { code: "E_ACCESS", exit: 4 });
     }

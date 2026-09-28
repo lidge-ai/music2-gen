@@ -138,7 +138,10 @@ void test("voice automation accepts only opted-in numeric parameters and their r
     tracks: [{ id: "sampled", kind: "notes", instrument: "sfz:a.sfz", pattern: "c4",
       automation: [{ target: "param.cutoffHz", points: [{ at: 0, value: 1200 }] }] }],
     sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] });
-  assert.doesNotThrow(() => validateDawVoiceLanes(sfz));
+  assert.throws(() => validateDawVoiceLanes(sfz), (error: unknown) => {
+    assert.deepEqual(issuePaths(error), ["$.tracks[0].automation[0].target"]);
+    return true;
+  });
 });
 
 void test("supersaw and expanded voice bounds validate", () => {
@@ -172,11 +175,18 @@ void test("SFZ bypasses built-in voices and rejects drum-kind tracks", () => {
   assert.equal(resolveVoice(notes, 0), null);
   assert.equal(declaredSampleNames(notes.instrument), null);
   const drums = { ...notes, kind: "drums" as const };
-  assert.deepEqual(issuePaths(assert.throws(() => resolveVoice(drums, 0))), ["tracks[0].kind"]);
+  assert.throws(() => resolveVoice(drums, 0), (error: unknown) => {
+    assert.deepEqual(issuePaths(error), ["tracks[0].kind"]);
+    return true;
+  });
   const parameter = { ...notes, params: { cutoffHz: 1000 } };
-  assert.deepEqual(issuePaths(assert.throws(() => validateVoiceParams({ ...song, tracks: [parameter] }))),
-    ["tracks[0].params.cutoffHz"]);
+  assert.throws(() => validateVoiceParams({ ...song, tracks: [parameter] }), (error: unknown) => {
+    assert.deepEqual(issuePaths(error), ["tracks[0].params.cutoffHz"]);
+    return true;
+  });
   const lane = { ...notes, automation: [{ target: "param.cutoffHz", points: [{ tick: 0, value: 1000, curve: "hold" as const }] }] };
-  assert.deepEqual(issuePaths(assert.throws(() => validateDawVoiceLanes({ ...song, tracks: [lane] }))),
-    ["$.tracks[0].automation[0].target"]);
+  assert.throws(() => validateDawVoiceLanes({ ...song, tracks: [lane] }), (error: unknown) => {
+    assert.deepEqual(issuePaths(error), ["$.tracks[0].automation[0].target"]);
+    return true;
+  });
 });

@@ -56,7 +56,7 @@ export async function renderSong(song: ResolvedSong, songPath: string,
   for (const event of timeline.events) {
     const track = song.tracks[event.trackIndex]!;
     const sourcePath = track.notes === undefined ? `tracks[${event.trackIndex}].pattern` :
-      `tracks[${event.trackIndex}].notes[${event.order}]`;
+      `tracks[${event.trackIndex}].notes[${track.notes[event.order]!.inputIndex}]`;
     const names = declaredSampleNames(track.instrument);
     if (names && event.sample) checkSample(event.sample.name, names,
       track.notes === undefined ? sourcePath : `${sourcePath}.sample`);

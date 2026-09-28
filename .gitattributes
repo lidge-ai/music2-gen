@@ -6,3 +6,4 @@
 *.md text eol=lf
 *.wav binary
 *.png binary
+tests/fixtures/dawproject/** -text

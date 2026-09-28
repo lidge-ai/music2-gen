@@ -131,16 +131,15 @@ test("list pitch errors point to the note field after timeline sorting", async (
     sampleIssue(error, "tracks[0].notes[0].pitch"));
 });
 
-test("automation remains capability-gated before partial mixing", async () => {
+test("automation renders through the mixer", async () => {
   const base = (instrument = "piano") => validateSong({ version: 1, bpm: 120,
     tracks: [{ id: "lead", kind: "notes", instrument, pattern: "c4" }],
     sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] });
   const automation = base();
   automation.tracks[0]!.automation = [{ target: "gain", points: [{ tick: 0, value: 0, curve: "linear" }] }];
-  for (const song of [automation]) {
-    await assert.rejects(renderSong(song, "fixture.song.json"), (error: unknown) =>
-      error instanceof Music2Error && error.code === "E_CAPABILITY" && error.exit === 3);
-  }
+  const result = await renderSong(automation, "fixture.song.json");
+  assert.equal(result.events, 1);
+  assert.ok(result.audio.left.some((sample) => sample !== 0));
 });
 
 function sampleIssue(error: unknown, path: string): boolean {
@@ -229,9 +228,9 @@ test("SFZ plus audio clip renders and surfaces parser warnings", async () => {
   try {
     const audio = createStereo(44100, 44100);
     for (let i = 0; i < audio.left.length; i++) audio.left[i] = Math.sin(2 * Math.PI * 440 * i / 44100) * .25;
-    await writeWav(join(dir, "tone.wav"), audio, { bits: 16, seed: 1 });
+    await writeWav(join(dir, "tone.wav"), audio, { bits: 24, seed: 1 });
     await writeFile(join(dir, "tone.sfz"), "<region> sample=tone.wav key=69 pitch_keycenter=69 unsupported_wp5=1\n");
-    const song = validateSong({ version: 1, bpm: 120, sampleRate: 44100,
+    const song = validateSong({ version: 1, bpm: 120, sampleRate: 44100, tailSeconds: 0,
       tracks: [{ id: "sfz", kind: "notes", instrument: "sfz:tone.sfz", pattern: "a4 ~ ~ ~" }],
       audioTracks: [{ id: "clip", clips: [{ file: "tone.wav", start: 0, length: 1, fadeIn: 0, fadeOut: 0 }] }],
       sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] });
@@ -243,7 +242,7 @@ test("SFZ plus audio clip renders and surfaces parser warnings", async () => {
     assert.ok(rendered.stems[1]!.audio.left.some((value) => value !== 0));
     const partial = await renderSong(song, join(dir, "song.json"), { bars: { start: 0, end: 1 }, stems: true });
     assert.deepEqual(partial.stems[1]!.audio.left, rendered.stems[1]!.audio.left);
-    const taped = validateSong({ version: 1, bpm: 120, sampleRate: 44100,
+    const taped = validateSong({ version: 1, bpm: 120, sampleRate: 44100, tailSeconds: 0,
       tracks: [{ id: "sfz", kind: "notes", instrument: "sfz:tone.sfz", pattern: "a4 ~ ~ ~",
         fx: [{ type: "tapestop", startBar: 2, beats: 2 }] }],
       audioTracks: [{ id: "clip", clips: [{ file: "tone.wav", start: 3, length: 2, fadeIn: 0, fadeOut: 0 }] }],

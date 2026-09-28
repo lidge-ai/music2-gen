@@ -39,7 +39,7 @@ test("stage uses destination directory and commitNoReplace preserves a late occu
     const final = join(dir, "out.wav");
     const item = stage(final);
     assert.equal(item.final, final);
-    assert.match(item.temporary, /^.*\/\.out\.[\da-f-]+\.tmp\.wav$/);
+    assert.match(item.temporary, /^.*[\\/]\.out\.[\da-f-]+\.tmp\.wav$/);
     try {
       await writeFile(item.temporary, "new");
       await writeFile(final, "late");
@@ -120,7 +120,7 @@ test("commitReplace leaves an unrelated destination directory intact", async () 
   });
 });
 
-void test("an output path through a non-directory is an access error", async () => {
+void test("an output path through a non-directory is an access error", { skip: process.platform === "win32" ? "/dev/null has no Windows equivalent; Windows reports ENOENT for paths through a file" : false }, async () => {
   await assert.rejects(assertDistinct([], ["/dev/null/out.json"]), (error: unknown) =>
     error instanceof Music2Error && error.code === "E_ACCESS");
 });
