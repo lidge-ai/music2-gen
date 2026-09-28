@@ -12,7 +12,7 @@
 
 ## Wire and audio
 
-One UTF-8 JSON object goes to stdin; one JSON object comes from stdout. Stderr is retained only as a bounded 2 KiB diagnostic tail and is never copied into public errors. JSON request and response each cap at 64 KiB. `runPluginHost` uses argument arrays with `shell:false` and a small inherited environment; processor and probe calls supply a private working directory. Timeout and abort terminate the process group. The bridge creates a private OS temp directory per stage and removes it in `finally`.
+One UTF-8 JSON object goes to stdin; one JSON object comes from stdout. Stderr is retained only as a bounded 2 KiB diagnostic tail and is never copied into public errors. JSON request and response each cap at 64 KiB. `runPluginHost` uses argument arrays with `shell:false` and a small inherited environment; processor and probe calls supply a private working directory. Timeout and abort terminate the POSIX process group or use Windows `taskkill /T /F`; if inherited pipes remain open, the host wait is bounded to two more seconds. The bridge creates a private OS temp directory per stage and removes it in `finally`.
 
 `encodePluginWav` writes a 58-byte RIFF/IEEE float32 stereo header (`fmt ` size 18, `fact` size 4) and interleaved samples. `decodePluginWav` walks chunks, including odd padding, and requires exact rate, frames, channels, float32 format and fact count. Output must be a regular `out.wav` in that temp directory with the same inode seen before and after open; symlinks and unexpected response paths are rejected. Samples must be finite with magnitude at most 64. The decoder signals headroom above 1 through `ExternalProcessor.warnings` as `PLUGIN_HEADROOM_EXCEEDED`. A stage's output replaces only that track's pre-fader buffer; plugin audio is outside byte-determinism claims.
 
@@ -20,6 +20,6 @@ Errors map to `E_CAPABILITY` for missing host/library/ID, `E_INPUT` for bad conf
 
 ## Optional host and verification
 
-`scripts/music2-plugin-bridge.py` is a separately installed, MIT-header Python program. It imports pedalboard only when executed; music2 core has no pedalboard dependency or bundled wheel. Redistributors of a Python environment containing pedalboard must review its GPLv3 obligations. The script implements `probe`, `render` and a built-in Gain self-test using JSON and standard float WAV bytes.
+`scripts/music2-plugin-bridge.py` is a separately installed, MIT-header Python program. It imports pedalboard and NumPy only when executed; music2 core has no pedalboard dependency or bundled wheel. Redistributors of a Python environment containing pedalboard must review its GPLv3 obligations. The script implements `probe`, `render` and a built-in Gain self-test using JSON and standard float WAV bytes. It uses NumPy arrays and chunked writes for PCM instead of per-sample Python objects. Pedalboard versions without `reported_latency_samples` report zero latency in the existing wire format.
 
 Colocated contract, host and detection tests use `tests/fixtures/plugin-host/stub-host.mjs` for deterministic gain, probe and failure vectors. The fixture requires only Node. Local tests were forbidden in this lane; hosted CI owns their execution. The optional Python script is included in the npm `files` list, without its GPLv3 pedalboard dependency.

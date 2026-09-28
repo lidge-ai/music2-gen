@@ -50,7 +50,7 @@ def read_request():
     return request
 
 
-def read_wav(path, frames, rate):
+def read_wav(path, frames, rate, numpy):
     if not os.path.isfile(path):
         fail("BAD_REQUEST", "input WAV is not a file", 2)
     with open(path, "rb") as stream:
@@ -62,23 +62,32 @@ def read_wav(path, frames, rate):
             (size, fmt_size, tag, channels, sr, byte_rate, align, bits, extra, fact_size, count, data_size) != \
             (50 + frames * 8, 18, 3, 2, rate, rate * 8, 8, 32, 0, 4, frames, frames * 8):
         fail("BAD_REQUEST", "input WAV format mismatch", 2)
-    samples = struct.unpack_from("<" + "f" * (frames * 2), data, 58)
-    if any(not math.isfinite(x) or abs(x) > 64 for x in samples):
-        fail("BAD_REQUEST", "input WAV samples are invalid", 2)
-    return samples
+    samples = numpy.frombuffer(data, dtype="<f4", count=frames * 2, offset=58)
+    for start in range(0, samples.size, 16384):
+        part = samples[start:start + 16384]
+        if not numpy.isfinite(part).all() or numpy.any(numpy.abs(part) > 64):
+            fail("BAD_REQUEST", "input WAV samples are invalid", 2)
+    return samples.reshape((frames, 2)).T.copy()
 
 
-def write_wav(path, samples, rate):
-    frames = len(samples) // 2
-    if any(not math.isfinite(x) or abs(x) > 64 for x in samples):
-        fail("RENDER_FAILED", "output samples are invalid", 4)
+def write_wav(path, samples, rate, numpy):
+    frames = samples.shape[1]
+    peak = 0.0
+    energy = 0.0
+    for start in range(0, frames, 8192):
+        part = samples[:, start:start + 8192]
+        if not numpy.isfinite(part).all() or numpy.any(numpy.abs(part) > 64):
+            fail("RENDER_FAILED", "output samples are invalid", 4)
+        peak = max(peak, float(numpy.max(numpy.abs(part))))
+        energy += float(numpy.sum(numpy.square(part, dtype=numpy.float64)))
     header = HEADER.pack(b"RIFF", 50 + frames * 8, b"WAVE", b"fmt ", 18, 3, 2,
                          rate, rate * 8, 8, 32, 0, b"fact", 4, frames, b"data", frames * 8)
     with open(path, "xb") as stream:
         stream.write(header)
-        for start in range(0, len(samples), 8192):
-            part = samples[start:start + 8192]
-            stream.write(struct.pack("<" + "f" * len(part), *part))
+        for start in range(0, frames, 8192):
+            part = samples[:, start:start + 8192].T
+            stream.write(numpy.asarray(part, dtype="<f4").tobytes(order="C"))
+    return peak, math.sqrt(energy / (frames * 2)) if frames else 0.0
 
 
 def pedalboard_module():
@@ -138,8 +147,8 @@ def render(request):
     if not isinstance(stage["path"], str) or not os.path.isabs(stage["path"]) or \
             not isinstance(stage["params"], dict) or stage["initTimeoutSec"] != 10:
         fail("BAD_REQUEST", "invalid plugin stage", 2)
-    samples = read_wav(inp["wavPath"], frames, rate)
     pedalboard, numpy = pedalboard_module()
+    audio = read_wav(inp["wavPath"], frames, rate, numpy)
     try:
         plugin = pedalboard.load_plugin(stage["path"], plugin_name=stage["pluginName"],
                                         initialization_timeout=10)
@@ -151,20 +160,16 @@ def render(request):
             if name not in plugin.parameters or type(value) not in (int, float, str, bool):
                 fail("BAD_REQUEST", "unsupported plugin parameter", 2)
             setattr(plugin, name, value)
-        audio = numpy.asarray(samples, dtype=numpy.float32).reshape((frames, 2)).T.copy()
         processed = numpy.asarray(plugin(audio, rate, buffer_size=512), dtype=numpy.float32)
         if processed.shape != (2, frames):
             fail("RENDER_FAILED", "plugin changed output shape", 4)
-        output = processed.T.reshape(-1).tolist()
-        write_wav(out["wavPath"], output, rate)
+        peak, rms = write_wav(out["wavPath"], processed, rate, numpy)
     except (SystemExit, KeyboardInterrupt):
         raise
     except Exception as exc:
         print(f"plugin render failed: {type(exc).__name__}", file=sys.stderr)
         fail("RENDER_FAILED", "plugin render failed", 4)
-    peak = max((abs(x) for x in output), default=0.0)
-    rms = math.sqrt(sum(x * x for x in output) / len(output)) if output else 0.0
-    latency = int(plugin.reported_latency_samples)
+    latency = int(getattr(plugin, "reported_latency_samples", 0))
     print(json.dumps({"protocol": PROTOCOL, "ok": True, "wavPath": out["wavPath"], "frames": frames,
                       "sampleRate": rate, "channels": 2, "peak": peak, "rms": rms,
                       "latencySamples": [latency], "hostVersion": "music2-python/1", "warnings": []},

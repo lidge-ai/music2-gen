@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Deterministic protocol fixture; no third-party plugin is loaded.
 import { readFile, writeFile, symlink } from "node:fs/promises";
+import { spawn } from "node:child_process";
 import { basename } from "node:path";
 
 const protocol = "music2-plugin-bridge/1";
@@ -16,6 +17,12 @@ if (request.protocol !== protocol || !["probe", "render", "selftest"].includes(r
 console.error("stub-host diagnostic");
 if (mode === "crash") process.exit(4);
 if (mode === "delay") await new Promise(resolve => setTimeout(resolve, 5000));
+if (mode === "child-delay" || mode === "orphan-pipes") {
+  spawn(process.execPath, ["-e", "setTimeout(() => {}, 5000)"], {
+    stdio: ["ignore", "inherit", "inherit"], detached: mode === "orphan-pipes", windowsHide: true,
+  }).unref();
+  await new Promise(resolve => setTimeout(resolve, 5000));
+}
 if (mode === "flood") { process.stdout.write("x".repeat(70000)); process.exit(0); }
 if (mode === "invalid-json") { process.stdout.write("{"); process.exit(0); }
 if (request.op === "probe") {

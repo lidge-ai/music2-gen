@@ -4,7 +4,7 @@ import { mkdtemp, writeFile, rm, readdir, access } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createExternalProcessor, decodePluginWav, encodePluginWav, loadPluginConfig } from "./host.tool.ts";
+import { createExternalProcessor, decodePluginWav, encodePluginWav, loadPluginConfig, runPluginHost } from "./host.tool.ts";
 import type { PluginConfig } from "./contract.schema.ts";
 
 const fixture = fileURLToPath(new URL("../../tests/fixtures/plugin-host/stub-host.mjs", import.meta.url));
@@ -62,6 +62,15 @@ test("bad host responses, symlinks, crashes and timeout fail with mapped codes",
     await assert.rejects(processor.process("track", [{ id: "a" }], audio, { bpm: 120, seed: 1, startSeconds: 0 }), { code: "E_TIMEOUT" });
     assert.deepEqual((await readdir(state.home)).sort(), ["a.vst3", "b.vst3"]);
   } finally { await state.cleanup(); }
+});
+
+test("timeout stays bounded when a child inherits the host pipes", async () => {
+  for (const mode of ["child-delay", "orphan-pipes"]) {
+    const started = Date.now();
+    await assert.rejects(runPluginHost([process.execPath, fixture, mode],
+      { protocol: "music2-plugin-bridge/1", op: "probe" }, 500), { code: "E_TIMEOUT" });
+    assert.ok(Date.now() - started < 4000, `${mode} exceeded the post-kill wait`);
+  }
 });
 
 test("finite headroom above unity is accepted with a warning", async () => {

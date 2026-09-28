@@ -14,6 +14,7 @@ import type { PluginConfig, PluginEntry, PluginRequest, PluginResponse, PluginUs
 const MAX_WAV_BYTES = 512 * 1024 * 1024 + 58;
 const STDERR_BYTES = 2048;
 const HEADROOM_LIMIT = 64;
+const POST_KILL_WAIT_MS = 2000;
 export interface PluginContext { bpm: number; seed: number; startSeconds: number; signal?: AbortSignal }
 export interface ExternalProcessor {
   readonly warnings: readonly string[];
@@ -83,7 +84,13 @@ export async function resolveHostArgv(entry: PluginEntry, override?: readonly st
 
 function killTree(pid: number | undefined, signal: NodeJS.Signals): void {
   if (pid === undefined) return;
-  try { process.kill(process.platform === "win32" ? pid : -pid, signal); }
+  if (process.platform === "win32") {
+    const killer = spawn("taskkill", ["/pid", String(pid), "/T", "/F"], { shell: false, stdio: "ignore" });
+    killer.on("error", () => { /* watchdog still bounds the host wait */ });
+    killer.unref();
+    return;
+  }
+  try { process.kill(-pid, signal); }
   catch { /* already exited */ }
 }
 
@@ -107,9 +114,33 @@ export async function runPluginHost(argv: readonly string[], request: PluginRequ
     let excess = false;
     let timedOut = false;
     let aborted = signal?.aborted ?? false;
+    let settled = false;
+    let stopping = false;
+    let killTimer: NodeJS.Timeout | undefined;
+    let postKillTimer: NodeJS.Timeout | undefined;
+    const cleanup = (): void => {
+      clearTimeout(timer);
+      if (killTimer) clearTimeout(killTimer);
+      if (postKillTimer) clearTimeout(postKillTimer);
+      signal?.removeEventListener("abort", abort);
+    };
+    const failHost = (error: Music2Error): void => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(error);
+    };
     const stop = (): void => {
+      if (stopping || settled) return;
+      stopping = true;
       killTree(child.pid, "SIGTERM");
-      setTimeout(() => killTree(child.pid, "SIGKILL"), 500).unref();
+      if (process.platform !== "win32") killTimer = setTimeout(() => killTree(child.pid, "SIGKILL"), 500);
+      postKillTimer = setTimeout(() => {
+        child.stdin.destroy();
+        child.stdout.destroy();
+        child.stderr.destroy();
+        failHost(new Music2Error("E_TIMEOUT", "plugin host timed out"));
+      }, POST_KILL_WAIT_MS);
     };
     const abort = (): void => { aborted = true; stop(); };
     signal?.addEventListener("abort", abort, { once: true });
@@ -126,18 +157,19 @@ export async function runPluginHost(argv: readonly string[], request: PluginRequ
     child.stderr.on("data", (chunk: Buffer) => {
       errorTail = Buffer.concat([errorTail, chunk]).subarray(-STDERR_BYTES);
     });
-    child.on("error", cause => { clearTimeout(timer); signal?.removeEventListener("abort", abort); reject(new Music2Error("E_CAPABILITY", "plugin host cannot start", { cause })); });
+    child.on("error", cause => { failHost(new Music2Error("E_CAPABILITY", "plugin host cannot start", { cause })); });
     child.on("close", code => {
-      clearTimeout(timer);
-      signal?.removeEventListener("abort", abort);
-      if (aborted) { reject(new Music2Error("E_INTERRUPTED", "plugin host interrupted")); return; }
-      if (timedOut) { reject(new Music2Error("E_TIMEOUT", "plugin host timed out")); return; }
-      if (excess) { reject(new Music2Error("E_RENDER", "plugin host response exceeds 64 KiB")); return; }
-      if (code === 5) { reject(new Music2Error("E_CAPABILITY", "plugin host library is unavailable")); return; }
+      if (settled) return;
+      if (aborted) { failHost(new Music2Error("E_INTERRUPTED", "plugin host interrupted")); return; }
+      if (timedOut) { failHost(new Music2Error("E_TIMEOUT", "plugin host timed out")); return; }
+      if (excess) { failHost(new Music2Error("E_RENDER", "plugin host response exceeds 64 KiB")); return; }
+      if (code === 5) { failHost(new Music2Error("E_CAPABILITY", "plugin host library is unavailable")); return; }
       let response: PluginResponse;
       try { response = validatePluginResponse(parseStrictJson(output.toString("utf8")), request.op); }
-      catch { reject(new Music2Error("E_RENDER", "plugin host returned invalid JSON")); return; }
-      if (code !== 0 || !response.ok) { reject(new Music2Error("E_RENDER", "plugin host failed")); return; }
+      catch { failHost(new Music2Error("E_RENDER", "plugin host returned invalid JSON")); return; }
+      if (code !== 0 || !response.ok) { failHost(new Music2Error("E_RENDER", "plugin host failed")); return; }
+      settled = true;
+      cleanup();
       resolve({ response, stderrTail: errorTail.toString("utf8") });
     });
     child.stdin.on("error", () => { /* close handler reports the process failure */ });
