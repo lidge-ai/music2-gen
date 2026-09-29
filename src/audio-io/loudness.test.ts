@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createStereo } from "./buffer.tool.ts";
-import { measureLoudness } from "./loudness.tool.ts";
+import { Music2Error } from "../shared/index.ts";
+import { integratedLoudness, measureLoudness } from "./loudness.tool.ts";
 
 function sine(rate: number, seconds: number, dbfs: number, channels: 1 | 2 = 2) {
   const pcm = createStereo(rate, rate * seconds);
@@ -71,4 +72,20 @@ test("4x reconstruction preserves the interior of a constant signal", () => {
   const result = measureLoudness(pcm);
   assert.ok(result.truePeakEstimateDbtp !== null);
   assert.ok(Math.abs(10 ** (result.truePeakEstimateDbtp / 20) - .5) < 1e-4);
+});
+
+test("integratedLoudness equals measureLoudness integratedLufs bit for bit", () => {
+  const gated = sine(48000, 6, -18);
+  for (let frame = 3 * 48000; frame < gated.left.length; frame++) { gated.left[frame]! *= 1e-4; gated.right[frame]! *= 1e-4; }
+  const cases = {
+    stereo: sine(44100, 5, -20), mono: sine(48000, 5, -20, 1), silence: createStereo(44100, 44100),
+    short: sine(44100, .3, -20), gated,
+  };
+  for (const [name, pcm] of Object.entries(cases)) {
+    assert.ok(Object.is(integratedLoudness(pcm), measureLoudness(pcm).integratedLufs), name);
+  }
+  const bad = { ...createStereo(44100, 10), sampleRate: 1000 };
+  for (const measure of [integratedLoudness, measureLoudness]) {
+    assert.throws(() => measure(bad), (error: unknown) => error instanceof Music2Error && error.code === "E_INPUT");
+  }
 });

@@ -51,6 +51,7 @@ The two validators are exported from
 | `export function truePeakLinearOf(channel: Float32Array, rate: number): number` | `buffer.tool.ts` | Estimate one channel's intersample peak. |
 | `export function resampleLinear(input: Float32Array, fromRate: number, toRate: number): Float32Array` | `buffer.tool.ts` | Linearly resample one channel. |
 | `export function measureLoudness(pcm: StereoBuffer): LoudnessMetrics` | `loudness.tool.ts` | Measure gated loudness and peaks. |
+| `export function integratedLoudness(pcm: StereoBuffer): number \| null` | `loudness.tool.ts` | Gated integrated LUFS only, bit-identical to `measureLoudness(pcm).integratedLufs` without the true-peak pass; used by render mastering and per-section analysis. |
 | `export function kWeightedPower(pcm: StereoBuffer, visit?: (frame: number, power: number) => void): Float64Array` | `kweight.tool.ts` | Visit sample-ordered channel power and return 100 ms block sums, retaining a final partial block. |
 | `export async function readWav(path: string): Promise<StereoBuffer>` | `wav.tool.ts` | Decode a supported WAV file. |
 | `export async function writeWav(path: string, audio: StereoBuffer, options: WavWriteOptions): Promise<WavInfo>` | `wav.tool.ts` | Write stereo PCM WAV. |

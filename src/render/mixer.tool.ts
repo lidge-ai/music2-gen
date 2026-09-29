@@ -1,4 +1,4 @@
-import { createStereo, measureLoudness, peakLinear } from "../audio-io/index.ts";
+import { createStereo, integratedLoudness, peakLinear } from "../audio-io/index.ts";
 import type { StereoBuffer } from "../audio-io/index.ts";
 import { Music2Error } from "../shared/index.ts";
 import type { ResolvedSong, Timeline } from "../song/index.ts";
@@ -128,7 +128,7 @@ function truePeakBounded(audio: StereoBuffer): number {
 
 function masterAudio(audio: StereoBuffer, song: ResolvedSong, mastering: RenderOptions["mastering"]): { peakDbfs: number; truePeakDbtp: number } {
   const mode = mastering ?? (song.master.targetLufs === null ? "peak" : "lufs");
-  const measured = mode === "lufs" && song.master.targetLufs !== null ? measureLoudness(audio).integratedLufs : null;
+  const measured = mode === "lufs" && song.master.targetLufs !== null ? integratedLoudness(audio) : null;
   const loudnessGainDb = measured === null ? 0 : song.master.targetLufs! - measured;
   const gain = 10 ** ((song.master.gainDb + loudnessGainDb) / 20);
   const ceiling = 10 ** (song.master.ceilingDb / 20);
