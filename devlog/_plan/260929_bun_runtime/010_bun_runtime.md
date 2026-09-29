@@ -596,3 +596,7 @@ for (const flags of [[], ["--ignore-scripts"]]) {
 
 The script lives under `scripts/`, which the existing pack rule excludes, so it never ships.
 
+
+## Stale check (wp2 P, branch codex/bun-runtime at c332383)
+
+No file under src, tests, scripts, bin, package.json or .github changed since the audited plan (git diff 08e78c9..c332383 touches devlog only). Re-read: src/render/mixer.test.ts:26, tests/e2e/legacy-render.test.ts:15, scripts/test.mjs:86, tests/e2e/skill-docs.test.ts:49, src/song/load.tool.ts:7 match the plan. Architect proposal and reflection from wp1 stand; no amendment.
