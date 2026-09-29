@@ -98,7 +98,7 @@ metadata with `bitsPerSample` equal to the requested 16 or 24 bits.
 
 ### Loudness behavior
 
-- `measureLoudness` accepts integer 8000..192000 Hz PCM with matching
+- `measureLoudness` and `integratedLoudness` accept integer 8000..192000 Hz PCM with matching
   `Float32Array` channels and finite samples; invalid input raises `E_INPUT`.
 - Mono energy and true peak use only the left channel; stereo sums K-weighted
   channel powers.
