@@ -1,6 +1,6 @@
 import { mkdir, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, join, resolve } from "node:path";
-import { measureLoudness, readWav } from "../audio-io/index.ts";
+import { integratedLoudness, measureLoudness, readWav } from "../audio-io/index.ts";
 import type { StereoBuffer } from "../audio-io/index.ts";
 import { renderSong } from "../render/index.ts";
 import { Music2Error } from "../shared/index.ts";
@@ -86,7 +86,7 @@ function sectionMetrics(pcm: StereoBuffer, timeline: Timeline, metered: StereoBu
       left: metered.left.subarray(meterStart, meterEnd), right: metered.right.subarray(meterStart, meterEnd) };
     return { id: `${placement.section}#${placement.occurrence}`, role: placement.role,
       startSeconds, endSeconds, rmsDbfs: end > start ? amplitude(slice).rms : null,
-      integratedLufs: meterEnd > meterStart ? measureLoudness(meterSlice).integratedLufs : null };
+      integratedLufs: meterEnd > meterStart ? integratedLoudness(meterSlice) : null };
   });
 }
 

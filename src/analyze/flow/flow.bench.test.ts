@@ -35,21 +35,21 @@ const child = String.raw`
   run(pcm);
   const wallSeconds = Number(process.hrtime.bigint() - start) / 1e9;
   const rss = process.resourceUsage().maxRSS / 1024;
-  process.stdout.write(JSON.stringify({ wallSeconds, rssMb: rss, node: process.version, platform: process.platform }));
+  process.stdout.write(JSON.stringify({ wallSeconds, rssMb: rss, runtime: "bun " + process.versions.bun, platform: process.platform }));
 `;
 
 test("three-minute flow and overview incremental budget", { skip: process.env.MUSIC2_BENCH !== "1" }, () => {
-  const measure = (mode: string): { wallSeconds: number; rssMb: number; node: string; platform: string } => {
-    const run = spawnSync(process.execPath, ["--input-type=module", "-e", child, mode],
+  const measure = (mode: string): { wallSeconds: number; rssMb: number; runtime: string; platform: string } => {
+    const run = spawnSync(process.execPath, ["-e", child, mode],
       { cwd: process.cwd(), encoding: "utf8", maxBuffer: 1024 * 1024 });
     assert.equal(run.status, 0, run.stderr);
-    return JSON.parse(run.stdout) as { wallSeconds: number; rssMb: number; node: string; platform: string };
+    return JSON.parse(run.stdout) as { wallSeconds: number; rssMb: number; runtime: string; platform: string };
   };
   const baseline = measure("baseline");
   const added = measure("added");
   const wallDelta = added.wallSeconds - baseline.wallSeconds;
   const rssDelta = added.rssMb - baseline.rssMb;
-  console.log(JSON.stringify({ host: hostname(), node: added.node, platform: added.platform,
+  console.log(JSON.stringify({ host: hostname(), runtime: added.runtime, platform: added.platform,
     baseline, added, wallDelta, rssDelta }));
   assert.ok(wallDelta <= 15, `added wall ${wallDelta.toFixed(2)} s`);
   assert.ok(rssDelta <= 100, `added peak RSS ${rssDelta.toFixed(2)} MB`);

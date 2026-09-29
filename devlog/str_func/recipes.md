@@ -225,7 +225,7 @@ Schema failures normally throw, except the isolated pattern-parse report.
 | Card modules | `./cards/*.ts` | Registry input. |
 | Geometry and rule helpers | `./lint-*.tool.ts` | Static lint computation. |
 
-There are no runtime package dependencies. Tests use Node's test runner.
+The only runtime package dependency is the pinned `bun` runtime. Tests use `node:test` under `bun test`.
 
 ## Dependents
 
@@ -239,8 +239,8 @@ There are no runtime package dependencies. Tests use Node's test runner.
 
 The CLI owns file reads, writes, output formatting, and QA exit policy.
 The generator validates its expected recipe IDs and lint-rule meanings, then
-compares UTF-8 bytes with the generated file. `npm run docs:genres` writes
-changes; `npm run docs:genres:check` runs `--check` and exits 1 on drift.
+compares UTF-8 bytes with the generated file. `bun run docs:genres` writes
+changes; `bun run docs:genres:check` runs `--check` and exits 1 on drift.
 `.github/workflows/ci.yml` runs that check as a CI gate. The generated genre
 reference is consumed by `skills/music2/SKILL.md` and should not be edited by
 hand.
@@ -252,7 +252,7 @@ hand.
 - [ ] Recheck the lint catalogue when rule IDs or thresholds change.
 - [ ] Verify the geometry definitions before describing eligible bars.
 - [ ] Keep the feature barrel aligned with public exports.
-- [ ] Regenerate `skills/music2/references/genres.md` after card changes and run `npm run docs:genres:check`.
+- [ ] Regenerate `skills/music2/references/genres.md` after card changes and run `bun run docs:genres:check`.
 - [ ] Update `devlog/str_func/cli.md` when command flags or exit policy change.
 - [ ] Update `devlog/str_func/AGENTS.md` index when adding or moving this document.
 

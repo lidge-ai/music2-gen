@@ -86,8 +86,10 @@ function truePeakOf(channel: Float32Array, samplePeak: number): number {
   return peak;
 }
 
-/** BS.1770 integrated loudness, EBU loudness range and a 4x true-peak estimate. */
-export function measureLoudness(pcm: StereoBuffer): LoudnessMetrics {
+interface WeightedPrefix { prefix: Float64Array; samplePeak: number }
+
+/** Validates PCM and returns the K-weighted power prefix sum plus the sample peak. */
+function kWeightedPrefix(pcm: StereoBuffer): WeightedPrefix {
   const { sampleRate, left, right, sourceChannels } = pcm;
   if (!Number.isInteger(sampleRate) || sampleRate < 8000 || sampleRate > 192000 ||
       !(left instanceof Float32Array) || !(right instanceof Float32Array) || left.length !== right.length ||
@@ -102,6 +104,19 @@ export function measureLoudness(pcm: StereoBuffer): LoudnessMetrics {
     samplePeak = Math.max(samplePeak, Math.abs(l), sourceChannels === 2 ? Math.abs(r) : 0);
     prefix[frame + 1] = prefix[frame]! + power;
   });
+  return { prefix, samplePeak };
+}
+
+/** BS.1770 gated integrated loudness only; the same arithmetic as measureLoudness(pcm).integratedLufs, without the true-peak pass. */
+export function integratedLoudness(pcm: StereoBuffer): number | null {
+  const power = gatedMean(blockPowers(kWeightedPrefix(pcm).prefix, pcm.sampleRate, .4), 10);
+  return power === null ? null : loudness(power);
+}
+
+/** BS.1770 integrated loudness, EBU loudness range and a 4x true-peak estimate. */
+export function measureLoudness(pcm: StereoBuffer): LoudnessMetrics {
+  const { sampleRate, left, right, sourceChannels } = pcm;
+  const { prefix, samplePeak } = kWeightedPrefix(pcm);
   const integratedPower = gatedMean(blockPowers(prefix, sampleRate, .4), 10);
   const range = loudnessRange(blockPowers(prefix, sampleRate, 3));
   const truePeak = samplePeak === 0 ? 0 : Math.max(

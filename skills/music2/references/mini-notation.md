@@ -1,6 +1,6 @@
 # Mini-notation: one bar at a time
 
-music2 implements a clean-room subset of mini-notation, not full Strudel compatibility. A pattern cycle is one song bar. Spaces sequence steps evenly; `[ ]` divides a single parent step; `~` occupies a step with no event. Nesting is limited to 32 groups, and a pattern to 4,000 characters. Use `node bin/music2.js events <song.json> --json` to see the timed result.
+music2 implements a clean-room subset of mini-notation, not full Strudel compatibility. A pattern cycle is one song bar. Spaces sequence steps evenly; `[ ]` divides a single parent step; `~` occupies a step with no event. Nesting is limited to 32 groups, and a pattern to 4,000 characters. Use `bun bin/music2.js events <song.json> --json` to see the timed result.
 
 | Pattern | Onsets within bar 0 |
 | --- | --- |

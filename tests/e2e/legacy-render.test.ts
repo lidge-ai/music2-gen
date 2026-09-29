@@ -5,14 +5,15 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "n
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { packageRoot } from "../../src/shared/index.ts";
+import { packageRoot, pinnedBunVersion } from "../../src/shared/index.ts";
 
-// Digests were produced by the pre-effects renderer (commit 0737e13) on Node 24 / macOS. Songs without
-// track.fx, song.fx or master.fx must keep rendering these exact bytes on the same Node major and platform.
+// Digests were produced by the pre-effects renderer (commit 0737e13) on Node 24 / macOS and are replayed on the
+// pinned Bun, which renders the same bytes. Songs without track.fx, song.fx or master.fx must keep rendering these
+// exact bytes on the pinned Bun and platform.
 const root = packageRoot();
 const cli = (args: string[]): void => { execFileSync(process.execPath, [join(root, "src/cli/index.ts"), ...args, "--json"], { cwd: root, stdio: "pipe" }); };
 const sha = (path: string): string => createHash("sha256").update(readFileSync(path)).digest("hex");
-const legacyPlatform = process.platform === "darwin" && process.versions.node.startsWith("24.");
+const legacyPlatform = process.platform === "darwin" && process.versions.bun === pinnedBunVersion();
 
 test("no-FX renders keep the pre-effects bytes for loop, --bars, stems and peak mastering", { skip: !legacyPlatform && "digests are pinned to the recording platform" }, () => {
   const dir = mkdtempSync(join(tmpdir(), "music2-legacy-"));

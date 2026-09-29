@@ -46,7 +46,7 @@ test("documented CLI examples use current CommandSpec flags", async () => {
   for (const name of documents) {
     if (name === "references/genres.md") continue;
     const source = await readFile(resolve(skillDir, name), "utf8");
-    for (const match of source.matchAll(/node bin\/music2\.js ([^\n`]+)/g)) {
+    for (const match of source.matchAll(/bun bin\/music2\.js ([^\n`]+)/g)) {
       const line = match[1]!;
       const command = line.split(/\s+/, 1)[0]!;
       const spec = commands.get(command);

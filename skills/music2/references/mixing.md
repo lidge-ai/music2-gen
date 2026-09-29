@@ -2,7 +2,7 @@
 
 For insert chains, configurable wet buses, master effects, parameter bounds, and style starting points, see [effects](effects.md).
 
-Render a WAV, then run `node bin/music2.js analyze /tmp/music2-song.wav --song /tmp/music2-song.song.json --out /tmp/music2-analysis --json`. Read `analysis.md` for a text-only summary and `analysis.json` for exact values and warnings. Read [overview.png](overview.md) first for section order, bar boundaries, loudness flow, density, and warning markers. `spectrogram.png` shows time and frequency; `pianoroll.png` shows the supplied song's note and drum timeline. None is a listening test. Without `--song`, WAV analysis has no piano roll or declared section labels; its overview uses an inferred beat or 0.5 s axis.
+Render a WAV, then run `bun bin/music2.js analyze /tmp/music2-song.wav --song /tmp/music2-song.song.json --out /tmp/music2-analysis --json`. Read `analysis.md` for a text-only summary and `analysis.json` for exact values and warnings. Read [overview.png](overview.md) first for section order, bar boundaries, loudness flow, density, and warning markers. `spectrogram.png` shows time and frequency; `pianoroll.png` shows the supplied song's note and drum timeline. None is a listening test. Without `--song`, WAV analysis has no piano roll or declared section labels; its overview uses an inferred beat or 0.5 s axis.
 
 Compare `flow.sectionMeans` for a hook and verse occurrence when the overview shows little loudness contrast. Check which instruments and gains differ in those sections, change the source song, then rerender and remeasure. A small gap is an editorial cue; the structured `SECTION_LOUDNESS_FLAT` warning applies only at its documented threshold.
 

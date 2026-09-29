@@ -217,7 +217,7 @@ drawing, and colormap are internal to this feature.
 | Image helpers | `./colormap.ts`, `./font.tool.ts`, `./png.tool.ts` | Heatmap colors, labels, and PNG encoding. |
 | Shared K scanner | `../audio-io/kweight.tool.ts` | Continuous power for interval and section means. |
 
-There are no runtime package dependencies. Tests use the Node test runner.
+The only runtime package dependency is the pinned `bun` runtime. Tests use `node:test` under `bun test`.
 
 ## Dependents
 

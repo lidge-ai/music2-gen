@@ -124,7 +124,7 @@ the parameters relevant to their operation.
 | AST schema | `./ast.schema.ts` | Parser, query, and type boundary. |
 | Euclidean helper | `./euclid.tool.ts` | Query engine slot expansion. |
 
-There are no runtime package dependencies. Tests use the Node test runner.
+The only runtime package dependency is the pinned `bun` runtime. Tests use `node:test` under `bun test`.
 
 ## Dependents
 

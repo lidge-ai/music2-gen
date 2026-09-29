@@ -317,6 +317,10 @@ All failures use the shared error envelope and exit mapping. Encoded-output
 failures can also carry errors from `src/probe`; the CLI preserves their
 typed code. JSON mode still emits exactly one object.
 
+## npm launcher (bin/)
+
+`bin/music2.js` is the package `bin`. It is plain Node ESM because npm and pnpm global shims start it with Node. Under Bun it imports `src/cli/index.ts` in-process. Under Node it calls `resolveBun()` from `bin/bun-binary.mjs` (a valid `MUSIC2_BUN_PATH`, else the pinned `bun` dependency's binary; a sub-1 MB placeholder triggers one run of the package's `install.js`), spawns that Bun on the CLI with `MUSIC2_BUN_SOURCE` set, forwards SIGINT/SIGTERM (and SIGHUP off Windows) and mirrors the exit code or signal. With no usable Bun it exits 3 with an `E_CAPABILITY` envelope in JSON mode (`--json` or `MUSIC2_JSON=1`). `bin/package-main.mjs` is the non-Bun library entry and throws. `tests/e2e/launcher.test.ts` and `scripts/install-smoke.mjs` (CI) cover it.
+
 ## Dependencies
 
 | Dependency | Import path | Current use |
@@ -339,7 +343,7 @@ typed code. JSON mode still emits exactly one object.
 | Shared package root | `../../shared/index.ts` | Locate the installed package for `skill path`. |
 | Node filesystem/path/crypto | `node:fs/promises`, `node:path`, `node:crypto` | Stage files, resolve paths, and name temporary outputs. |
 
-There are no runtime package dependencies. `main.test.ts` uses Node's test,
+The only runtime package dependency is the pinned `bun` runtime. `main.test.ts` uses Node's test,
 assert, filesystem, process-spawn, OS-temp, and path modules.
 
 ## Dependents

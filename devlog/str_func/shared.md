@@ -132,7 +132,9 @@ re-exports all listed public members.
 | Shared error implementation | `./errors.tool.ts` | `rational.tool.ts` reports internal arithmetic failures. |
 
 No runtime package dependency is imported by these files.
-The colocated tests use `node:test` and `node:assert/strict`.
+The colocated tests use `node:test` and `node:assert/strict` under `bun test`.
+
+`pinnedBunVersion()` (`paths.tool.ts`) returns `dependencies.bun` from `package.json`; the golden-digest tests and `version --json` key the determinism promise to it.
 
 ## Dependents
 
