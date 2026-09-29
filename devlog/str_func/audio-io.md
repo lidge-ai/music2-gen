@@ -151,7 +151,7 @@ metadata with `bitsPerSample` equal to the requested 16 or 24 bits.
 | Buffer validators | `./buffer.tool.ts` | WAV writer's input checks. |
 | Loudness schema | `./loudness.schema.ts` | Measurement result type. |
 
-There are no runtime package dependencies. Tests use the Node test runner
+The only runtime package dependency is the pinned `bun` runtime. Tests use `node:test` under `bun test`
 and temporary files from Node's standard library.
 
 ## Dependents

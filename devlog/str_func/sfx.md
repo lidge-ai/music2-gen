@@ -30,7 +30,7 @@ Transition ranges/defaults are declared in `TRANSITION_PARAMS`: `riserSemitones`
 
 Game/UI controls use physical units in `GAME_PARAMS`: `wave` 0 sine/1 saw/2 pulse/3 noise; `fstart`, `fmin`, `slide` octaves/s, `deltaSlide` octaves/s², `vDepth` cents, `vRate` Hz, `jump` semitones at `tArp`, `duty` and `dutySlope`, `attack`/`sustain`/`punch`/`decay`, `repeat`, `phaserMix`/`phaserDelay`/`phaserSweep`, and `lpHz`/`lpQ`/`lpSweep` plus `hpHz`/`hpSweep`. Exact bounds are in `GAME_PARAMS`; laser alone extends `slide` to −14. All presets accept waveform, base pitch, minimum pitch, slide, envelope, and LP/HP cutoffs. The specific preset's drawn controls and related controls form its additional override allowlist in `GAME_ALLOWED`. Controls outside that list fail `E_INPUT`.
 
-Game preset randomization consumes one wave draw, then table fields in declared order, from `mulberry32(fnv1a32(GENERATOR_VERSION, preset, seed))`. Overrides replace resolved values after all draws. Noise uses a separate addressed stream. Identical inputs on the same Node major/platform yield identical PCM bytes. No wall clock, ambient RNG, asset, or runtime dependency enters synthesis.
+Game preset randomization consumes one wave draw, then table fields in declared order, from `mulberry32(fnv1a32(GENERATOR_VERSION, preset, seed))`. Overrides replace resolved values after all draws. Noise uses a separate addressed stream. Identical inputs on the same pinned Bun version and platform yield identical PCM bytes. No wall clock, ambient RNG, asset, or runtime dependency enters synthesis.
 
 ## Sync checklist
 

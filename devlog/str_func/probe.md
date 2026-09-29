@@ -126,8 +126,8 @@ The path is the executable that discovery checked; processing uses that path.
 | Node file/path APIs | `node:fs`, `node:fs/promises`, `node:path` | Check executable access and search PATH. |
 | Probe schema | `./ffmpeg.schema.ts` | Discovery and processing types. |
 
-There are no runtime package dependencies. ffmpeg is an optional external
-executable; tests use fake executables and the Node test runner.
+The only runtime package dependency is the pinned `bun` runtime. ffmpeg is an optional external
+executable; tests use fake executables and `node:test` under `bun test`.
 
 ## Dependents
 

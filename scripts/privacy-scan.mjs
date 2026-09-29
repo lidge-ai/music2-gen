@@ -33,7 +33,6 @@ export function scanText(text, source, denied = []) {
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index];
     if (line === undefined) continue;
-    if (source.endsWith("package-lock.json") && /^\s*"resolved"\s*:/.test(line)) continue;
     /** @type {Set<string>} */
     const categories = new Set();
     if (/\b(?:ghp_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})\b/.test(line)) {

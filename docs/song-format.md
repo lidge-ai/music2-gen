@@ -1,10 +1,10 @@
 # Song v1 format
 
-A song is JSON, validated by [the Song v1 schema](../schema/song.v1.json) and `node bin/music2.js validate song.json`. The TypeScript source of truth is `src/song/song.schema.ts`. Unknown object keys fail validation; malformed JSON returns `E_INPUT`, while an invalid song or mini-notation pattern returns `E_SCHEMA` with issue paths (and a parse offset when available).
+A song is JSON, validated by [the Song v1 schema](../schema/song.v1.json) and `bun bin/music2.js validate song.json`. The TypeScript source of truth is `src/song/song.schema.ts`. Unknown object keys fail validation; malformed JSON returns `E_INPUT`, while an invalid song or mini-notation pattern returns `E_SCHEMA` with issue paths (and a parse offset when available).
 
 ## Complete small song
 
-Save this as `/tmp/music2-small.song.json`, then run `node bin/music2.js validate /tmp/music2-small.song.json --json`.
+Save this as `/tmp/music2-small.song.json`, then run `bun bin/music2.js validate /tmp/music2-small.song.json --json`.
 
 ```json
 {

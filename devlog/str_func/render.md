@@ -241,7 +241,7 @@ overrides the voice's mono default.
 | Voice registry | `./voices/registry.tool.ts` | Resolution and parameter validation. |
 | Mixer, effects, kit | `./mixer.tool.ts`, `./fx.tool.ts`, `./kit.tool.ts` | Render pipeline. |
 
-There are no runtime package dependencies. Tests use the Node test runner.
+The only runtime package dependency is the pinned `bun` runtime. Tests use `node:test` under `bun test`.
 
 ## Dependents
 
