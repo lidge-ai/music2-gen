@@ -10,6 +10,7 @@ export const version: CommandSpec = {
     if (args.length) throw new Music2Error("E_INPUT", "version takes no positional arguments", {
       fix: "run music2 version --help",
     });
-    return Promise.resolve({ command: "version", data: { version: packageVersion() } });
+    return Promise.resolve({ command: "version", data: { version: packageVersion(),
+      bun: process.versions.bun ?? null, bunSource: process.env["MUSIC2_BUN_SOURCE"] ?? "direct" } });
   },
 };

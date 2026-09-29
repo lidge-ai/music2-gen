@@ -196,7 +196,9 @@ the source arrangement entry; `repeat` indexes its repetition;
 | Song schema | `./song.schema.ts` | Resolved types for loader, arrangement, timeline. |
 | Arrangement | `./arrange.tool.ts` | Timeline placements. |
 
-There are no runtime package dependencies. Tests use Node's test runner;
+`json-location.tool.ts` exports `jsonErrorOffset(source)` (first RFC 8259 syntax error offset, or null) and `jsonErrorLocation(source)` (offset, one-based line and column); `loadSong` uses it because JavaScriptCore's `JSON.parse` message has no position.
+
+The only runtime package dependency is the pinned `bun` runtime. Tests use `node:test` under `bun test`;
 file-loading tests also use temporary files.
 
 ## Dependents

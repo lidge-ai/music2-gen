@@ -14,7 +14,7 @@ All samples are 16-bit PCM WAV at 32 kHz. Notes held longer than a sample fade o
 
 ## Rebuilding
 
-`node scripts/build-instruments.mjs` downloads the pinned sources, verifies them, and regenerates this folder. The Salamander tarball is pinned by SHA-256 `58750eb1366761e187f71ddb9b932355ea894d28ec4331e74ab8acb44c819936`; VSCO 2 CE files are fetched at commit `440300901dfe9275fd84e0b7763af1f8443ae62e`. Downloads are cached in `~/.cache/music2-instruments` (override with `--cache <dir>`).
+`bun scripts/build-instruments.mjs` downloads the pinned sources, verifies them, and regenerates this folder. The Salamander tarball is pinned by SHA-256 `58750eb1366761e187f71ddb9b932355ea894d28ec4331e74ab8acb44c819936`; VSCO 2 CE files are fetched at commit `440300901dfe9275fd84e0b7763af1f8443ae62e`. Downloads are cached in `~/.cache/music2-instruments` (override with `--cache <dir>`).
 
 See `THIRD_PARTY_NOTICES.md` in the package root for the license texts and attribution.
 

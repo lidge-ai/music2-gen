@@ -10,3 +10,4 @@ export type { NoteInput, ResolvedNote, PointInput, LaneInput, ResolvedPoint, Res
 export type { ResolvedInsert } from "../render/fx/fx.schema.ts";
 export { appendListEvents } from "./timeline-notes.tool.ts";
 export { loadSong } from "./load.tool.ts";
+export { jsonErrorLocation, jsonErrorOffset } from "./json-location.tool.ts";

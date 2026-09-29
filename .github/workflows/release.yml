@@ -1,0 +1,102 @@
+name: Release
+
+# Publishes music2-gen to npm with Trusted Publishing (OIDC, no token). Dry-run is the default.
+# The build job has read-only permissions and runs every check; only the publish job can request the
+# npm OIDC token, and it runs no project code: it publishes the tarball the build job packed.
+# A real publish needs the package claimed on npm, this repository + release.yml + environment "npm"
+# registered as its Trusted Publisher, and the "npm" environment limited to main with required reviewers.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish; must equal package.json
+        required: true
+        type: string
+      tag:
+        description: npm dist-tag
+        required: true
+        default: latest
+        type: choice
+        options: [latest, next]
+      dry-run:
+        description: Build and pack without publishing
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg libxml2-utils
+      - run: bun install --frozen-lockfile
+      - name: Version matches package.json and is unpublished
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          test "$(node -p "require('./package.json').version")" = "$RELEASE_VERSION"
+          if npm view "music2-gen@$RELEASE_VERSION" version >/dev/null 2>&1; then
+            echo "::error::music2-gen@$RELEASE_VERSION is already published"
+            exit 1
+          fi
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun run test
+        env:
+          MUSIC2_REQUIRE_FFMPEG: '1'
+          MUSIC2_REQUIRE_XMLLINT: '1'
+          MUSIC2_REQUIRE_NODE: '1'
+      - run: npm pack
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: npm-tarball
+          path: music2-gen-${{ inputs.version }}.tgz
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: npm-tarball
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Publish the packed tarball
+        env:
+          DRY_RUN: ${{ inputs.dry-run }}
+          NPM_DIST_TAG: ${{ inputs.tag }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          tarball="./music2-gen-$RELEASE_VERSION.tgz"
+          if [ "$DRY_RUN" = "true" ]; then
+            npm publish "$tarball" --dry-run --tag "$NPM_DIST_TAG" --access public
+          else
+            npm publish "$tarball" --tag "$NPM_DIST_TAG" --access public
+          fi

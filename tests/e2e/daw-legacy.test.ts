@@ -6,14 +6,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { pinnedBunVersion } from "../../src/shared/index.ts";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const fixtureDir = join(root, "tests/fixtures/daw-legacy");
-// The baseline is captured per platform/Node major from the pre-wp2 source. The darwin manifest is the structural
+// The baseline was captured per platform on Node 24 from the pre-wp2 source and is replayed on the pinned Bun,
+// which renders the same bytes. The darwin manifest is the structural
 // reference; replay uses the manifest for the running platform, and a platform without one is skipped with a reason.
-const fixture = JSON.parse(readFileSync(join(fixtureDir, "darwin-node24.json"), "utf8")) as Manifest;
-const nodeMajor = Number(process.versions.node.split(".")[0]);
-const hostFixturePath = join(fixtureDir, `${process.platform}-node${nodeMajor}.json`);
+const fixture = JSON.parse(readFileSync(join(fixtureDir, "darwin-bun.json"), "utf8")) as Manifest;
+const runtime = `bun@${pinnedBunVersion()}`;
+const hostFixturePath = join(fixtureDir, `${process.platform}-bun.json`);
 const hostFixture = existsSync(hostFixturePath) ? JSON.parse(readFileSync(hostFixturePath, "utf8")) as Manifest : null;
 
 interface JsonDigest { exit: number; sha256: string }
@@ -26,7 +28,7 @@ interface ExampleDigest {
 }
 interface Manifest {
   sourceSha: string;
-  nodeMajor: number;
+  runtime: string;
   platform: string;
   examples: Record<string, ExampleDigest>;
 }
@@ -101,7 +103,7 @@ test("pre-DAW schema is an exact subtree of the current Song v1 schema", () => {
 
 test("baseline manifest has complete, pinned example categories", () => {
   assert.match(fixture.sourceSha, /^[a-f0-9]{40}$/);
-  assert.equal(fixture.nodeMajor, 24);
+  assert.equal(fixture.runtime, runtime);
   assert.equal(fixture.platform, "darwin");
   const songs = Object.keys(fixture.examples);
   assert.ok(songs.length > 0);
@@ -122,7 +124,8 @@ test("baseline manifest has complete, pinned example categories", () => {
 });
 
 const replay = hostFixture ?? fixture;
-const matchingPlatform = hostFixture !== null && process.platform === hostFixture.platform && nodeMajor === hostFixture.nodeMajor;
+const matchingPlatform = hostFixture !== null && process.platform === hostFixture.platform &&
+  process.versions.bun === pinnedBunVersion() && hostFixture.runtime === runtime;
 // cinematic-cue and pop-transition moved from synthesized strings/brass to bundled samples; their entries
 // were recaptured on darwin/Node 24 with the same procedure as this replay. minimal's lint digest was recaptured
 // after clipping_risk calibration (threshold 2, weighted chords and attacks; its 1.6 warning is gone), and
@@ -130,7 +133,7 @@ const matchingPlatform = hostFixture !== null && process.platform === hostFixtur
 // entries are pre-wp2 bytes.
 for (const [song, expected] of Object.entries(replay.examples)) {
   test(`legacy bytes and JSON: ${song}`, {
-    skip: !matchingPlatform && `no legacy baseline captured for ${process.platform}/Node ${nodeMajor}; D10 unverified on this host`,
+    skip: !matchingPlatform && `no legacy baseline replayable for ${process.platform}/${process.versions.bun ?? process.version}; D10 unverified on this host`,
   }, () => {
     const directory = mkdtempSync(join(tmpdir(), "music2-daw-replay-"));
     try {

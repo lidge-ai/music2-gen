@@ -51,6 +51,7 @@ The two validators are exported from
 | `export function truePeakLinearOf(channel: Float32Array, rate: number): number` | `buffer.tool.ts` | Estimate one channel's intersample peak. |
 | `export function resampleLinear(input: Float32Array, fromRate: number, toRate: number): Float32Array` | `buffer.tool.ts` | Linearly resample one channel. |
 | `export function measureLoudness(pcm: StereoBuffer): LoudnessMetrics` | `loudness.tool.ts` | Measure gated loudness and peaks. |
+| `export function integratedLoudness(pcm: StereoBuffer): number \| null` | `loudness.tool.ts` | Gated integrated LUFS only, bit-identical to `measureLoudness(pcm).integratedLufs` without the true-peak pass; used by render mastering and per-section analysis. |
 | `export function kWeightedPower(pcm: StereoBuffer, visit?: (frame: number, power: number) => void): Float64Array` | `kweight.tool.ts` | Visit sample-ordered channel power and return 100 ms block sums, retaining a final partial block. |
 | `export async function readWav(path: string): Promise<StereoBuffer>` | `wav.tool.ts` | Decode a supported WAV file. |
 | `export async function writeWav(path: string, audio: StereoBuffer, options: WavWriteOptions): Promise<WavInfo>` | `wav.tool.ts` | Write stereo PCM WAV. |
@@ -97,7 +98,7 @@ metadata with `bitsPerSample` equal to the requested 16 or 24 bits.
 
 ### Loudness behavior
 
-- `measureLoudness` accepts integer 8000..192000 Hz PCM with matching
+- `measureLoudness` and `integratedLoudness` accept integer 8000..192000 Hz PCM with matching
   `Float32Array` channels and finite samples; invalid input raises `E_INPUT`.
 - Mono energy and true peak use only the left channel; stereo sums K-weighted
   channel powers.
@@ -151,7 +152,7 @@ metadata with `bitsPerSample` equal to the requested 16 or 24 bits.
 | Buffer validators | `./buffer.tool.ts` | WAV writer's input checks. |
 | Loudness schema | `./loudness.schema.ts` | Measurement result type. |
 
-There are no runtime package dependencies. Tests use the Node test runner
+The only runtime package dependency is the pinned `bun` runtime. Tests use `node:test` under `bun test`
 and temporary files from Node's standard library.
 
 ## Dependents

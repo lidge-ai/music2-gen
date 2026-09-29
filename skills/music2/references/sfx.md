@@ -1,6 +1,6 @@
 # Sound effects: transition atoms, tape stop, and `music2 sfx`
 
-music2 synthesizes its effects; it ships no audio samples. There are two separate tools. The `sfx` **voice** puts transition effects inside a song, on the song's grid. The `music2 sfx` **command** writes a standalone one-shot WAV (for a video edit, a game, or an app) with a JSON sidecar that records how to reproduce it. Every sound is a synthesized approximation, and the same inputs give the same bytes on the same Node major and platform.
+music2 synthesizes its effects; it ships no audio samples. There are two separate tools. The `sfx` **voice** puts transition effects inside a song, on the song's grid. The `music2 sfx` **command** writes a standalone one-shot WAV (for a video edit, a game, or an app) with a JSON sidecar that records how to reproduce it. Every sound is a synthesized approximation, and the same inputs give the same bytes on the same pinned Bun version and platform.
 
 ## In-song transition atoms
 
@@ -60,8 +60,8 @@ These habits come from public production guides; the exact numbers in music2 are
 
 ```sh
 mkdir -p out
-node bin/music2.js sfx --preset pickup --seed 41 -o out/music2-pickup.wav --json
-node bin/music2.js sfx --preset riser --seconds 2 --params sweepFromHz=250,sweepToHz=8000 -o out/music2-riser.wav --json
+bun bin/music2.js sfx --preset pickup --seed 41 -o out/music2-pickup.wav --json
+bun bin/music2.js sfx --preset riser --seconds 2 --params sweepFromHz=250,sweepToHz=8000 -o out/music2-riser.wav --json
 ```
 
 Each call writes a 16-bit stereo WAV and `<basename>.sfx.json` beside it (`out/music2-pickup.sfx.json`); `artifacts` lists both. The sidecar holds `generatorVersion`, `preset`, `seed`, `seconds`, `frames`, `sampleRate` and the fully resolved `params`, in that order, with no paths or timestamps. Pass the same values back to regenerate the same bytes. Change `--seed` for a new variation of the same preset.

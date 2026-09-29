@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
@@ -11,27 +11,29 @@ interface PackageManifest {
   license?: string;
 }
 
-function assertNoRuntimeDependencies(manifest: PackageManifest): void {
-  assert.deepEqual(manifest.dependencies ?? {}, {});
+/** The only runtime dependency is the Bun runtime itself, pinned to an exact version. */
+function assertRuntimeDependencies(manifest: PackageManifest): void {
+  const dependencies = manifest.dependencies ?? {};
+  assert.deepEqual(Object.keys(dependencies), ["bun"]);
+  assert.match(dependencies["bun"]!, /^\d+\.\d+\.\d+$/, "bun must be pinned to an exact version");
 }
 
-test("manifest and lock contain no production dependencies", () => {
+test("manifest and lock contain only the pinned bun runtime dependency", () => {
   const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as PackageManifest;
-  const lock = JSON.parse(readFileSync(join(root, "package-lock.json"), "utf8")) as {
-    packages: Record<string, PackageManifest & { dev?: boolean }>;
-  };
-  assertNoRuntimeDependencies(manifest);
-  assertNoRuntimeDependencies(lock.packages[""] ?? {});
-  for (const [name, metadata] of Object.entries(lock.packages)) {
-    if (name) assert.equal(metadata.dev, true, `${name} is a production lock package`);
-  }
+  // bun.lock is JSON with trailing commas.
+  const lockText = readFileSync(join(root, "bun.lock"), "utf8").replace(/,(\s*[}\]])/g, "$1");
+  const lock = JSON.parse(lockText) as { workspaces: Record<string, PackageManifest> };
+  assertRuntimeDependencies(manifest);
+  assert.deepEqual(lock.workspaces[""]?.dependencies, manifest.dependencies);
+  assert.equal(existsSync(join(root, "package-lock.json")), false, "package-lock.json must not come back");
   assert.equal(manifest.license, "MIT");
   // Windows checkouts may convert LICENSE to CRLF (.gitattributes text=auto).
   assert.match(readFileSync(join(root, "LICENSE"), "utf8"), /^MIT License\r?\n/);
 });
 
 test("runtime dependency assertion rejects a contrived package", () => {
-  assert.throws(() => assertNoRuntimeDependencies({ dependencies: { "forbidden-runtime": "1.0.0" } }));
+  assert.throws(() => assertRuntimeDependencies({ dependencies: { bun: "1.4.0", "forbidden-runtime": "1.0.0" } }));
+  assert.throws(() => assertRuntimeDependencies({ dependencies: { bun: "^1.4.0" } }));
 });
 
 test("npm package includes the skill and shipped runtime has no forbidden imports", () => {
@@ -62,6 +64,10 @@ test("npm package includes the skill and shipped runtime has no forbidden import
       `${folder} samples missing`);
   }
   assert.ok(files.has("LICENSE"), "MIT license missing from npm package");
+  for (const file of ["bin/music2.js", "bin/bun-binary.mjs", "bin/package-main.mjs", "src/cli/index.ts", "src/index.ts"])
+    assert.ok(files.has(file), `${file} missing from npm package`);
+  assert.ok([...files].every((file) => !file.endsWith(".test.ts")), "test files must not be packaged");
+  assert.ok([...files].every((file) => !file.startsWith("dist/") || file.endsWith(".d.ts")), "dist holds declarations only");
 
   const tracked = spawnSync("git", ["ls-files", "-z", "--", "src"], {
     cwd: root, encoding: "buffer",
@@ -73,7 +79,7 @@ test("npm package includes the skill and shipped runtime has no forbidden import
     assert.doesNotMatch(source, /GNU (?:AFFERO )?GENERAL PUBLIC LICENSE/, `${file} contains GPL text`);
   }
   for (const file of files) {
-    if (!file.startsWith("dist/") || !/\.(?:js|mjs)$/.test(file)) continue;
+    if (!/^(?:src|bin)\/.*\.(?:ts|js|mjs)$/.test(file)) continue;
     const source = readFileSync(join(root, file), "utf8");
     assert.doesNotMatch(source, /@strudel\//, `${file} imports @strudel`);
     assert.doesNotMatch(source, /GNU (?:AFFERO )?GENERAL PUBLIC LICENSE/, `${file} contains GPL text`);

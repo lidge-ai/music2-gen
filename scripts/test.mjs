@@ -1,4 +1,5 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
+// Runs every src/**/*.test.ts and tests/e2e/*.test.ts with bun test in 4 isolated workers.
 import { mkdirSync, readdirSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -82,8 +83,7 @@ try {
     const home = mkdtempSync(join(tmpdir(), "music2-test-"));
     const env = { ...process.env, MUSIC2_HOME: home };
     await checkFfmpeg(home, env);
-    delete env.NODE_TEST_CONTEXT;
-    const child = spawnSync(process.execPath, ["--test", "--test-concurrency=4", ...files], {
+    const child = spawnSync(process.execPath, ["test", "--parallel=4", "--timeout=600000", ...files], {
       cwd: root,
       env,
       encoding: "utf8",
@@ -93,6 +93,12 @@ try {
     if (child.stdout) process.stdout.write(child.stdout);
     if (child.stderr) process.stderr.write(child.stderr);
     process.exitCode = child.status ?? 1;
+    // bun test treats each path as a filter and only notes filters that match nothing, so count what ran.
+    const ran = /Ran \d+ tests? across (\d+) files?/.exec(`${child.stdout ?? ""}\n${child.stderr ?? ""}`);
+    if (!ran || Number(ran[1]) !== files.length) {
+      console.error(`music2 test: bun test ran ${ran ? ran[1] : "no"} of ${files.length} files`);
+      process.exitCode = 1;
+    }
   }
 } catch (error) {
   console.error(`music2 test: ${error.message}`);

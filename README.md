@@ -2,28 +2,28 @@
 
 music2 is a source-first music CLI for coding agents. An agent can compose in a JSON song file without a browser, render deterministic audio offline, and revise it using text measurements, images, or optional audio-model feedback. Songs and mini-notation remain readable and editable source.
 
-Requires Node.js 22.18 or newer. The runtime has no npm dependencies, bundled samples, or required network service. WAV rendering and analysis work without ffmpeg; MP3, OGG, and ffmpeg loudness mastering use an optional local ffmpeg installation.
+music2 runs on Bun 1.4.0. Install it with `npm install -g music2-gen`: the package depends on the pinned `bun` package, and its `music2` launcher hands every command to that bundled Bun, so Node only starts the launcher. From a clone, install Bun 1.4.0 and run `bun install`. The runtime has no other npm dependency and no required network service. WAV rendering and analysis work without ffmpeg; MP3, OGG, and ffmpeg loudness mastering use an optional local ffmpeg installation.
 
 ## 60-second quick start
 
 From a fresh clone, run this sequence. `/tmp` paths are illustrative outputs; the heading describes the number of steps, not a render-time guarantee.
 
 ```sh
-npm ci
-node bin/music2.js recipes drill_uk --json
-node bin/music2.js new --genre drill_uk -o /tmp/music2-demo.song.json --json
-node bin/music2.js validate /tmp/music2-demo.song.json --json
-node bin/music2.js render examples/drill-140.song.json -o /tmp/music2-drill.wav --json
-node bin/music2.js analyze /tmp/music2-drill.wav --song examples/drill-140.song.json --out /tmp/music2-analysis --json
+bun install --frozen-lockfile
+bun bin/music2.js recipes drill_uk --json
+bun bin/music2.js new --genre drill_uk -o /tmp/music2-demo.song.json --json
+bun bin/music2.js validate /tmp/music2-demo.song.json --json
+bun bin/music2.js render examples/drill-140.song.json -o /tmp/music2-drill.wav --json
+bun bin/music2.js analyze /tmp/music2-drill.wav --song examples/drill-140.song.json --out /tmp/music2-analysis --json
 ```
 
 Open `/tmp/music2-analysis/analysis.md` or `analysis.json` for a text-only agent. A vision-capable agent can inspect `overview.png` for labeled section order, boundary bars, loudness flow, density, and warnings, then `spectrogram.png` and the song-backed `pianoroll.png`. The directory also contains `beats.json` with the declared song grid. An audio-capable model can use `critique` through a configured Responses route and should trust its comments only when `review.heard_audio` is true. The critic cannot reliably hear sub-bass; check the low-end measurements and listen separately if that matters. Text and image outputs are measurements and views, not proof of hearing.
 
-The [composition skill](skills/music2/SKILL.md) gives agents a full edit-and-check workflow. `node bin/music2.js skill path` prints the installed skill directory when the skill is shipped with this copy.
+The [composition skill](skills/music2/SKILL.md) gives agents a full edit-and-check workflow. `bun bin/music2.js skill path` prints the installed skill directory when the skill is shipped with this copy.
 
 ## Commands
 
-Use `node bin/music2.js <command>`; add `--json` to get one machine-readable object.
+Use `bun bin/music2.js <command>`; add `--json` to get one machine-readable object.
 
 | Command | Purpose |
 | --- | --- |
@@ -45,18 +45,18 @@ Song v1 has a BPM, tracks with one-bar mini-notation patterns, sections that may
 
 Start with [drill at 140 BPM](examples/drill-140.song.json), or generate a starter with `new`. The example set also includes `trap-150.song.json`, `boom-bap-90.song.json`, `lofi-75.song.json`, and `house-124.song.json` under `examples/`, plus `pop-transition`, `lofi-textures`, `cinematic-cue`, and `game-spark-loop`, which show the virtual instruments (piano, electric piano, strings, brass, choir, mallets), drum-kit characters, and transition effects.
 
-Given the same song, seed, Node major version, and platform, music2 promises byte-identical WAV output. Keep those conditions fixed when comparing renders. Audio key estimation is advisory, especially when `KEY_UNCERTAIN` appears: the declared key and `generic/out_of_key` lint result are the reliable pitch checks. Tempo analysis reports half-time, double-time and 2:3 alternatives, and names the candidate that matches the declared BPM. `generic/clipping_risk` is a static onset proxy (threshold 2, chord tones and slow attacks weighted) and does not account for master normalization; verify clipping on the rendered WAV.
+Given the same song, seed, music2 version (which pins Bun 1.4.0) and platform, music2 promises byte-identical WAV output. Keep those conditions fixed when comparing renders; running on another Bun through `MUSIC2_BUN_PATH` voids that promise. Audio key estimation is advisory, especially when `KEY_UNCERTAIN` appears: the declared key and `generic/out_of_key` lint result are the reliable pitch checks. Tempo analysis reports half-time, double-time and 2:3 alternatives, and names the candidate that matches the declared BPM. `generic/clipping_risk` is a static onset proxy (threshold 2, chord tones and slow attacks weighted) and does not account for master normalization; verify clipping on the rendered WAV.
 
 Layering checks flag source arrangement risks in strict lint and genre-aware band-balance warnings in song-backed analysis; use the [layering guide](skills/music2/references/layering.md) to inspect and revise the rendered mix.
 
 ## DAW bridge
 
-Song v1 can carry absolute note lists, SFZ instruments, audio clips and automation. Built-in sampled notes instruments include `lib:grand-piano`, `lib:strings`, `lib:strings-staccato`, `lib:brass`, and `lib:brass-staccato`; run `music2 instruments --json` to list sources, emulations, families, and licenses. Saw-based lead, bass, supersaw, and pad are normal synth choices. For acoustic strings or brass, use the sampled instruments; reserve synthesized `strings` and `brass` for an explicitly wanted synth sound. Synthesized `choir` is also saw-based and has no bundled sampled alternative, so use it sparingly. Start with [notes and automation](examples/daw-notes-automation.song.json). The [SFZ and clip example](examples/daw-bridge/audio-sfz.song.json) is a template: `node examples/daw-bridge/make-fixtures.mjs /tmp/music2-daw-example` creates tiny deterministic WAVs and a renderable song copy.
+Song v1 can carry absolute note lists, SFZ instruments, audio clips and automation. Built-in sampled notes instruments include `lib:grand-piano`, `lib:strings`, `lib:strings-staccato`, `lib:brass`, and `lib:brass-staccato`; run `music2 instruments --json` to list sources, emulations, families, and licenses. Saw-based lead, bass, supersaw, and pad are normal synth choices. For acoustic strings or brass, use the sampled instruments; reserve synthesized `strings` and `brass` for an explicitly wanted synth sound. Synthesized `choir` is also saw-based and has no bundled sampled alternative, so use it sparingly. Start with [notes and automation](examples/daw-notes-automation.song.json). The [SFZ and clip example](examples/daw-bridge/audio-sfz.song.json) is a template: `bun examples/daw-bridge/make-fixtures.mjs /tmp/music2-daw-example` creates tiny deterministic WAVs and a renderable song copy.
 
 Use `export midi` for editable notes, `export stems` for aligned sound, `export als` for an **experimental** Ableton Live 12 set, or `export dawproject` for notes and/or frozen audio. MIDI cannot preserve music2's instrument sound or every effect; frozen audio is not editable notes. `import midi` converts a MIDI file to Song v1 note lists; `slice` turns a WAV into a playable kit. See the [DAW choice and loss guide](skills/music2/references/daw-bridge.md), [CLI flags](docs/cli.md) and [Song fields](docs/song-format.md). A generated ALS still needs a manual Live-open check.
 
 ## Development and license
 
-Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, and `npm run audit:structure` after source changes. Contributions should follow [repository agent rules](AGENTS.md) and the existing `devlog/` plans.
+Run `bun run typecheck`, `bun run lint`, `bun run test`, `bun run build`, and `bun run audit:structure` after source changes. Contributions should follow [repository agent rules](AGENTS.md) and the existing `devlog/` plans.
 
 music2 is MIT licensed. Its mini-notation parser is a clean-room subset implemented from public documentation and conformance work; no AGPL source is copied. Voices, drum kits and sound effects are synthesized approximations; the package includes no audio samples. User-supplied kits remain the user's licensing responsibility.

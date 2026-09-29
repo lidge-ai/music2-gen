@@ -212,7 +212,7 @@ overrides the voice's mono default.
   the renderer checks every Float32 frame/channel against the pre-master sum at
   `1e-6 * max(1, sum(abs(components)))`. Loop exports fold each captured stem
   and return tail; legacy `render --stems` keeps its original truncation. Premaster, stem and return windows match the full render within `1e-6`, while final `--bars` PCM is mastered per window as in legacy behavior and is not compared.
-- `lufs` measures pre-master PCM with `measureLoudness`, adds the difference
+- `lufs` measures pre-master PCM with `integratedLoudness` (no true-peak pass), adds the difference
   from `master.targetLufs` to master gain, and uses a milder soft-saturation
   normalization without peak scaling. Silence or a null target adds no LUFS gain.
 - Other modes apply gain, soft saturation, and peak scaling. All modes then
@@ -241,7 +241,7 @@ overrides the voice's mono default.
 | Voice registry | `./voices/registry.tool.ts` | Resolution and parameter validation. |
 | Mixer, effects, kit | `./mixer.tool.ts`, `./fx.tool.ts`, `./kit.tool.ts` | Render pipeline. |
 
-There are no runtime package dependencies. Tests use the Node test runner.
+The only runtime package dependency is the pinned `bun` runtime. Tests use `node:test` under `bun test`.
 
 ## Dependents
 

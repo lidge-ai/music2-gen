@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Builds the bundled sample instruments under instruments/ from pinned public sources.
 // Dev-only: node scripts/build-instruments.mjs [--cache <dir>]. Not shipped in the npm package.
 import { createHash } from "node:crypto";

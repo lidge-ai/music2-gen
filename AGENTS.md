@@ -4,9 +4,9 @@ music2 is a source-first music CLI. `bin/music2.js` is the user entry point; `sr
 
 ## Stack and checks
 
-- Use Node.js >=22.18, ESM TypeScript with native type stripping, erasable syntax, and `.ts` endings on relative imports.
-- Keep runtime dependencies at zero.
-- Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, and `npm run audit:structure` for affected source changes. Check generated genre docs with `npm run docs:genres:check` when recipe cards change.
+- Use Bun 1.4.0 (pinned in `package.json` as the `bun` dependency and `packageManager`), ESM TypeScript with erasable syntax, and `.ts` endings on relative imports. Node is supported only as the host of the npm launcher `bin/music2.js`.
+- The only runtime dependency is the pinned `bun` package; add no others. Keep `src` on `node:*` APIs.
+- Run `bun run typecheck`, `bun run lint`, `bun run test`, `bun run build`, and `bun run audit:structure` for affected source changes. Check generated genre docs with `bun run docs:genres:check` when recipe cards change.
 
 ## Source and documentation layout
 
@@ -16,7 +16,7 @@ music2 is a source-first music CLI. `bin/music2.js` is the user entry point; `sr
 
 ## Correctness and boundaries
 
-- Use a fixed song seed and `src/shared/prng.tool.ts` for generated musical choices. Do not use `Math.random` or `Date` in pattern or audio logic. Check deterministic output under the same Node major version and platform.
+- Use a fixed song seed and `src/shared/prng.tool.ts` for generated musical choices. Do not use `Math.random` or `Date` in pattern or audio logic. Check deterministic output under the pinned Bun version and the same platform; the golden-digest tests run on darwin with that Bun.
 - Implement mini-notation clean-room from public documentation and `devlog/_fin/260928_music2_roadmap/004_mini_notation_spec.md`. Do not read or copy AGPL/GPL source.
 - CLI `--json` prints exactly one JSON object. Exit codes: 0 success, 1 internal, 2 input, 3 capability, 4 access/provider, 5 render, 6 QA, 7 interrupted/timeout.
 - Keep private material and personal absolute paths out of committed files. Use conventional commits. Push, publish, and release only within the explicit task scope.

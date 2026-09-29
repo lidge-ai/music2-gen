@@ -596,3 +596,19 @@ for (const flags of [[], ["--ignore-scripts"]]) {
 
 The script lives under `scripts/`, which the existing pack rule excludes, so it never ships.
 
+
+## Stale check (wp2 P, branch codex/bun-runtime at c332383)
+
+No file under src, tests, scripts, bin, package.json or .github changed since the audited plan (git diff 08e78c9..c332383 touches devlog only). Re-read: src/render/mixer.test.ts:26, tests/e2e/legacy-render.test.ts:15, scripts/test.mjs:86, tests/e2e/skill-docs.test.ts:49, src/song/load.tool.ts:7 match the plan. Architect proposal and reflection from wp1 stand; no amendment.
+
+## Check round folds (wp2 C, fresh reviewer GO-WITH-FIXES, blockers=1)
+
+- C1 (Medium, folded): `release.yml` split into a read-only `build` job (all checks, `npm pack`, tarball uploaded as an artifact) and a `publish` job that alone has `id-token: write`, runs only on `main`, sits behind `environment: npm`, installs nothing and publishes the downloaded tarball (npm runs no lifecycle scripts for a tarball). Actions in that workflow are pinned to commit SHAs (checkout v7.0.1, setup-bun v2.2.0, setup-node v7.0.0, upload-artifact v7.0.1, download-artifact v8.0.1). The npm Trusted Publisher must name environment `npm`; required reviewers and a `main`-only deployment rule on that environment are repository settings (NEEDS_HUMAN).
+- C2 (Low, folded): the launcher follows `process.kill(process.pid, signal)` with `process.exit(128 + n)` for signals Node ignores or repurposes.
+- C4 (Low, folded): CI `test` installs Node 24 with setup-node, since it sets `MUSIC2_REQUIRE_NODE=1`.
+- C6 (Low, folded): `build` clears `dist` before emitting declarations, so stale JS cannot ship from a developer checkout.
+- C7 (Style, folded): repository scripts use `#!/usr/bin/env bun`.
+- C3 (Low, residual): two first runs after an `--ignore-scripts` install can both start `install.js`. The bun package's installer is its own code; the launcher only retries once. Left as a documented residual.
+- C5 (Low, rebutted): the fixture's `runtime` field names the runtime that must replay it; the comments at `daw-legacy.test.ts:13,130` state the bytes were recorded on Node 24. A Bun bump must re-prove the digests in its own PR, so failing on every platform after a bump is intended.
+- C8 (Note): Windows absolute paths passed to `bun test` are covered by the file-count guard; hosted CI on windows-latest is the proof.
+- Local gate runs set `TMPDIR` to a fresh directory: this host's default `$TMPDIR` holds ~449k entries, which makes every Bun start with a cwd inside it take 300–500 ms (Node: 20 ms) and pushed the plugin-host 1 s timeout test over its limit. CI runners start with a clean temp directory.

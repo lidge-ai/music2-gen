@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Breaking: Bun 1.4.0 is the only supported runtime. The package depends on the pinned `bun` npm package, and the `music2` launcher (`bin/music2.js`) is a small Node script that runs the CLI on that bundled Bun, honors `MUSIC2_BUN_PATH`, repairs a skipped Bun postinstall once, and keeps the JSON error contract when no Bun is available. Golden-digest tests now run on the pinned Bun, which renders the same bytes as Node 24 did. `version --json` reports `bun` and `bunSource`. Malformed song JSON reports its line and column on any engine. CI runs on Bun across Linux, macOS and Windows and installs the packed tarball with npm; a dry-run-first `release.yml` publishes through npm Trusted Publishing.
+
 - Bundle five sampled SFZ instruments (`lib:grand-piano`, `lib:strings`, `lib:strings-staccato`, `lib:brass`, `lib:brass-staccato`) with per-instrument confinement, manifest validation, license notices, and a new `music2 instruments` inventory. MIDI/ALS/DAWproject keep notes editable and warn when sampled sound is not portable.
 - Add opt-in triangle waves to bass and lead without changing their defaults. Saw-based lead, bass, supersaw, and pad remain normal synth choices. Recipes avoid synthesized acoustic `strings` and `brass`; lint warns on those voices, while sampled strings/brass serve acoustic parts. The saw-based `choir` has no bundled sampled replacement and should be used sparingly.
 

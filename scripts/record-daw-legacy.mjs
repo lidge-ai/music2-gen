@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, readlinkSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, resolve, sep } from "node:path";
+import { pinnedBunVersion } from "../src/shared/index.ts";
 
 function fail(message) { throw new Error(message); }
 function run(command, args, cwd, options = {}) {
@@ -29,7 +30,7 @@ function options() {
     const flag = process.argv[i];
     const value = process.argv[i + 1];
     if (!flag?.startsWith("--") || !value || !["source", "out", "repository", "ref"].includes(flag.slice(2))) {
-      fail("usage: node scripts/record-daw-legacy.mjs --source <pristine checkout/archive> --out <manifest> [--repository <git repo> --ref <commit>]");
+      fail("usage: bun scripts/record-daw-legacy.mjs --source <pristine checkout/archive> --out <manifest> [--repository <git repo> --ref <commit>]");
     }
     values[flag.slice(2)] = value;
   }
@@ -106,12 +107,13 @@ const source = resolve(args.source);
 const output = resolve(args.out);
 const repository = resolve(args.repository ?? source);
 if (process.platform !== "darwin" && process.platform !== "linux") fail(`unsupported platform: ${process.platform}`);
-const nodeMajor = Number(process.versions.node.split(".")[0]);
-if (nodeMajor !== 24) fail(`Node 24 required; found ${process.version}`);
+const pinnedBun = pinnedBunVersion();
+const runtime = `bun@${pinnedBun}`;
+if (process.versions.bun !== pinnedBun) fail(`Bun ${pinnedBun} required; found ${process.versions.bun ?? process.version}`);
 const sourceSha = verifySource(source, repository, args.ref ?? "HEAD");
 if (existsSync(output)) {
   const previous = JSON.parse(readFileSync(output, "utf8"));
-  if (previous.sourceSha !== sourceSha || previous.nodeMajor !== nodeMajor || previous.platform !== process.platform) {
+  if (previous.sourceSha !== sourceSha || previous.runtime !== runtime || previous.platform !== process.platform) {
     fail("existing manifest provenance differs");
   }
 }
@@ -129,7 +131,7 @@ try {
     results[song] = record(source, song, directory);
     process.stderr.write(`recorded ${index + 1}/${examples.length} ${song}\n`);
   }
-  writeFileSync(output, JSON.stringify({ sourceSha, nodeMajor, platform: process.platform, examples: results }, null, 2) + "\n");
+  writeFileSync(output, JSON.stringify({ sourceSha, runtime, platform: process.platform, examples: results }, null, 2) + "\n");
 } finally {
   rmSync(temporary, { recursive: true, force: true });
 }

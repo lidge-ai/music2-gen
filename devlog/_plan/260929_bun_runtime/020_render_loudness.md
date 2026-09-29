@@ -66,3 +66,7 @@ Consumes 001 D7. Stale check at wp3 P: re-read the cited lines on the wp2 tip. B
 | Bytes | the Bun-keyed digest and legacy tests pass (15 examples set `targetLufs`, so the changed branch runs) and the 030 sha256 script matches the wp2 tip | render |
 | Speed | 120-bar render time before/after under Bun, reported in the PR (the song is private and stays out of the repo) | render |
 | Suite | full wp2 acceptance set again at the wp3 tip | all |
+
+## Stale check (wp3 P, branch codex/render-loudness at 07ea7b8)
+
+wp2 did not touch src/audio-io, src/render/mixer.tool.ts or src/analyze/analyze.tool.ts (git diff dev..07ea7b8 is empty for them). Cited lines still match: loudness.tool.ts:90, mixer.tool.ts:131, analyze.tool.ts:3 and 89, audio-io/index.ts:5. The Bun-keyed digest gates from wp2 now run, so the byte-identity acceptance row is live. No amendment.

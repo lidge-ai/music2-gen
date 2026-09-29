@@ -150,7 +150,7 @@ the configured API key before including at most 500 characters in an error.
 | Node filesystem, OS, path | `node:fs/promises`, `node:os`, `node:path` | Temporary excerpt lifecycle. |
 | Global Fetch API | `fetch`, `AbortController` | Responses request and timeout. |
 
-There are no runtime package dependencies. Tests use Node's test runner and
+The only runtime package dependency is the pinned `bun` runtime. Tests use `node:test` under `bun test` and
 local response fixtures or controlled provider behavior.
 
 ## Dependents
