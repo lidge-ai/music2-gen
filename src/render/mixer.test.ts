@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { fnv1a32, Music2Error, packageRoot } from "../shared/index.ts";
+import { fnv1a32, Music2Error, packageRoot, pinnedBunVersion } from "../shared/index.ts";
 import type { Song } from "../song/index.ts";
 import { mixTracks } from "./mixer.tool.ts";
 
@@ -22,8 +22,9 @@ function rms(input: Float32Array, end = input.length): number {
   return Math.sqrt(sum / end);
 }
 
-// Digest recorded on Node 24 / macOS; float library differences can change bytes on other platforms or Node majors.
-const digestPlatform = process.platform === "darwin" && process.versions.node.startsWith("24.");
+// Digest recorded on Node 24 / macOS and replayed on the pinned Bun, which renders the same bytes; float library
+// differences can change bytes on other platforms or runtimes.
+const digestPlatform = process.platform === "darwin" && process.versions.bun === pinnedBunVersion();
 
 test("drill-140 no-FX WAV retains the pre-integration byte digest", { skip: !digestPlatform && "digest is pinned to the recording platform" }, async () => {
   const source = join(packageRoot(), "examples/drill-140.song.json");

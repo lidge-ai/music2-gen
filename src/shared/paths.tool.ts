@@ -41,6 +41,12 @@ export function packageVersion(): string {
   return pj.version;
 }
 
+/** Bun version pinned by the package's single runtime dependency; the determinism promise is keyed to it. */
+export function pinnedBunVersion(): string {
+  const pj = JSON.parse(readFileSync(join(packageRoot(), "package.json"), "utf8")) as { dependencies?: Record<string, string> };
+  return pj.dependencies?.["bun"] ?? "";
+}
+
 /** Resolve an existing file beneath a canonical root, including symlink targets. */
 export async function confinedRealpath(rootDir: string, candidate: string): Promise<string> {
   try {

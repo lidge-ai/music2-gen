@@ -1,6 +1,6 @@
 {
   "sourceSha": "3355d53ae42ea95b84070d1fbf7d017859053ae5",
-  "nodeMajor": 24,
+  "runtime": "bun@1.4.0",
   "platform": "darwin",
   "examples": {
     "examples/boom-bap-90.song.json": {

@@ -52,6 +52,10 @@
   "engines": {
     "node": ">=22.18"
   },
+  "packageManager": "bun@1.4.0",
+  "dependencies": {
+    "bun": "1.4.0"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
