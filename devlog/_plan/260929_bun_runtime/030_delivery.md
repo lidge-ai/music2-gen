@@ -26,3 +26,15 @@ CI runs on `pull_request` for every PR regardless of base (ci.yml `on.pull_reque
 ## Out of scope
 
 Merging, npm publish, tags, releases, dispatching release.yml.
+
+## Delivery amendment (wp4 P, 2026-09-29)
+
+This host cannot run `git push`: `gh` reports an invalid token, git HTTPS has no stored credential, and SSH is refused (publickey). The GitHub connector is signed in as the repository owner's account, so wp4 publishes through the Git Data API instead:
+
+1. For each commit in `git rev-list --reverse origin/main..codex/render-loudness` (13 commits; the local `main` ref is stale, and `origin/main` is 08e78c9), read `git diff-tree -r --raw <parent> <commit>`; upload every added or modified blob (`create_blob`), then `create_tree` on the parent's tree with those entries (deleted paths as `sha: null`), then `create_commit` with the local message and the remote parent.
+2. Git objects are content-addressed, so each uploaded blob and tree SHA must equal the local one. The replay stops at the first mismatch. Commit SHAs differ because the connector sets author and committer.
+3. `create_branch` / `update_ref`: `dev` → replay of c332383, `codex/bun-runtime` → replay of 07ea7b8, `codex/render-loudness` → replay of the top commit. File modes come from each raw diff line (`bin/music2.js` is 100755). If GitHub refuses a ref that changes `.github/workflows/` for lack of workflow permission, stop and record BLOCKED for the upper two PRs.
+4. `git fetch origin` (anonymous read works) and assert `git rev-parse origin/<branch>^{tree}` equals the local branch tree for all three.
+5. Open the three PRs with the connector, bases `main`, `dev`, `codex/bun-runtime`, and read CI for each PR head through the connector (commit workflow runs and jobs).
+
+Privacy check before publishing: `{ git diff origin/main..codex/render-loudness; git log --format=%B origin/main..codex/render-loudness; } | rg -i -F -f /tmp/m2t/private-ids.txt` (home path, temp path, account names, the session's private project and song names) matched only the public project name opencodex, cited as the packaging reference.
