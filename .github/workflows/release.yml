@@ -1,0 +1,76 @@
+name: Release
+
+# Publishes music2-gen to npm with Trusted Publishing (OIDC, no token). Dry-run is the default; a real
+# publish needs the package claimed on npm and this repository + workflow registered as its Trusted Publisher.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish; must equal package.json
+        required: true
+        type: string
+      tag:
+        description: npm dist-tag
+        required: true
+        default: latest
+        type: choice
+        options: [latest, next]
+      dry-run:
+        description: Build and pack without publishing
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg libxml2-utils
+      - run: bun install --frozen-lockfile
+      - name: Version matches package.json and is unpublished
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          test "$(node -p "require('./package.json').version")" = "$RELEASE_VERSION"
+          if npm view "music2-gen@$RELEASE_VERSION" version >/dev/null 2>&1; then
+            echo "::error::music2-gen@$RELEASE_VERSION is already published"
+            exit 1
+          fi
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun run test
+        env:
+          MUSIC2_REQUIRE_FFMPEG: '1'
+          MUSIC2_REQUIRE_XMLLINT: '1'
+          MUSIC2_REQUIRE_NODE: '1'
+      - run: bun run build
+      - run: npm pack --dry-run
+      - name: Publish
+        env:
+          DRY_RUN: ${{ inputs.dry-run }}
+          NPM_DIST_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ "$DRY_RUN" = "true" ]; then
+            npm publish --dry-run --tag "$NPM_DIST_TAG" --access public
+          else
+            npm publish --tag "$NPM_DIST_TAG" --access public
+          fi

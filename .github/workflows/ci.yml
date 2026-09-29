@@ -18,17 +18,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: '22'
-          cache: npm
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run build
-      - run: npm run audit:structure
-      - run: npm run docs:genres:check
-      - run: npm run privacy:scan
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun run build
+      - run: bun run audit:structure
+      - run: bun run docs:genres:check
+      - run: bun run privacy:scan
       - run: npm pack --dry-run
 
   test:
@@ -36,29 +35,47 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        node: ['22', '24']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: ${{ matrix.node }}
-          cache: npm
+          bun-version-file: package.json
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y ffmpeg libxml2-utils
-      - run: npm ci
-      - run: npm test
+      - run: bun install --frozen-lockfile
+      - run: bun run test
         env:
           MUSIC2_REQUIRE_FFMPEG: ${{ runner.os == 'Linux' && '1' || '' }}
           MUSIC2_REQUIRE_XMLLINT: ${{ runner.os == 'Linux' && '1' || '' }}
+          MUSIC2_REQUIRE_NODE: '1'
+
+  install-smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: npm pack
+      - run: bun scripts/install-smoke.mjs
 
   ci:
     if: always()
-    needs: [checks, test]
+    needs: [checks, test, install-smoke]
     runs-on: ubuntu-latest
     steps:
       - name: Require all jobs
         env:
           CHECKS: ${{ needs.checks.result }}
           TEST: ${{ needs.test.result }}
-        run: test "$CHECKS" = success && test "$TEST" = success
+          INSTALL_SMOKE: ${{ needs.install-smoke.result }}
+        run: test "$CHECKS" = success && test "$TEST" = success && test "$INSTALL_SMOKE" = success
