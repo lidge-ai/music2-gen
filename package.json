@@ -61,7 +61,7 @@
     "bun": "1.4.0"
   },
   "scripts": {
-    "build": "bun --bun tsc -p tsconfig.build.json",
+    "build": "bun -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && bun --bun tsc -p tsconfig.build.json",
     "typecheck": "bun --bun tsc -p tsconfig.json --noEmit",
     "lint": "bun --bun eslint .",
     "test": "bun scripts/test.mjs",

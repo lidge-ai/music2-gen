@@ -4,6 +4,7 @@
 // (bunx, `bun bin/music2.js`, tests) the CLI is imported in-process.
 import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { constants } from "node:os";
 import { fileURLToPath } from "node:url";
 import { resolveBun } from "./bun-binary.mjs";
 
@@ -40,6 +41,9 @@ if (process.versions.bun) {
   child.on("error", (error) => failCapability(`failed to start Bun: ${error.message}`));
   child.on("exit", (code, signal) => {
     for (const s of signals) process.removeListener(s, forward);
-    if (signal) process.kill(process.pid, signal); else process.exit(code ?? 1);
+    if (!signal) process.exit(code ?? 1);
+    // Re-raise the child's signal; Node ignores some (SIGPIPE) or repurposes them (SIGUSR1), so fall back to 128+n.
+    process.kill(process.pid, signal);
+    process.exit(128 + (constants.signals[signal] ?? 0));
   });
 }
