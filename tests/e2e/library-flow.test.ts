@@ -113,6 +113,15 @@ test("synthetic sample library scans, finds, imports SFZ and kit, verifies and r
     assert.equal(layeredRender.data.frames, 88200);
     const layeredAudio = await readWav(layeredOutput);
     assert.ok(layeredAudio.left.some((sample) => Math.abs(sample) > .001));
+    const beforeBalance = JSON.parse(await readFile(layered, "utf8")) as {
+      tracks: { gain: number; layers: { gain: number }[] }[];
+    };
+    const balanced = cli(dir, ["balance", layered, "--target", "bass=-28", "--target", "bass.sample=-9", "--apply"]);
+    assert.equal(balanced.command, "balance"); assert.equal(balanced.ok, true);
+    const afterBalance = JSON.parse(await readFile(layered, "utf8")) as typeof beforeBalance;
+    assert.notEqual(afterBalance.tracks[0]!.gain, beforeBalance.tracks[0]!.gain);
+    assert.notEqual(afterBalance.tracks[0]!.layers[0]!.gain, beforeBalance.tracks[0]!.layers[0]!.gain);
+    assert.equal(afterBalance.tracks[1]!.gain, beforeBalance.tracks[1]!.gain);
     const midi = cli(dir, ["export", "midi", layered, "-o", join(dir, "layered.mid")]);
     assert.deepEqual(midi.warnings.filter((warning) => warning.startsWith("LAYERS_FLATTENED:")),
       ["LAYERS_FLATTENED:bass:1", "LAYERS_FLATTENED:kick:1"]);

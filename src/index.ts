@@ -26,3 +26,6 @@ export { critique } from "./critic/index.ts";
 export type { CritiqueOptions, CriticReview, CritiqueReport } from "./critic/index.ts";
 export { analyzeAudio, analyzeFile } from "./analyze/index.ts";
 export type { AnalysisJson, AnalysisArtifacts, BeatMap, FlowAnalysis } from "./analyze/index.ts";
+
+export { parseTarget, gatedLevel, resolveWindow, measureSong, planChanges, applyChanges, balanceSong } from "./balance/index.ts";
+export type { BalanceTarget, BalanceWindow, BalanceRow, BalanceChange, BalanceReport, BalanceOptions } from "./balance/index.ts";

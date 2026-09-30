@@ -3,6 +3,7 @@ import { version } from "./commands/version.ts";
 import { schema } from "./commands/schema.ts";
 import { validate } from "./commands/validate.ts";
 import { events } from "./commands/events.ts";
+import { balance } from "./commands/balance.ts";
 import { render } from "./commands/render.ts";
 import { doctor } from "./commands/doctor.ts";
 import { analyze } from "./commands/analyze.ts";
@@ -57,4 +58,4 @@ export function register(spec: CommandSpec): void {
   commands.set(spec.name, spec);
 }
 
-for (const spec of [version, help, schema, validate, events, render, doctor, analyze, recipes, instruments, library, newCommand, lint, critiqueCommand, skillPath, sfx, exportCommand, importCommand, slice]) register(spec);
+for (const spec of [version, help, schema, validate, events, render, balance, doctor, analyze, recipes, instruments, library, newCommand, lint, critiqueCommand, skillPath, sfx, exportCommand, importCommand, slice]) register(spec);

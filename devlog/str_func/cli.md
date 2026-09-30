@@ -26,6 +26,8 @@ src/cli/
     ├── import.ts        # bounded format-0/1 MIDI to Song v1 import
     ├── import.test.ts   # MIDI note lists, collision and malformed-input cases
     ├── render.test.ts   # render command output and failure cases
+    ├── balance.ts       # gated level matching, targets, preview/apply and human table
+    ├── balance.test.ts  # JSON envelopes, precedence, invalid options and no-write cases
     ├── analyze.ts       # WAV/song analysis and artifacts
     ├── analyze.test.ts  # analysis command and output cases
     ├── doctor.ts        # ffmpeg and encoder capability report
@@ -57,7 +59,7 @@ used by both parsing and help text.
 
 At this source snapshot the registry contains `help`, `version`, `schema`,
 `validate`, `events`, `render`, `doctor`, `analyze`, `recipes`, `new`, `lint`,
-`critique`, `skill`, `sfx`, `export`, `import`, `slice`, `instruments`, and `library`.
+`critique`, `skill`, `sfx`, `export`, `import`, `slice`, `instruments`, `library`, and `balance`.
 
 ## Key Function Signatures
 
@@ -410,3 +412,11 @@ MIDI keeps editable notes but has empty Live instruments and omits source audio/
 `commands/instruments.ts` adds data.user summaries (id, instrument, kind, zones, role). `commands/doctor.ts` adds data.sampleLibrary {roots,available}. Export resolves every user ID through loadExportInstruments before MIDI/ALS/DAW planning, retaining ProjectIR's filesystem-free identity. `library.test.ts` checks flags, repeated roots, cache fallback, notes and exit-6 details; tests/e2e/library-flow.test.ts creates synthetic AIFF/WAV-with-smpl and drum files, imports both kinds and renders user instruments.
 
 The checks job runs bun run audit:assets after privacy scan. scripts/asset-audit.mjs checks tracked tree, dry-run package files without lifecycle scripts, and optionally every commit against every parent in a base..head range. Every audio extension or first-12-byte magic match requires the exact path/SHA-256 allowlist entry, including merge-only audio later deleted. Asset tests use temporary Git repositories/packages.
+
+### Balance command
+
+`export const balance: CommandSpec` in `commands/balance.ts` loads file targets before repeated
+`--target` flags, parses finite `--max-step` and 1-based `--occurrence`, and delegates to
+`src/balance`. The handler returns one `CommandResult` with the balance report in `data`,
+render/planning warnings, a human table, and the song artifact only when `--apply` changes gains.
+The registry exposes its options through normal command help and strict parsing.

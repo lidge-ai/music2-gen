@@ -32,6 +32,43 @@ Analyze warnings are advisory measurements of whole-file six-band power. `LOW_EN
 
 **020 integration note — loop render and analyze checks:** A song with `loop:true` renders the whole song as one loop body: the effects tail wraps onto its start, `loopStartSample` is 0, and `loopEndSample` is the exclusive output-frame count. `render --bars` is invalid for a loop song. Song-backed analyze can report `SECTION_LOUDNESS_FLAT` from ungated `flow.sectionMeans` and `LOOP_SEAM_DISCONTINUITY` from the loop boundary; WAV-only analysis has neither song-backed check. These warnings are advisory measurements, not a claim that audio was heard.
 
+## Match track and layer levels
+
+`music2 balance song.json --section drop --reference kick --target bass=-2 --target bass.growl=-8 --apply --json`
+measures gated RMS, peak and active ratio for every track and each layered track's main and layer sources.
+Track rows are post-fader stems. Main and layer rows are taps before track effects and the track fader;
+layer taps include the layer's effects, gain and pan. Measurement excludes the effects tail, uses 50 ms
+blocks, and excludes blocks below −60 dBFS from RMS. It is a level measurement, not LUFS.
+
+With no targets, the command only measures. Without `--apply`, it previews gain changes.
+Track targets (`kick=-14`) are absolute dBFS, or relative to the read-only `--reference` track
+(`bass=-2` is 2 dB below the reference). Layer targets (`bass.growl=-8`) are always relative
+to that track's main source and edit only the layer gain. `.main` cannot be targeted.
+Layers are adjusted first in memory; track changes are planned from a new measurement so
+simultaneous parent and layer targets use the resulting sum.
+
+| Option | Meaning |
+| --- | --- |
+| `--bars A:B` | Zero-based, end-exclusive range, default the whole arrangement. |
+| `--section ID` | One placement of a section; cannot combine with `--bars`. |
+| `--occurrence N` | 1-based placement of `--section`, default 1; requires `--section`. |
+| `--target ID=DB` | Repeatable track or layer target. Later duplicates override earlier ones. |
+| `--targets FILE` | JSON object such as `{"kick":-14,"bass.growl":-8}`; loaded before target flags. |
+| `--reference TRACK` | Audible instrument track for relative track targets; cannot also be a track target. |
+| `--max-step DB` | Finite nonnegative maximum gain adjustment, default 12 dB; zero makes no changes. Final gains stay within −60..12 dB. |
+| `--apply` | Validate and re-measure changes, then replace the song using a staged file and rename. |
+
+`--apply` **reformats the whole song JSON** with two-space indentation and a trailing newline
+when gains change. With no changes, it preserves file bytes and modification time. The report
+includes `window`, `rows`, `changes`, `warnings`, optional `reference`, and `after` when changes
+are applied; JSON mode prints one standard envelope. Human mode prints a level table and gain changes.
+
+Silent targets are skipped. A silent main skips its layer target with a warning. Gain automation
+skips the track edit while keeping its layers editable. A silent reference, invalid window,
+unknown track/layer/section, `.main` target, audio-track target, or whole-song loop returns
+`E_INPUT` (exit 2). Rendering warnings are retained in the report. Large or nonlinear changes
+may need another measurement and adjustment.
+
 ## Local sample library
 
 `library` discovers local sample folders and imports instruments for `"instrument": "user:<id>"` in songs. Human mode prints compact tables; JSON mode uses the standard single-object envelope.

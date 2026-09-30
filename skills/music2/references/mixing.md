@@ -53,3 +53,16 @@ Summed peaks cluster on the last beats of a phrase, where snare rolls, choir or 
 ## Automation lanes replace static levels
 
 Automation lanes are absolute: while a lane is active its value replaces the track's static `gain` or send; it is not added to it. A track with `"gain": -27` that should dip 8 dB into a build uses points like `-27 → -35 → -27`; writing `0 → -8 → 0` plays it 27 dB above its static level. `music2 lint` reports `generic/automation_gain_jump` when a gain lane rises more than 12 dB above the static gain and `generic/automation_send_jump` when a send lane rises more than 12 dB above a nonzero static send.
+
+## Match levels with music2 balance
+
+Use gated RMS over a representative section to match track and layer gains:
+
+```sh
+music2 balance song.json --section drop --reference kick --target bass=-2 --target bass.growl=-8 --apply --json
+```
+
+Track targets are dB below the reference (absolute dBFS without one); layer targets are dB relative
+to their own main source. Layers adjust first, then the summed track is measured again. Omit
+`--apply` to preview. Applying changes reformats the song JSON; silent sources and automated
+track gains are skipped. See [CLI balance options](../../../docs/cli.md#match-track-and-layer-levels).
