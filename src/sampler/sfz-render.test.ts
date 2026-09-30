@@ -128,3 +128,18 @@ test("release-only region uses held velocity and rt_decay at note-off", async ()
     assert.ok(Math.abs(out.left[8000]! - 10 ** (-6 / 20)) < 0.0001);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
+
+test("shared smpl parser retains warning opcode and SFZ source location", async () => {
+  const root = await mkdtemp(join(tmpdir(), "music2-sfz-parity-"));
+  try {
+    const bytes = wav([0, 0.25, 0.5, 0.25], 48000, { unity: 60, fraction: 0, start: 0, end: 3 });
+    bytes.writeUInt32LE(1, 84); // smpl loop type is unsupported ping-pong
+    await writeFile(join(root, "tone.wav"), bytes);
+    await writeFile(join(root, "bank.sfz"), "<region> sample=tone.wav pitch_keycenter=sample\n");
+    const loaded = await loadSfz(join(root, "song.json"), "bank.sfz", 48000);
+    const warning = loaded.instrument.warnings.find((item) => item.opcode === "smpl");
+    assert.equal(warning?.message, "unsupported loop type; loop disabled");
+    assert.equal(warning?.file, "bank.sfz"); assert.equal(warning?.line, 1);
+    assert.equal(loaded.smpl.get("tone.wav")?.loop, null);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});

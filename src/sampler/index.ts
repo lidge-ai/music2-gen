@@ -16,3 +16,5 @@ export type { OnsetOptions } from "./onsets.tool.ts";
 export { sliceTransients, sliceRegions } from "./slice.tool.ts";
 export type { AudioSlice, SliceOptions } from "./slice.tool.ts";
 export { loadClipSources, renderClips } from "./clips.tool.ts";
+export { USER_ID_PATTERN, userInstrumentsDir, parseUserManifest, readUserManifest, listUserInstruments } from "./user-instrument.tool.ts";
+export type { UserZone, UserInstrumentManifest, UserInstrumentKinds } from "./user-instrument.tool.ts";

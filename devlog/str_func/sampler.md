@@ -7,6 +7,8 @@ Sampler owns WAV-backed SFZ playback, clip source rendering, deterministic rate 
 ```text
 src/sampler/
 ├── index.ts                # public feature boundary
+├── user-instrument.tool.ts # shared confined import identity and manifests
+├── user-instrument.test.ts # isolated user storage and escape checks
 ├── sfz.schema.ts           # SFZ regions, events, warnings and loaded types
 ├── sfz-parse.tool.ts       # confined SFZ text and include parser
 ├── sfz-region.tool.ts      # deterministic region selection
@@ -29,7 +31,7 @@ SFZ parsing captures region controls in source order and resolves includes under
 | Export | Signature | Role |
 |---|---|---|
 | `parseSfz` | `(path: string, root: string): Promise<SfzInstrument>` | Parse confined SFZ and diagnostics. |
-| `loadSfz`, `renderSfz` | `(songPath, ref, sampleRate): Promise<LoadedSfz>`; `(events, loaded, sampleRate, frames): StereoBuffer` | Decode and play SFZ. |
+| `loadSfz`, `renderSfz` | `(songPath, ref, sampleRate, budget?, root?): Promise<LoadedSfz>`; `(events, loaded, sampleRate, frames): StereoBuffer` | Decode and play SFZ. |
 | `resample` | `(src: StereoBuffer, ratio: number, opts?: ResampleOptions): StereoBuffer` | Sample-rate and pitch conversion. |
 | `timeStretch` | `(src: StereoBuffer, alpha: number, opts?: StretchOptions): StereoBuffer` | Duration conversion while preserving pitch. |
 | `detectOnsets` | `(audio: StereoBuffer, opts?: OnsetOptions): number[]` | Sample-index onset candidates. |
@@ -56,3 +58,9 @@ Render's sample-instrument and audio-track adapters consume SFZ and clip outputs
 ## Built-in sampled instruments and voice policy
 
 `library.schema.ts` and `library.tool.ts` validate and cache the packaged `instruments/index.json` manifest, exposing `libraryManifest` and `libraryInstrument`. `loadSfz` accepts an optional explicit confined root for built-in instruments; omitted root retains song-relative SFZ behavior. The caller shares one `DecodeBudget` across all tracks.
+
+## Imported user instrument identity
+
+`user-instrument.tool.ts` and its adjacent test own shared local identity below render and library. `index.ts` exports `USER_ID_PATTERN`, `userInstrumentsDir(): string`, `parseUserManifest(input: unknown, id: string): UserInstrumentManifest`, `readUserManifest(id): Promise<{root,entryPath,manifest}>`, and sorted `listUserInstruments(): Promise<UserInstrumentManifest[]>`. Public types are `UserZone`, `UserInstrumentManifest` and `UserInstrumentKinds = Readonly<Record<string, "sfz" | "kit">>`. IDs match `^[a-z0-9][a-z0-9-]{0,47}$`; entries are confined relative SFZ paths or literal kit.json; source.folder is a basename. Missing imports raise `E_CAPABILITY`, malformed identity raises `E_SCHEMA`, and symlink escapes raise `E_ACCESS`. Dot-prefixed staging/trash directories are omitted from lists.
+
+Render, library, export's async metadata adapter and CLI share these manifests without render/library cycles. `sfz-render.tool.ts` consumes `readWavSmpl` from audio-io; smpl parsing no longer lives in sampler. Imported sample WAVs omit that chunk, keeping SFZ tune/loop data authoritative.

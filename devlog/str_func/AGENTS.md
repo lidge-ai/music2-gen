@@ -11,6 +11,7 @@ The index table below is kept in sync with `src/`.
 | pattern | pattern.md | active |
 | song | song.md | active |
 | project | project.md | active |
+| library | library.md | active |
 | sampler | sampler.md | active |
 | automation | automation.md | active |
 | plugin-host | plugin-host.md | active |

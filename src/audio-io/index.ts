@@ -4,3 +4,5 @@ export { readWav, writeWav } from "./wav.tool.ts";
 export type { LoudnessMetrics } from "./loudness.schema.ts";
 export { integratedLoudness, measureLoudness } from "./loudness.tool.ts";
 export { kWeightedPower } from "./kweight.tool.ts";
+export { decodeAiff } from "./aiff.tool.ts";
+export { readWavSmpl } from "./wav-meta.tool.ts";
