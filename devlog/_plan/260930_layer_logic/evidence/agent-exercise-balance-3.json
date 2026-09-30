@@ -1,0 +1,422 @@
+{
+ "ok": true,
+ "command": "balance",
+ "warnings": [
+  "BALANCE_LOOP_UNWRAPPED"
+ ],
+ "data": {
+  "window": {
+   "startBar": 8,
+   "endBar": 12,
+   "section": "drop",
+   "occurrence": 1
+  },
+  "reference": "kick",
+  "rows": [
+   {
+    "id": "kick",
+    "kind": "track",
+    "track": "kick",
+    "rmsDb": -27.16,
+    "peakDb": -12.4,
+    "activeRatio": 0.93
+   },
+   {
+    "id": "kick.main",
+    "kind": "main",
+    "track": "kick",
+    "rmsDb": -15.52,
+    "peakDb": -6.42,
+    "activeRatio": 0.94
+   },
+   {
+    "id": "kick.punch",
+    "kind": "layer",
+    "track": "kick",
+    "layer": "punch",
+    "rmsDb": -21.67,
+    "peakDb": -7.67,
+    "activeRatio": 0.58,
+    "applied": true,
+    "targetDb": -21.52,
+    "deltaDb": 0.15
+   },
+   {
+    "id": "clap",
+    "kind": "track",
+    "track": "clap",
+    "rmsDb": -30.33,
+    "peakDb": -11.82,
+    "activeRatio": 0.24,
+    "applied": true,
+    "targetDb": -32.1,
+    "deltaDb": -1.77
+   },
+   {
+    "id": "clap.main",
+    "kind": "main",
+    "track": "clap",
+    "rmsDb": -28.2,
+    "peakDb": -9.95,
+    "activeRatio": 0.24
+   },
+   {
+    "id": "clap.crack",
+    "kind": "layer",
+    "track": "clap",
+    "layer": "crack",
+    "rmsDb": -36.2,
+    "peakDb": -9.78,
+    "activeRatio": 0.1
+   },
+   {
+    "id": "hats",
+    "kind": "track",
+    "track": "hats",
+    "rmsDb": -34.26,
+    "peakDb": -17.01,
+    "activeRatio": 0.36,
+    "applied": true,
+    "targetDb": -36.1,
+    "deltaDb": -1.85
+   },
+   {
+    "id": "hats.main",
+    "kind": "main",
+    "track": "hats",
+    "rmsDb": -22.53,
+    "peakDb": -6.27,
+    "activeRatio": 0.38
+   },
+   {
+    "id": "hats.tick",
+    "kind": "layer",
+    "track": "hats",
+    "layer": "tick",
+    "rmsDb": -35.32,
+    "peakDb": -8.64,
+    "activeRatio": 0.39
+   },
+   {
+    "id": "shaker",
+    "kind": "track",
+    "track": "shaker",
+    "rmsDb": -40.33,
+    "peakDb": -22.0,
+    "activeRatio": 0.6,
+    "applied": true,
+    "targetDb": -42.1,
+    "deltaDb": -1.77
+   },
+   {
+    "id": "bass",
+    "kind": "track",
+    "track": "bass",
+    "rmsDb": -28.31,
+    "peakDb": -17.32,
+    "activeRatio": 0.54,
+    "applied": true,
+    "targetDb": -30.1,
+    "deltaDb": -2.36
+   },
+   {
+    "id": "bass.main",
+    "kind": "main",
+    "track": "bass",
+    "rmsDb": -9.75,
+    "peakDb": -3.54,
+    "activeRatio": 0.51
+   },
+   {
+    "id": "bass.mid",
+    "kind": "layer",
+    "track": "bass",
+    "layer": "mid",
+    "rmsDb": -13.17,
+    "peakDb": -0.7,
+    "activeRatio": 0.6,
+    "applied": true,
+    "targetDb": -11.75,
+    "deltaDb": 1.42
+   },
+   {
+    "id": "stabs",
+    "kind": "track",
+    "track": "stabs",
+    "rmsDb": -34.33,
+    "peakDb": -21.26,
+    "activeRatio": 0.12,
+    "applied": true,
+    "targetDb": -36.1,
+    "deltaDb": -1.77
+   },
+   {
+    "id": "stabs.main",
+    "kind": "main",
+    "track": "stabs",
+    "rmsDb": -12.69,
+    "peakDb": -1.94,
+    "activeRatio": 0.15
+   },
+   {
+    "id": "stabs.edge",
+    "kind": "layer",
+    "track": "stabs",
+    "layer": "edge",
+    "rmsDb": -22.94,
+    "peakDb": -4.61,
+    "activeRatio": 0.12
+   },
+   {
+    "id": "vocal",
+    "kind": "track",
+    "track": "vocal",
+    "rmsDb": -37.33,
+    "peakDb": -20.56,
+    "activeRatio": 0.13,
+    "applied": true,
+    "targetDb": -39.1,
+    "deltaDb": -1.77
+   },
+   {
+    "id": "rim",
+    "kind": "track",
+    "track": "rim",
+    "rmsDb": -43.1,
+    "peakDb": -24.54,
+    "activeRatio": 0.12,
+    "applied": true,
+    "targetDb": -45.1,
+    "deltaDb": -2.0
+   },
+   {
+    "id": "transition",
+    "kind": "track",
+    "track": "transition",
+    "rmsDb": null,
+    "peakDb": null,
+    "activeRatio": 0
+   }
+  ],
+  "changes": [
+   {
+    "track": "bass",
+    "layer": "mid",
+    "path": "$.tracks[4].layers[0].gain",
+    "before": -0.67,
+    "after": 0.75
+   },
+   {
+    "track": "kick",
+    "layer": "punch",
+    "path": "$.tracks[0].layers[0].gain",
+    "before": -3.95,
+    "after": -3.8
+   },
+   {
+    "track": "bass",
+    "path": "$.tracks[4].gain",
+    "before": -19.72,
+    "after": -22.08
+   },
+   {
+    "track": "clap",
+    "path": "$.tracks[1].gain",
+    "before": -2.53,
+    "after": -4.3
+   },
+   {
+    "track": "hats",
+    "path": "$.tracks[2].gain",
+    "before": -12.95,
+    "after": -14.8
+   },
+   {
+    "track": "shaker",
+    "path": "$.tracks[3].gain",
+    "before": -9.34,
+    "after": -11.11
+   },
+   {
+    "track": "stabs",
+    "path": "$.tracks[5].gain",
+    "before": -18.93,
+    "after": -20.7
+   },
+   {
+    "track": "vocal",
+    "path": "$.tracks[6].gain",
+    "before": -10.94,
+    "after": -12.72
+   },
+   {
+    "track": "rim",
+    "path": "$.tracks[7].gain",
+    "before": -13.25,
+    "after": -15.25
+   }
+  ],
+  "after": [
+   {
+    "id": "kick",
+    "kind": "track",
+    "track": "kick",
+    "rmsDb": -27.1,
+    "peakDb": -12.32,
+    "activeRatio": 0.93
+   },
+   {
+    "id": "kick.main",
+    "kind": "main",
+    "track": "kick",
+    "rmsDb": -15.52,
+    "peakDb": -6.42,
+    "activeRatio": 0.94
+   },
+   {
+    "id": "kick.punch",
+    "kind": "layer",
+    "track": "kick",
+    "layer": "punch",
+    "rmsDb": -21.52,
+    "peakDb": -7.52,
+    "activeRatio": 0.58
+   },
+   {
+    "id": "clap",
+    "kind": "track",
+    "track": "clap",
+    "rmsDb": -32.1,
+    "peakDb": -13.6,
+    "activeRatio": 0.24
+   },
+   {
+    "id": "clap.main",
+    "kind": "main",
+    "track": "clap",
+    "rmsDb": -28.2,
+    "peakDb": -9.95,
+    "activeRatio": 0.24
+   },
+   {
+    "id": "clap.crack",
+    "kind": "layer",
+    "track": "clap",
+    "layer": "crack",
+    "rmsDb": -36.2,
+    "peakDb": -9.78,
+    "activeRatio": 0.1
+   },
+   {
+    "id": "hats",
+    "kind": "track",
+    "track": "hats",
+    "rmsDb": -36.03,
+    "peakDb": -18.86,
+    "activeRatio": 0.35
+   },
+   {
+    "id": "hats.main",
+    "kind": "main",
+    "track": "hats",
+    "rmsDb": -22.53,
+    "peakDb": -6.27,
+    "activeRatio": 0.38
+   },
+   {
+    "id": "hats.tick",
+    "kind": "layer",
+    "track": "hats",
+    "layer": "tick",
+    "rmsDb": -35.32,
+    "peakDb": -8.64,
+    "activeRatio": 0.39
+   },
+   {
+    "id": "shaker",
+    "kind": "track",
+    "track": "shaker",
+    "rmsDb": -41.91,
+    "peakDb": -23.77,
+    "activeRatio": 0.58
+   },
+   {
+    "id": "bass",
+    "kind": "track",
+    "track": "bass",
+    "rmsDb": -30.0,
+    "peakDb": -18.77,
+    "activeRatio": 0.53
+   },
+   {
+    "id": "bass.main",
+    "kind": "main",
+    "track": "bass",
+    "rmsDb": -9.75,
+    "peakDb": -3.54,
+    "activeRatio": 0.51
+   },
+   {
+    "id": "bass.mid",
+    "kind": "layer",
+    "track": "bass",
+    "layer": "mid",
+    "rmsDb": -11.8,
+    "peakDb": 0.72,
+    "activeRatio": 0.61
+   },
+   {
+    "id": "stabs",
+    "kind": "track",
+    "track": "stabs",
+    "rmsDb": -35.86,
+    "peakDb": -23.03,
+    "activeRatio": 0.11
+   },
+   {
+    "id": "stabs.main",
+    "kind": "main",
+    "track": "stabs",
+    "rmsDb": -12.69,
+    "peakDb": -1.94,
+    "activeRatio": 0.15
+   },
+   {
+    "id": "stabs.edge",
+    "kind": "layer",
+    "track": "stabs",
+    "layer": "edge",
+    "rmsDb": -22.94,
+    "peakDb": -4.61,
+    "activeRatio": 0.12
+   },
+   {
+    "id": "vocal",
+    "kind": "track",
+    "track": "vocal",
+    "rmsDb": -39.1,
+    "peakDb": -22.33,
+    "activeRatio": 0.13
+   },
+   {
+    "id": "rim",
+    "kind": "track",
+    "track": "rim",
+    "rmsDb": -45.1,
+    "peakDb": -26.54,
+    "activeRatio": 0.12
+   },
+   {
+    "id": "transition",
+    "kind": "track",
+    "track": "transition",
+    "rmsDb": null,
+    "peakDb": null,
+    "activeRatio": 0
+   }
+  ],
+  "warnings": [
+   "BALANCE_LOOP_UNWRAPPED"
+  ]
+ }
+}

@@ -36,3 +36,5 @@ Final song: 10 tracks; `user:deep-tech` on kick, clap, hats, shaker and fill, `u
 Redacted balance-3 (drop, after apply) layer rows vs main rows, gated RMS dBFS: kick.punch −21.5 vs −15.5; clap.crack −36.2 vs −28.2; hats.tick −35.3 vs −22.5; bass.mid −11.8 vs −9.8; stabs.edge −22.9 vs −12.7. 9 gain changes applied. All layers non-null and within 30 dB of their main source.
 
 Outcome against R2-3: met by the agent itself.
+
+Redacted JSON of balance-3 (paths removed, numbers rounded to 0.01): [agent-exercise-balance-3.json](agent-exercise-balance-3.json).
