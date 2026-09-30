@@ -22,3 +22,17 @@ The agent skipped Balance because the skill then limited it to non-loop songs an
 `music2 balance club-loop.song.json --json` exit 0 with `BALANCE_LOOP_UNWRAPPED`. Layer rows vs their main rows (gated RMS dBFS): kick.punch −26.6 vs −15.1; clap.crack −39.6 vs −29.4; hats.metal −42.8 vs −24.1; bass.mid −15.2 vs −7.7; stab.sample −31.6 vs −11.6. Every layer is non-null and within 30 dB of its main source.
 
 Outcome against R2-3: library consumption, two imported `user:` instruments, successful render and audible layers are met by the agent; the balance run is met by the coordinator on the agent's song after the loop fix, because the pre-fix skill told the agent not to run it on a loop.
+
+## Rerun with the final skill (after the review)
+
+A second fresh sol agent got the same request with the final skill (commit 1f95636). Its 43 commands all exited 0 and included:
+
+- `library scan`, four `library find` calls, `library import` of Deep Tech GB (`--as kit`), Alchemy "Mini M Attack Sust Bass" and "Cherry Stacc Ta" vocal, and `library verify` for both pitched imports.
+- Four `balance` runs: three on the `drop` section with `--reference kick` and track plus layer targets (`bass=-3`, `bass.mid`, `kick.punch`, clap), one on `turnaround` with `--apply`; each saved its JSON and carried `BALANCE_LOOP_UNWRAPPED`.
+- The only file it wrote besides music2 outputs was a shell wrapper that logs each music2 command; no import, pitch or calibration script.
+
+Final song: 10 tracks; `user:deep-tech` on kick, clap, hats, shaker and fill, `user:mini-bass` as the bass mid layer, `user:vocal-ta` as a vocal track; layers on kick, clap, hats, bass and stabs. Strict lint clean; render −12.48 LUFS, −2.55 dBTP, zero clipping.
+
+Redacted balance-3 (drop, after apply) layer rows vs main rows, gated RMS dBFS: kick.punch −21.5 vs −15.5; clap.crack −36.2 vs −28.2; hats.tick −35.3 vs −22.5; bass.mid −11.8 vs −9.8; stabs.edge −22.9 vs −12.7. 9 gain changes applied. All layers non-null and within 30 dB of their main source.
+
+Outcome against R2-3: met by the agent itself.
