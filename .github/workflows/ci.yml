@@ -28,6 +28,7 @@ jobs:
       - run: bun run audit:structure
       - run: bun run docs:genres:check
       - run: bun run privacy:scan
+      - run: bun run audit:assets
       - run: npm pack --dry-run
 
   test:

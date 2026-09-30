@@ -67,6 +67,7 @@
     "test": "bun scripts/test.mjs",
     "schema:json": "bun bin/music2.js schema --out schema/song.v1.json",
     "audit:structure": "bun scripts/structure-audit.mjs",
+    "audit:assets": "bun scripts/asset-audit.mjs --tree --pack",
     "prepack": "bun run build",
     "music2": "bun src/cli/index.ts",
     "docs:genres": "bun scripts/gen-genre-docs.mjs",
