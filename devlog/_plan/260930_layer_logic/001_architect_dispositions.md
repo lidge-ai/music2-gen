@@ -11,4 +11,3 @@
 | D7 | Insert layered source before shared processing in automation, tape pre-roll and static paths; extend pre-roll detection; per-voice release limits; main param automation must not leak | Accepted. Layer source rendering lives in `src/render/layers.tool.ts`; `mixer.tool.ts` (429 lines) only calls it. |
 | D8 | Section roles are `hook`/`groove`; user-instrument roles; ProjectIR must keep `user:` identity | Accepted. The 040 rule uses `hook` and `groove`. `instrument.json` may carry a `role` hint, but lint stays file-free and treats `user:` like `sfz:`/`kit:`. ProjectIR classifies `user:` as sampled with a portability warning. |
 | Risk | mixer 429 and song.schema 393 lines; structure audit hard cap 500 | Split before growing: layer schema in `src/song/song-layers.schema.ts`, layer render in `src/render/layers.tool.ts`. |
-
