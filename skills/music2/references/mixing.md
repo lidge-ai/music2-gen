@@ -56,7 +56,7 @@ Automation lanes are absolute: while a lane is active its value replaces the tra
 
 ## Match levels with music2 balance
 
-For non-loop songs, use gated RMS over a representative peak section to match track and layer gains. `balance` rejects `loop: true` before selecting a window; for loops adjust gains by hand, then rerender and analyze.
+Use gated RMS over a representative peak section to match track and layer gains. A `loop: true` song is measured without wrapping its tail onto the first bar and the report carries `BALANCE_LOOP_UNWRAPPED`; rerender and check the loop seam afterwards.
 
 ```sh
 bun bin/music2.js balance song.json --section drop --reference kick --target bass=-2 --target bass.mid=-8 --apply --json

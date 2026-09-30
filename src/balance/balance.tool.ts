@@ -12,7 +12,6 @@ export { planChanges } from "./plan.tool.ts";
 
 export function resolveWindow(song: ResolvedSong, timeline: Timeline,
   opts: Pick<BalanceOptions, "section" | "occurrence" | "bars">): BalanceWindow {
-  if (song.loop) throw new Music2Error("E_INPUT", "balance does not support loop songs");
   if (opts.bars !== undefined && opts.section !== undefined)
     throw new Music2Error("E_INPUT", "--bars and --section cannot be combined");
   if (opts.occurrence !== undefined && opts.section === undefined)
@@ -39,7 +38,10 @@ export function resolveWindow(song: ResolvedSong, timeline: Timeline,
 
 export async function measureSong(song: ResolvedSong, songPath: string, window: BalanceWindow):
   Promise<{ rows: BalanceRow[]; warnings: string[] }> {
-  if (song.loop) throw new Music2Error("E_INPUT", "balance does not support loop songs");
+  // A loop song is measured without wrapping its tail onto bar 0: gains do not depend on the wrap, and a
+  // window render (bars) is only defined for non-loop songs.
+  const looped = song.loop;
+  if (looped) song = { ...song, loop: false };
   const timeline = buildTimeline(song);
   const bodyFrames = Math.ceil((window.endBar - window.startBar) * timeline.secondsPerBar * song.sampleRate);
   const taps = new Map<string, BalanceRow>();
@@ -62,7 +64,7 @@ export async function measureSong(song: ResolvedSong, songPath: string, window: 
       if (row) rows.push(row);
     }
   }
-  return { rows, warnings: [...result.warnings ?? []] };
+  return { rows, warnings: [...result.warnings ?? [], ...(looped ? ["BALANCE_LOOP_UNWRAPPED"] : [])] };
 }
 
 /** Edit only gains; retain all other input fields rather than serializing resolved defaults. */

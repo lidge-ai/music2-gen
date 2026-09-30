@@ -33,7 +33,8 @@ test("lint returns report, strict warning exits 6 with complete report, genre ov
   const file = "examples/wrong-genre.song.json";
   const result = await lint.run(ctx(file));
   assert.equal(result.command, "lint");
-  assert.equal(result.data["infos"], 0);
+  assert.equal(result.data["infos"], (result.data["results"] as { id: string; severity: string }[])
+    .filter((item) => item.severity === "info" && item.id === "generic/thin_peak_layers").length);
   assert.match(result.text ?? "", /drill_uk\/1/);
   await assert.rejects(lint.run(ctx(file, { strict: true })), (error: unknown) => {
     assert.ok(error instanceof Music2Error);

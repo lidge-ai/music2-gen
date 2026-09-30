@@ -65,8 +65,8 @@ are applied; JSON mode prints one standard envelope. Human mode prints a level t
 
 Silent targets are skipped. A silent main skips its layer target with a warning. Gain automation
 skips the track edit while keeping its layers editable. A silent reference, invalid window,
-unknown track/layer/section, `.main` target, audio-track target, or whole-song loop returns
-`E_INPUT` (exit 2). Rendering warnings are retained in the report. Large or nonlinear changes
+unknown track/layer/section, `.main` target or audio-track target returns `E_INPUT` (exit 2).
+A whole-song loop is measured without wrapping its tail onto bar 0 and adds `BALANCE_LOOP_UNWRAPPED`. Rendering warnings are retained in the report. Large or nonlinear changes
 may need another measurement and adjustment.
 
 ## Local sample library

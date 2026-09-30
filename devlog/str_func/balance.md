@@ -27,7 +27,7 @@ original JSON; unchanged songs retain their bytes and mtime. Audio tracks remain
 | --- | --- |
 | `parseTarget(text: string): BalanceTarget` | Parse track=dB / track.layer=dB; main is read-only. |
 | `gatedLevel(audio: StereoBuffer, startFrame = 0, endFrame = audio.left.length)` | 50 ms stereo mean-square gate at −60 dBFS, weighted active RMS/ratio, whole-window peak. |
-| `resolveWindow(song: ResolvedSong, timeline: Timeline, opts): BalanceWindow` | Whole arrangement, 0-based half-open bars, or 1-based section occurrence; rejects loops. |
+| `resolveWindow(song: ResolvedSong, timeline: Timeline, opts): BalanceWindow` | Whole arrangement, 0-based half-open bars, or 1-based section occurrence; loop songs are measured unwrapped (`BALANCE_LOOP_UNWRAPPED`). |
 | `measureSong(song, songPath, window): Promise<{rows: BalanceRow[]; warnings: string[]}>` | One renderSong call per measurement; excludes tail and preserves render warnings. |
 | `planChanges(song, rows, targets, options)` | Absolute/reference track targets and own-main layer targets; step and gain clamps; skip silent/automated gains. |
 | `applyChanges(rawJson: string, changes: BalanceChange[]): string` | Change only selected gains and format JSON with two-space indentation and newline. |

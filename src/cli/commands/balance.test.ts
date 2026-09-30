@@ -7,7 +7,7 @@ import type { TestContext } from "node:test";
 import type { BalanceReport } from "../../balance/index.ts";
 import { main } from "../main.ts";
 
-interface Envelope { ok: boolean; command: string; data: BalanceReport; artifacts: string[]; error: { code: string } }
+interface Envelope { ok: boolean; command: string; data: BalanceReport; artifacts: string[]; warnings: string[]; error: { code: string } }
 async function setup(t: TestContext): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "music2-balance-cli-"));
   await writeFile(join(dir, "song.json"), JSON.stringify({ version: 1, seed: 2, bpm: 120, tailSeconds: 0,
@@ -77,7 +77,7 @@ test("bad arguments and identifiers yield one E_INPUT envelope with exit 2", asy
   const song = JSON.parse(await readFile(join(dir, "song.json"), "utf8")) as Record<string, unknown>;
   song["loop"] = true; await writeFile(join(dir, "song.json"), JSON.stringify(song));
   const result = await invoke(dir, ["song.json"]);
-  assert.equal(result.exit, 2); assert.equal(envelope(result.stdout).error.code, "E_INPUT");
+  assert.equal(result.exit, 0); assert.ok(envelope(result.stdout).warnings.includes("BALANCE_LOOP_UNWRAPPED"));
 });
 
 test("max-step zero leaves bytes and mtime; human mode prints levels and changes", async (t) => {

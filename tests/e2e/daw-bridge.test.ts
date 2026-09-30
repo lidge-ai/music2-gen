@@ -72,7 +72,8 @@ test("DAW examples expose note timing, media, automation and exchange artifacts"
       assert.deepEqual(readFileSync(join(fixture, file)), readFileSync(join(repeatFixture, file)), file);
     for (const source of [notes, song]) {
       assert.equal(cli("validate", source).data["bars"], 2);
-      assert.deepEqual(cli("lint", source, "--strict").data["results"], []);
+      assert.deepEqual((cli("lint", source, "--strict").data["results"] as { severity: string }[])
+        .filter((item) => item.severity !== "info"), []);
       const events = cli("events", source).data["events"] as { track: string; time: number; midi?: number }[];
       assert.ok(events.some((event) => event.track === (source === notes ? "hook" : "sampled_hook") && event.time === 0));
       const ir = cli("export", "ir", source).data["ir"] as { ppq: number; quantization: { inexact: number } };

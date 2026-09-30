@@ -54,7 +54,7 @@ test("window uses 0-based half-open bars and 1-based arrangement placements", ()
     { section: "drop", bars: "0:1" }, { section: "drop", occurrence: 0 }, { section: "drop", occurrence: 1.5 },
     { bars: "-1:1" }, { bars: "1:1" }, { bars: "0:4" }, { bars: "1:2.5" }, { bars: "9007199254740992:9007199254740993" }])
     assert.throws(() => resolveWindow(song, timeline, opts), { code: "E_INPUT" });
-  assert.throws(() => resolveWindow({ ...song, loop: true }, timeline, {}), { code: "E_INPUT" });
+  assert.deepEqual(resolveWindow({ ...song, loop: true }, timeline, {}), resolveWindow(song, timeline, {}));
 });
 
 test("window measurement yields tracks six dB apart and excludes release tail", async (t) => {
@@ -179,14 +179,18 @@ test("exact target and measurement-only apply retain file bytes and mtime", asyn
   assert.equal(await readFile(path, "utf8"), source); assert.equal((await stat(path)).mtimeMs, before.mtimeMs);
 });
 
-test("unknown ids, main targets, invalid dB, audio targets and loops return E_INPUT", async (t) => {
+test("unknown ids, main targets, invalid dB and audio targets return E_INPUT; loops measure unwrapped", async (t) => {
   const { path } = await setup(t, fixture(true));
   for (const target of [{ track: "missing", db: 0 }, { track: "bass", layer: "missing", db: 0 },
     { track: "bass", layer: "main", db: 0 }, { track: "bass", db: Number.NaN }])
     await assert.rejects(balanceSong(path, { targets: [target] }), { code: "E_INPUT" });
   await assert.rejects(balanceSong(path, { targets: [], reference: "missing" }), { code: "E_INPUT" });
   const raw = fixture(); raw.loop = true; await writeFile(path, JSON.stringify(raw));
-  await assert.rejects(balanceSong(path, { targets: [] }), { code: "E_INPUT" });
+  const looped = await balanceSong(path, { targets: [] });
+  await writeFile(path, JSON.stringify(fixture()));
+  const plain = await balanceSong(path, { targets: [] });
+  assert.deepEqual(looped.rows, plain.rows);
+  assert.ok(looped.warnings.includes("BALANCE_LOOP_UNWRAPPED"));
   const song = validateSong(fixture());
   song.audioTracks = [{ id: "audio", gain: 0, pan: 0, sends: { reverb: 0, delay: 0 }, fx: [], duck: null, clips: [] }];
   assert.throws(() => planChanges(song, [], [{ track: "audio", db: -10 }]), { code: "E_INPUT" });
