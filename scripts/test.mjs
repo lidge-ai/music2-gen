@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// Runs every src/**/*.test.ts and tests/e2e/*.test.ts with bun test in 4 isolated workers.
+// Runs every src/**/*.test.ts and tests/e2e/*.test.ts with bun test (4 isolated workers, serial on Linux; see parallelArgs).
 import { mkdirSync, readdirSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -74,12 +74,27 @@ function filesIn(root, subdir, suffix, recursive) {
 const RUN_LIMIT_MS = 30 * 60 * 1000;
 
 /**
+ * On GitHub's ubuntu runners, `bun test --parallel=4` intermittently stopped making progress while tests
+ * waited in spawnSync on CLI subprocesses (layer unit wp6; the stalled files differed between runs). Linux
+ * runs the files serially; MUSIC2_TEST_PARALLEL=<n> overrides the worker count on any platform.
+ */
+function parallelArgs(env) {
+  const configured = env.MUSIC2_TEST_PARALLEL;
+  if (configured !== undefined && configured !== "") {
+    const workers = Number(configured);
+    if (!Number.isSafeInteger(workers) || workers < 1) throw new Error("MUSIC2_TEST_PARALLEL must be a positive integer");
+    return workers === 1 ? [] : [`--parallel=${workers}`];
+  }
+  return process.platform === "linux" ? [] : ["--parallel=4"];
+}
+
+/**
  * Stream bun test output live and finish when the process exits. Waiting for pipe EOF (spawnSync) can hang
  * forever when a test leaves a grandchild that inherited the pipes.
  */
 function runTests(root, env, files) {
   return new Promise((resolvePromise, reject) => {
-    const child = spawn(process.execPath, ["test", "--parallel=4", "--timeout=600000", ...files],
+    const child = spawn(process.execPath, ["test", ...parallelArgs(env), "--timeout=600000", ...files],
       { cwd: root, env, stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "", stderr = "";
     child.stdout.setEncoding("utf8").on("data", (chunk) => { stdout += chunk; process.stdout.write(chunk); });
