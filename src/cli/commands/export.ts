@@ -237,10 +237,12 @@ async function exportDawproject(input: string, output: string, values: Record<st
   const media: DawMedia[] = [...sources.values()];
   let temporaryDir: string | undefined;
   let pluginRendered = false;
+  let renderWarnings: readonly string[] = [];
   try {
     if (content !== "midi") {
       const rendered = await renderSong(song, input, { stems: true, returns: true, ...(external ? { external } : {}) });
       pluginRendered = rendered.deterministic === false;
+      renderWarnings = rendered.warnings ?? [];
       temporaryDir = await mkdtemp(join(tmpdir(), "music2-dawproject-"));
       const all = [...rendered.stems.map((stem) => ({ owner: { kind: "stem" as const, trackId: stem.trackId },
         path: `audio/stem-${stem.trackId}.wav` as const, audio: stem.audio })),
@@ -267,7 +269,8 @@ async function exportDawproject(input: string, output: string, values: Record<st
     } finally { await rm(staged.temporary, { force: true }); }
     return { command: "export", data: { ...plan.data, dawproject: output,
       ...(pluginRendered ? { deterministic: false } : {}) }, artifacts: [output],
-      warnings: [...plan.warnings, ...(content !== "midi" && hasPlugins(song) ? [PLUGIN_WARNING] : []),
+      warnings: [...plan.warnings, ...renderWarnings.filter((warning) => !plan.warnings.includes(warning)),
+        ...(content !== "midi" && hasPlugins(song) ? [PLUGIN_WARNING] : []),
         ...(content === "midi" && hasPlugins(song) ? [EDITABLE_PLUGIN_WARNING] : [])], text: `wrote ${output}` };
   } finally { if (temporaryDir) { await rm(join(temporaryDir, "media.wav"), { force: true }); await rmdir(temporaryDir); } }
 }

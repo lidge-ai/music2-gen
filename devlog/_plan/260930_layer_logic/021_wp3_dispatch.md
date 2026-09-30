@@ -50,3 +50,8 @@ Main source renders exactly as today (mono voices duplicated to both channels, S
 5. **Transpose policy.** One policy: pitches leaving 0..127 after layer transpose are dropped at render and reported once per layer in `RenderResult.warnings` as `LAYER_NOTES_DROPPED:<track>.<layer>:<count>`. No static rejection (020's static clause is superseded).
 6. **Owners.** Y2 also owns `src/render/index.ts` (export `LayerTap`), tests for `limitStops` and taps. Taps fire only for layered tracks; balance uses stems for unlayered tracks. Taps fire before loop-tail folding; `balance` rejects loop songs with E_INPUT. Y1 owns voice/FX validation tests. Y3 extends `tests/e2e/library-flow.test.ts` with a layered `user:` song.
 7. **Baselines.** The coordinator commits `src/render/layers-baseline.test.ts` with the recorded digests before dispatch. Export warnings: `buildProject` appends `LAYERS_FLATTENED:<trackId>:<count>` to ProjectIR warnings; ALS/DAWproject already surface ProjectIR warnings and the MIDI projection copies it into its own list.
+
+## Check findings (C, sol reviewer: near-pass)
+
+- P2 DAWproject audio/both exports dropped render warnings (`LAYER_NOTES_DROPPED`): fixed in `src/cli/commands/export.ts` with a CLI test.
+- P2 layer tape-stop crops process returns from the cropped sends only: rebutted as existing crop semantics. A `--bars` render re-renders full return history only when a track has automation or the song has audio tracks; a plain track, a track `tapestop` and now a layer `tapestop` all crop sends the same way (pinned by the `tapestop:1-4` baseline). Changing that is a separate render-contract change. `balance` measures dry stems and taps, so it is unaffected.

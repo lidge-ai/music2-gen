@@ -383,3 +383,17 @@ test("plugin-bearing audio exports require opt-in before artifact creation", asy
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("audio DAWproject exports keep layer render warnings", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-layer-dawproject-"));
+  try {
+    const song = { ...source, tracks: [{ id: "lead", kind: "notes", instrument: "piano", notes: [{ start: 0, length: 1, pitch: 120 }],
+      layers: [{ id: "high", instrument: "lead", transpose: 12 }] }] };
+    await writeFile(join(dir, "song.json"), JSON.stringify(song));
+    const result = await invoke(["export", "dawproject", "song.json", "-o", "song.dawproject", "--content", "audio", "--json"], dir);
+    assert.equal(result.exit, 0, result.stderr);
+    const warnings = envelope(result.stdout).warnings;
+    assert.ok(warnings.includes("LAYER_NOTES_DROPPED:lead.high:1"), warnings.join(","));
+    assert.ok(warnings.includes("LAYERS_FLATTENED:lead:1"), warnings.join(","));
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
