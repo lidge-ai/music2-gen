@@ -1,6 +1,6 @@
 {
   "name": "music2-gen",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "The music CLI for coding agents: write a song in mini-notation, render it offline, and see it as numbers and pictures. No browser.",
   "type": "module",
   "license": "MIT",

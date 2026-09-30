@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
 - Breaking: Bun 1.4.0 is the only supported runtime. The package depends on the pinned `bun` npm package, and the `music2` launcher (`bin/music2.js`) is a small Node script that runs the CLI on that bundled Bun, honors `MUSIC2_BUN_PATH`, repairs a skipped Bun postinstall once, and keeps the JSON error contract when no Bun is available. Golden-digest tests now run on the pinned Bun, which renders the same bytes as Node 24 did. `version --json` reports `bun` and `bunSource`. Malformed song JSON reports its line and column on any engine. CI runs on Bun across Linux, macOS and Windows and installs the packed tarball with npm; a dry-run-first `release.yml` publishes through npm Trusted Publishing.
 
