@@ -117,8 +117,8 @@ test("kit and user drums keep kick roles through strict CLI lint", (t) => {
     const song = source([{ id: "custom", kind: "drums", instrument, pattern: "bd", gain: -12 }]);
     const path = join(directory, "kit.song.json");
     writeFileSync(path, JSON.stringify(song));
-    const run = spawnSync(process.execPath, [join(ROOT, "bin/music2.js"), "lint", path, "--strict", "--json"],
-      { cwd: directory, encoding: "utf8", env: { ...process.env, MUSIC2_HOME: home, MUSIC2_JSON: "0" } });
+    const run = spawnSync(process.execPath, [join(ROOT, "src/cli/index.ts"), "lint", path, "--strict", "--json"],
+      { cwd: directory, encoding: "utf8", env: { ...process.env, MUSIC2_HOME: home, MUSIC2_JSON: "0" }, timeout: 90_000 });
     assert.ifError(run.error);
     assert.equal(run.status, 0, run.stdout + run.stderr);
     const body = JSON.parse(run.stdout) as { ok: boolean; data: ReturnType<typeof lintSong> };
@@ -133,8 +133,8 @@ test("strict CLI exits zero with only bass layer infos and one JSON object", (t)
   t.after(() => rmSync(directory, { recursive: true, force: true }));
   const path = join(directory, "bass.song.json");
   writeFileSync(path, JSON.stringify(source()));
-  const run = spawnSync(process.execPath, [join(ROOT, "bin/music2.js"), "lint", path, "--strict", "--json"],
-    { cwd: ROOT, encoding: "utf8", env: { ...process.env, MUSIC2_HOME: directory, MUSIC2_JSON: "0" } });
+  const run = spawnSync(process.execPath, [join(ROOT, "src/cli/index.ts"), "lint", path, "--strict", "--json"],
+    { cwd: ROOT, encoding: "utf8", env: { ...process.env, MUSIC2_HOME: directory, MUSIC2_JSON: "0" }, timeout: 90_000 });
   assert.ifError(run.error);
   assert.equal(run.status, 0, run.stdout + run.stderr);
   assert.equal(run.stderr, "");
