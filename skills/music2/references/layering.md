@@ -47,7 +47,7 @@ As a **convention**, place kick and sustained bass first, then bring hats and me
 
 Keep the role's pattern on one track. `layers` play those same events with their own instrument, gain, pan, velocity multiplier and inserts; notes layers can transpose, and drums layers can filter atom names with `only`. A layer cannot write its own pattern. Layer IDs are unique within a track; `main` is reserved for its original source.
 
-Start supporting layer `gain` at −6 to −12 dB. This offset is relative to the main source before track gain, not a promise about measured RMS: different timbres have different energy. Track gain then controls the complete sum. For non-loop songs use `balance --target bass.mid=-8` to match the mid layer to `bass.main`, and `--target bass=-2 --reference kick` to match the summed bass track to kick. Keep sub mono and centered; only one source should carry the sustained fundamental. Put drive before a highpass when drive creates low harmonics. See [balance](mixing.md#match-levels-with-music2-balance).
+Start supporting layer `gain` at −6 to −12 dB. This offset is relative to the main source before track gain, not a promise about measured RMS: different timbres have different energy. Track gain then controls the complete sum. Use `balance --target bass.mid=-8` to match the mid layer to `bass.main`, and `--target bass=-2 --reference kick` to match the summed bass track to kick. Keep sub mono and centered; only one source should carry the sustained fundamental. Put drive before a highpass when drive creates low harmonics. See [balance](mixing.md#match-levels-with-music2-balance).
 
 This complete bass sketch keeps a triangle-like main under a driven octave layer. Save it as `bass-stack.song.json`, then validate and render:
 

@@ -100,7 +100,7 @@ Import maps recognized filename words to drum atoms; unrecognized hits are skipp
 | `lib:<id>` | Bundled recorded piano, strings and brass. | Notes track, no local Apple content; see [instrument licences and ranges](instruments.md). |
 | Built-in voices / `sfx` | Synth parts, file-free sketches and transitions. | Registered parameters; `sfx` is a drums voice. See [instruments](instruments.md) and [sound effects](sfx.md). |
 
-Sample routes accept gain, pan, sends and insert effects, but no synthesized voice parameters. Use [role stacks](layering.md#stack-layers-inside-a-role), start supporting sources 6–12 dB below the main, then [balance non-loop songs](mixing.md#match-levels-with-music2-balance).
+Sample routes accept gain, pan, sends and insert effects, but no synthesized voice parameters. Use [role stacks](layering.md#stack-layers-inside-a-role), start supporting sources 6–12 dB below the main, then [balance the levels](mixing.md#match-levels-with-music2-balance).
 
 ## Traps and what stays manual
 
