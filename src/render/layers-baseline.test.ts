@@ -90,7 +90,7 @@ test("songs without layers keep their pre-layer mix and stem digests on every mi
     await mkdir(join(dir, "inst"), { recursive: true });
     await writeFile(join(dir, "inst", "sine.sfz"), "<region> sample=*sine pitch_keycenter=60 ampeg_release=0.2\n");
     for (const [name, raw] of Object.entries(FIXTURES)) {
-      for (const variant of [""]) { // wp3 adds "empty-layers"
+      for (const variant of ["", "empty-layers"]) {
         const input = structuredClone(raw) as { tracks: Record<string, unknown>[] };
         if (variant) for (const track of input.tracks) track["layers"] = [];
         const song = validateSong(input);
