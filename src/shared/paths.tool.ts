@@ -11,7 +11,7 @@ export function music2Home(): string {
   return configured ? configured : join(homedir(), ".music2");
 }
 
-export type StorageKind = "renders" | "analysis" | "sfx" | "projects";
+export type StorageKind = "renders" | "analysis" | "sfx" | "projects" | "library" | "instruments";
 
 /** Default directory for one kind of output inside the music2 home. Callers create it when they write. */
 export function storageDir(kind: StorageKind): string {

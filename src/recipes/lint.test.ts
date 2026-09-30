@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Music2Error, packageRoot } from "../shared/index.ts";
-import { lintSong } from "./lint.tool.ts";
+import { lintSong, summarizeLint, type LintResult } from "./lint.tool.ts";
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(packageRoot(), "examples", name), "utf8")) as unknown;
 const base = () => ({ version: 1 as const, bpm: 140, genre: "drill_uk", key: "C minor", swing: .5, tracks: [
@@ -13,6 +13,35 @@ const base = () => ({ version: 1 as const, bpm: 140, genre: "drill_uk", key: "C 
   { id: "bass", kind: "notes", instrument: "808", mono: true, swing: false, pattern: "c2 ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~" }],
   sections: [{ id: "hook", bars: 4, role: "hook", patterns: {} as Record<string, string | null> }], arrangement: [{ section: "hook" }] });
 const ids = (song: unknown, options?: { genre?: string }): string[] => lintSong(song, options).results.map((result) => result.id);
+
+test("lint aggregates errors, warnings and infos in severity then id/path order", () => {
+  const row = (id: string, severity: LintResult["severity"], path: string): LintResult =>
+    ({ id, severity, path, observed: 1, expected: 2, fix: "Review layers." });
+  const findings = [row("a", "info", "tracks.b"), row("z", "warning", "tracks.a"),
+    row("z", "error", "tracks.a"), row("a", "info", "tracks.a"), row("a", "warning", "tracks.b")];
+  const original = [...findings];
+  const report = summarizeLint(null, 4, findings);
+  assert.deepEqual(report.results.map(({ severity, id, path }) => [severity, id, path]), [
+    ["error", "z", "tracks.a"], ["warning", "a", "tracks.b"], ["warning", "z", "tracks.a"],
+    ["info", "a", "tracks.a"], ["info", "a", "tracks.b"],
+  ]);
+  assert.deepEqual([report.errors, report.warnings, report.infos], [1, 2, 2]);
+  assert.deepEqual(findings, original);
+  const plain = lintSong(base());
+  assert.equal(plain.infos, plain.results.filter((result) => result.id === "generic/thin_peak_layers").length);
+});
+
+test("layers do not supply extra lint instrument roles and empty layers match absent layers", () => {
+  const song = base();
+  song.tracks[3]!.instrument = "bass";
+  const layered = { ...song, tracks: song.tracks.map((track) => track.id === "bass" ?
+    { ...track, layers: [{ id: "sub", instrument: "808" }] } : track) };
+  const withoutLayerInfo = (report: ReturnType<typeof lintSong>) => ({ ...report, infos: 0,
+    results: report.results.filter((result) => result.id !== "generic/thin_peak_layers") });
+  assert.deepEqual(withoutLayerInfo(lintSong(layered)), withoutLayerInfo(lintSong(song)));
+  assert.ok(ids(layered).includes("drill_uk/5"));
+  assert.deepEqual(lintSong({ ...song, tracks: song.tracks.map((track) => ({ ...track, layers: [] })) }), lintSong(song));
+});
 
 test("list notes feed rhythm and pitch lint without pattern parse errors", () => {
   const report = lintSong({ version: 1, bpm: 124, genre: "house", key: "C major",
@@ -101,6 +130,7 @@ test("parse-only result retains path/offset and other schema error still throws"
   const song = base(); song.tracks[0]!.pattern = "[bd";
   const report = lintSong(song);
   assert.equal(report.barsChecked, 0); assert.equal(report.errors, 1);
+  assert.equal(report.infos, 0);
   assert.equal(report.results[0]?.id, "generic/pattern_parse");
   assert.equal(report.results[0]?.path, "$.tracks[0].pattern");
   assert.match(String(report.results[0]?.observed), /offset/);

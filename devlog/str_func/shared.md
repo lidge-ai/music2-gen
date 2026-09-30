@@ -59,7 +59,7 @@ re-exports all listed public members.
 | `export function secondsToTicks(seconds: number, bpm: number): number` | `ticks.tool.ts` | Seconds to safe integer ticks. |
 | `export function fractionToTicks(bars: Fraction, numerator: number): { ticks: number; exact: boolean }` | `ticks.tool.ts` | Rational bar position and exactness. |
 | `export function music2Home(): string` | `paths.tool.ts` | Resolve user data directory. |
-| `export function storageDir(kind: StorageKind): string` | `paths.tool.ts` | Default folder for `renders`, `analysis`, `sfx` or `projects` inside the home. |
+| `export function storageDir(kind: StorageKind): string` | `paths.tool.ts` | Default folder for `renders`, `analysis`, `sfx`, `projects`, `library` or `instruments` inside the home. |
 | `export function packageRoot(): string` | `paths.tool.ts` | Find `music2-gen` package root. |
 | `export function packageVersion(): string` | `paths.tool.ts` | Read package version. |
 | `constructor(n: number \| bigint, d: number \| bigint = 1)` | `Fraction` | Normalize signed rational parts. |
@@ -164,3 +164,7 @@ Pattern and CLI tests also import the public shared boundary for fixtures and as
 - [ ] Check `src/shared/rational.test.ts` and `src/pattern/query.test.ts` when time arithmetic changes.
 - [ ] Check `src/shared/prng.test.ts` and deterministic pattern vectors when hashing changes.
 - [ ] Check `src/shared/paths.test.ts` and CLI version behavior when package lookup changes.
+
+## Library storage
+
+`StorageKind` includes `library` and `instruments`. `storageDir("library")` locates the deterministic index cache; `storageDir("instruments")` locates imported manifests and audio under the current `music2Home()`. The path helper does not create directories. Library and sampler own creation and confined loading; tests use a fresh `MUSIC2_HOME`.

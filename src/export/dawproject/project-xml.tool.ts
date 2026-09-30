@@ -1,10 +1,12 @@
+import type { UserInstrumentKinds } from "../../sampler/index.ts";
+import { exportInstrumentKind, validateExportUserInstruments } from "../user-instruments.tool.ts";
 import type { ProjectIR, ProjectTrack } from "../../project/index.ts";
 import { drumNoteFor, sfxNoteFor } from "../../midi/gm.tool.ts";
 import { Music2Error, packageVersion } from "../../shared/index.ts";
 import { element, serializeXml } from "../xml.tool.ts";
 import type { DawContent, DawMedia, DawClipRegion } from "./index.ts";
 
-export interface DawView { content: DawContent; media: readonly DawMedia[]; regions: readonly DawClipRegion[];
+export interface DawView { userInstruments?: UserInstrumentKinds; content: DawContent; media: readonly DawMedia[]; regions: readonly DawClipRegion[];
   kitMaps?: Readonly<Record<string, Readonly<Record<string, number>>>> }
 export interface ProjectXmlResult { bytes: Uint8Array; warnings: string[]; tracks: number }
 type Node = { tag: string; attrs: [string, string][]; children: (Node | string)[] };
@@ -36,10 +38,11 @@ function noteKey(track: Extract<ProjectTrack, { type: "notes" | "drums" }>, note
   view: DawView, warnings: string[]): number | null {
   if (note.pitch !== null) return note.pitch;
   if (!note.sample) return null;
-  const mapped = track.instrument.kind === "kit" ? view.kitMaps?.[track.id]?.[note.sample.name] :
+  const kind = exportInstrumentKind(track.instrument, view.userInstruments);
+  const mapped = kind === "kit" ? view.kitMaps?.[track.id]?.[note.sample.name] :
     (sfxNoteFor(note.sample.name) ?? drumNoteFor(note.sample.name, note.sample.index));
   if (mapped === undefined) { warnings.push(`NOTE_MAPPING_OMITTED:${track.id}:${note.sample.name}`); return null; }
-  if (track.instrument.kind !== "kit") warnings.push(`NOTE_SOUND_NOT_PORTABLE:${track.id}:${note.sample.name}`);
+  if (kind !== "kit") warnings.push(`NOTE_SOUND_NOT_PORTABLE:${track.id}:${note.sample.name}`);
   return mapped;
 }
 
@@ -48,6 +51,7 @@ export function buildProjectXml(project: ProjectIR, view: DawView): ProjectXmlRe
   if (project.ppq !== 960 || project.tempo.length !== 1 || project.meter.length !== 1 ||
     project.tempo[0]?.tick !== 0 || project.meter[0]?.tick !== 0)
     throw new Music2Error("E_CAPABILITY", "DAWproject supports one tick-zero tempo and meter");
+  validateExportUserInstruments(project, view.userInstruments);
   const bpm = project.tempo[0].bpm;
   if (!Number.isFinite(bpm) || bpm < 20 || bpm > 999 || project.meter[0].denominator !== 4 ||
     !Number.isInteger(project.meter[0].numerator)) return fail("invalid transport values");
@@ -60,8 +64,8 @@ export function buildProjectXml(project: ProjectIR, view: DawView): ProjectXmlRe
   };
   const warnings: string[] = [];
   if (view.content !== "audio") for (const track of project.tracks)
-    if (track.type !== "audio" && track.instrument.kind === "lib")
-      warnings.push(`NOTE_SOUND_NOT_PORTABLE:${track.id}:lib:${track.instrument.id}`);
+    if (track.type !== "audio" && (track.instrument.kind === "lib" || track.instrument.kind === "user"))
+      warnings.push(`NOTE_SOUND_NOT_PORTABLE:${track.id}:${track.instrument.kind}:${track.instrument.id}`);
   const structure: Node[] = [];
   const lanes: Node[] = [];
   const mediaBySource = new Map(view.media.filter((entry) => entry.owner.kind === "source")

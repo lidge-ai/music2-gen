@@ -1,6 +1,7 @@
 import { open, readFile } from "node:fs/promises";
 import { dirname, relative } from "node:path";
 import { readWav } from "../audio-io/wav.tool.ts";
+import { readWavSmpl } from "../audio-io/wav-meta.tool.ts";
 import type { StereoBuffer } from "../audio-io/buffer.schema.ts";
 import { Music2Error, confinedRealpath, isMusic2Error } from "../shared/index.ts";
 import { parseSfz } from "./sfz-parse.tool.ts";
@@ -9,40 +10,13 @@ import { resample } from "./resample.tool.ts";
 import { createDecodeBudget } from "./decode-budget.tool.ts";
 import type { DecodeBudget } from "./decode-budget.tool.ts";
 import { SFZ_SOURCE_ORDER, sfzWarning } from "./sfz.schema.ts";
-import type { LoadedSfz, SfzEvent, SfzRegion, SfzSelectionState, SfzSmpl, SfzSource, SfzVoice, SfzWarning } from "./sfz.schema.ts";
+import type { LoadedSfz, SfzEvent, SfzRegion, SfzSelectionState, SfzSmpl, SfzVoice } from "./sfz.schema.ts";
 
 const MAX_PCM_BYTES = 512 * 1024 * 1024;
 const FAST_OFF_SECONDS = 0.006;
 const SINE_FRAMES = 48000;
 const sampleKey = (region: SfzRegion): string => region.sample.startsWith("*")
   ? region.sample : `${region.control.defaultPath}${region.sample}`;
-
-function smplMetadata(bytes: Buffer, source: SfzSource, warnings: SfzWarning[]): SfzSmpl {
-  const empty: SfzSmpl = { unityNote: null, pitchFraction: 0, loop: null };
-  if (bytes.length < 12 || bytes.toString("ascii", 0, 4) !== "RIFF") return empty;
-  const end = Math.min(bytes.length, bytes.readUInt32LE(4) + 8);
-  for (let offset = 12; offset + 8 <= end;) {
-    const size = bytes.readUInt32LE(offset + 4);
-    const data = offset + 8;
-    if (data + size > end) break;
-    if (bytes.toString("ascii", offset, offset + 4) === "smpl" && size >= 36) {
-      const unity = bytes.readUInt32LE(data + 12);
-      const pitchFraction = bytes.readUInt32LE(data + 16);
-      const loops = bytes.readUInt32LE(data + 28);
-      let loop: SfzSmpl["loop"] = null;
-      if (loops > 0 && size >= 60) {
-        const type = bytes.readUInt32LE(data + 40);
-        if (type === 0) loop = { start: bytes.readUInt32LE(data + 44), end: bytes.readUInt32LE(data + 48) };
-        else warnings.push(sfzWarning(source, "smpl", "unsupported loop type; loop disabled"));
-      } else if (loops > 0) {
-        warnings.push(sfzWarning(source, "smpl", "truncated loop metadata; loop disabled"));
-      }
-      return { unityNote: unity <= 127 ? unity : null, pitchFraction, loop };
-    }
-    offset = data + size + (size & 1);
-  }
-  return empty;
-}
 
 function virtualSine(): StereoBuffer {
   const left = new Float32Array(SINE_FRAMES);
@@ -127,7 +101,9 @@ export async function loadSfz(songPath: string, ref: string, sampleRate: number,
       let bytes: Buffer;
       try { bytes = await readFile(path); }
       catch (cause) { throw new Music2Error("E_ACCESS", "cannot read SFZ sample", { details: { file: key }, cause }); }
-      meta = smplMetadata(bytes, region.source, warnings);
+      const parsed = readWavSmpl(bytes);
+      for (const message of parsed.warnings) warnings.push(sfzWarning(region.source, "smpl", message));
+      meta = { unityNote: parsed.unityNote, pitchFraction: parsed.pitchFraction, loop: parsed.loop };
       cache.set(path, meta);
     }
     samples.set(key, audio);

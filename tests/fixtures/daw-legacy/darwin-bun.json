@@ -23,7 +23,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "faef56d9dac1eeecf1f26571a652b450924456671098d87a766726f3eaf2c95d"
+        "sha256": "b0f4463f54fa1a351b53db585048cb96ff84e49993082d28f8050473b678c7b6"
       }
     },
     "examples/boom-bap-verse-led-90.song.json": {
@@ -45,7 +45,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "787c2724dbdbd79f81ab65d1b702e18843a4a23a4d711d483ceb790b9f3ebac9"
+        "sha256": "f388655f5e2fc95ac274160cfb9dcb72833d50325843ef0862e94ab6dcd78fad"
       }
     },
     "examples/cinematic-cue.song.json": {
@@ -70,7 +70,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "bd79c8232e3b0ee16e1ac03ce04b029815fa37b97da5d5edd0def88d49023786"
+        "sha256": "75ffae80b5a67d7bf9dcd1a7f1d7a2ffa2cd227e4558cec157eb18dc29efe7d9"
       }
     },
     "examples/dogfood/boom-bap-dogfood.song.json": {
@@ -93,7 +93,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "78b02735ba7d53475c3cf325c42ad453e0f4ed6590f402cde81e2a38bd58dc9a"
+        "sha256": "34589eb722bca6a152207331225f481e6fb8bad8349804dc183217bf9d48f9c0"
       }
     },
     "examples/drill-140.song.json": {
@@ -116,7 +116,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "2ac2bb99bf1a6192764985ddbbdbe32d3665223aa590502dd08f70202d6303bb"
+        "sha256": "c0f7070edd359af1f9bcbae01a7f5728c798eb3742ce186e6ec3d3a80f4625f4"
       }
     },
     "examples/drill-uk-moving-snare-144.song.json": {
@@ -138,7 +138,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "29908d2577573b1c6c48782f4e0511e6b9bf7e98c9794608649954d3817f97ec"
+        "sha256": "d027bc12fc0ef093bcee7d27fdaeaaf669fe122d791df9484a1e697274dd5f7d"
       }
     },
     "examples/game-loop-16bar.song.json": {
@@ -161,7 +161,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "ac163982a01538fe75aecfb54533d9f0e56d46d362743e84c6f530314ed562ab"
+        "sha256": "c0afc9b6b5b7cdab03caaf565d7cd6caae3e7884c1d1a911e00c75253037c3e3"
       }
     },
     "examples/game-spark-loop.song.json": {
@@ -186,7 +186,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "69d35c591d7f608c14c2bbee2a742e491516930bfa36e2c05d9a0126f3d8f798"
+        "sha256": "f59335de4cc623090659518754b1d008f9e34dd1a971cb7c6b6c57a75a7a955e"
       }
     },
     "examples/house-124.song.json": {
@@ -209,7 +209,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "03a8d4f81649d33185fc768285e111e7eeb2c3d5881be6623ecf5032f653426f"
+        "sha256": "6be52152ca63b7a40bb54806e518effeb53ed6ca13340a4b80e556f20a8734a8"
       }
     },
     "examples/lofi-75.song.json": {
@@ -231,7 +231,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "4da640323b236739ecc50756c858d62bd1095e96d2e92db1aed17dea9bd46c1d"
+        "sha256": "05db3e66554911d525f863e85e2f375adab2da0130658841461b5753f78e54d2"
       }
     },
     "examples/lofi-textures.song.json": {
@@ -255,7 +255,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "afbb401f2305efba9dadefd9a47d544f7fd6afc1052d1aa79504363b770a09c9"
+        "sha256": "625b46ab9736d96ceeb0a9799d0b9e54d658a2c590f7be8a0762c80f0976e271"
       }
     },
     "examples/minimal.song.json": {
@@ -274,7 +274,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "d462609eba415904009a88fb984846e51149d3c9c7247994b803f41a3fa15a96"
+        "sha256": "a73d03d662bea54f37b52efe9d46b3831bd9a38a0f06d239166d90e82c9b87f1"
       }
     },
     "examples/pop-transition.song.json": {
@@ -299,7 +299,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "57cd6c379a1a1ae65d9e9a77afff29a5665cf97aa7f98c59b0c49c4331926d03"
+        "sha256": "2382cac618ed7f24b3d4b521c1b4a31d1d5380cf3d2cd0e37652a19b80672397"
       }
     },
     "examples/short-30-bed.song.json": {
@@ -321,7 +321,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "7e3837200796184876bf4a2289994748ed5b04afcf10712dd2df04e0653f9faf"
+        "sha256": "e0eabe740eebefcfd22c7a95fe9c1e7f47fd97c723b3cf89bf3ab8308dc5aecb"
       }
     },
     "examples/trap-150.song.json": {
@@ -344,7 +344,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "624bf6e2fe39ec9953bd722e47a05db28c017c2692aa59ad48faf6055e4f4724"
+        "sha256": "56cc427f47b5273ec7ff86898f040a66dedfd6d3a6b94c312e6976d531e6ad4e"
       }
     },
     "examples/trap-hook-first-142.song.json": {
@@ -366,7 +366,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "46c9297d350f82f5140f08e3b057c8d83cfbd2f38c9b1b3d92c05f87f6dc5ff4"
+        "sha256": "a7dd6e374dbdd12e73d26d036e719a5902089502a19cece3c58999ec3f22d6a8"
       }
     },
     "examples/type-beat-trap-140.song.json": {
@@ -389,7 +389,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "bcb04947d11fcda795bf91eb190be40578d7abd0466447a3817faf06ddee120b"
+        "sha256": "ead7e7b58070377af390726a2573701fc5af1b5bb0619653499a7e9b2bf77f36"
       }
     },
     "examples/wrong-genre.song.json": {
@@ -411,7 +411,7 @@
       },
       "lint": {
         "exit": 0,
-        "sha256": "5edcd58a9fcf4cd4da27b4ab082f35042a32d1f3f838797ca0e772928fb7c8c5"
+        "sha256": "21de480922bba0d9ecc2d4c71ebafd33659fa7b5a608da6c30075758a6894dd4"
       }
     }
   }

@@ -26,10 +26,14 @@ src/cli/
     ├── import.ts        # bounded format-0/1 MIDI to Song v1 import
     ├── import.test.ts   # MIDI note lists, collision and malformed-input cases
     ├── render.test.ts   # render command output and failure cases
+    ├── balance.ts       # gated level matching, targets, preview/apply and human table
+    ├── balance.test.ts  # JSON envelopes, precedence, invalid options and no-write cases
     ├── analyze.ts       # WAV/song analysis and artifacts
     ├── analyze.test.ts  # analysis command and output cases
     ├── doctor.ts        # ffmpeg and encoder capability report
     ├── doctor.test.ts   # doctor capability and required-mode cases
+    ├── library.ts       # scan/find/import/verify/list user samples
+    ├── library.test.ts  # option, cache and pitch QA command contracts
     ├── recipes.ts       # list or inspect genre cards
     ├── recipes.test.ts  # recipe command output cases
     ├── new.ts           # construct and optionally write starter song
@@ -55,7 +59,7 @@ used by both parsing and help text.
 
 At this source snapshot the registry contains `help`, `version`, `schema`,
 `validate`, `events`, `render`, `doctor`, `analyze`, `recipes`, `new`, `lint`,
-`critique`, and `skill`.
+`critique`, `skill`, `sfx`, `export`, `import`, `slice`, `instruments`, `library`, and `balance`.
 
 ## Key Function Signatures
 
@@ -165,6 +169,7 @@ they have no separately exported `run` function.
 | `export` | `commands/export.ts` | `ir <song.json>` only; formatted IR on stdout or staged `.json` output with no-replace default and `--force` replacement. JSON mode returns one envelope. |
 | `doctor` | `commands/doctor.ts` | No positional args; returns `DoctorData` for ffmpeg and required encoders. |
 | `analyze` | `commands/analyze.ts` | One WAV or song JSON path; optional `--song` and `--out`; returns artifacts and summary. |
+| `library` | `commands/library.ts` | Local scan/find/import/verify/list; confined imports and pitch QA. |
 | `recipes` | `commands/recipes.ts` | Zero or one recipe ID; returns summaries or a full card. |
 | `new` | `commands/new.ts` | Required `--genre`; optional arrangement, preset, seconds, BPM, key, seed, title, and output path. |
 | `lint` | `commands/lint.ts` | One song JSON path; optional genre override and strict QA policy. |
@@ -309,7 +314,7 @@ raises `E_FFMPEG_MISSING`; missing required encoders raises `E_CAPABILITY`.
 | `E_ACCESS` | Song, kit, or output path cannot be accessed. | 4 |
 | `E_RENDER` | PCM, effect, RIFF size, or peak-master failure. | 5 |
 | `E_PROVIDER` | Critic provider request or response failure. | 4 |
-| `E_QA` | Lint errors, or warnings under `--strict`. | 6 |
+| `E_QA` | Library pitch miss, lint errors, or warnings under `--strict`. | 6 |
 | `E_TIMEOUT` | Critic request timeout. | 7 |
 | `E_INTERNAL` | Unrecognized thrown error at the CLI boundary. | 1 |
 
@@ -399,3 +404,19 @@ MIDI keeps editable notes but has empty Live instruments and omits source audio/
 ## Built-in sampled instruments and voice policy
 
 `commands/instruments.ts` registers `music2 instruments [--json]`. It lists every synth voice with parameter schema and oscillator source, plus manifest-backed sampled instruments, roles, ranges and licenses.
+
+## Local sample library
+
+`commands/library.ts` exports `library: CommandSpec`, registered alongside `instruments`. It manually dispatches scan/find/import/verify/list, validates per-verb flags and positionals, resolves folder/root paths against cwd, and invokes library/sampler boundaries. Scan returns data.index plus the cache artifact; find returns data.candidates and scans defaults when no cache exists. Repeated --root replaces defaults; find with explicit roots refreshes the cache. Import returns its report directly in data; list returns sorted manifests in data.instruments. Human output is a compact table. Verification returns its report or raises E_QA with details.report when ok:false; bad input exits 2 and no roots exits 3.
+
+`commands/instruments.ts` adds data.user summaries (id, instrument, kind, zones, role). `commands/doctor.ts` adds data.sampleLibrary {roots,available}. Export resolves every user ID through loadExportInstruments before MIDI/ALS/DAW planning, retaining ProjectIR's filesystem-free identity. `library.test.ts` checks flags, repeated roots, cache fallback, notes and exit-6 details; tests/e2e/library-flow.test.ts creates synthetic AIFF/WAV-with-smpl and drum files, imports both kinds and renders user instruments.
+
+The checks job runs bun run audit:assets after privacy scan. scripts/asset-audit.mjs checks tracked tree, dry-run package files without lifecycle scripts, and optionally every commit against every parent in a base..head range. Every audio extension or first-12-byte magic match requires the exact path/SHA-256 allowlist entry, including merge-only audio later deleted. Asset tests use temporary Git repositories/packages.
+
+### Balance command
+
+`export const balance: CommandSpec` in `commands/balance.ts` loads file targets before repeated
+`--target` flags, parses finite `--max-step` and 1-based `--occurrence`, and delegates to
+`src/balance`. The handler returns one `CommandResult` with the balance report in `data`,
+render/planning warnings, a human table, and the song artifact only when `--apply` changes gains.
+The registry exposes its options through normal command help and strict parsing.

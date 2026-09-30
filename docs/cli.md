@@ -12,14 +12,14 @@ The examples below use the tracked `examples/drill-140.song.json` and illustrati
 | `bun bin/music2.js version --json` | No positional arguments. `data.version` is the package version; `data.bun` is the running Bun version; `data.bunSource` is `bundled` (the npm launcher used the package's Bun), `override` (`MUSIC2_BUN_PATH`) or `direct` (started with Bun, no launcher). |
 | `bun bin/music2.js schema --out /tmp/music2-schema.json --json` | `--out file` optionally writes Song v1 JSON Schema and returns `data.written` plus an artifact path. Without `--out`, `data.schema` contains the schema and no file is written. |
 | `bun bin/music2.js recipes drill_uk --json` | Optional recipe ID. Without it, `data.recipes` lists ID, title, BPM range, default keys, and roles. With it, `data.recipe` is the full card, including starter song and lint rule IDs. |
-| `bun bin/music2.js instruments --json` | No positional arguments. `data.voices` lists synthesized voice IDs, kinds, numeric parameter rules, oscillator sources, and `emulates` (`strings`, `brass`, `choir`, or `null`); `data.library` lists bundled `lib:` instruments with families, titles, ranges, roles, sources and licenses. Without `--json`, prints a compact table. |
+| `bun bin/music2.js instruments --json` | No positional arguments. `data.voices` lists synthesized voice IDs, kinds, numeric parameter rules, oscillator sources, and `emulates` (`strings`, `brass`, `choir`, or `null`); `data.library` lists bundled `lib:` instruments with families, titles, ranges, roles, sources and licenses. Without `--json`, prints a compact table. `data.user` lists imported `user:` IDs, manifest kind, zone count and role. |
 | `bun bin/music2.js new --genre drill_uk --use short_30 -o /tmp/music2-new.song.json --json` | `--genre id` is required. `--arrangement id` selects a named card form; `--use preset` applies a delivery preset; `--seconds n` requests an exact duration where the preset allows it. Optional `--bpm n`, `--key 'C minor'`, `--seed n`, `--title text` override card defaults; `-o path`/`--out path` writes a new file. The result includes selected arrangement, use case, and duration. Without `-o`, `data.song` is the editable JSON song. Existing output returns `E_ACCESS`. |
 | `bun bin/music2.js validate examples/drill-140.song.json --json` | One song path. Returns title, BPM, total bars, duration in seconds, and event count per track. Checks Song v1 structure, mini-notation and the voice rules render applies (known instrument, track kind, `mono` for bass/808, parameter names and bounds); a violation exits 2 with `E_SCHEMA`. |
 | `bun bin/music2.js events examples/drill-140.song.json --bars 0:1 --track kick --json` | One song path. `--bars start:end` selects a zero-based half-open range; default is all bars. `--track id` selects one track; default is all. `data.events` contains timed events with track, bar, time, duration, pitch/sample, and velocity fields. |
 | `bun bin/music2.js lint examples/drill-140.song.json --json` | One song path. `--genre id` overrides `song.genre`; `--strict` treats warnings as QA failure. `data` is `{genre,barsChecked,results,errors,warnings}`. Each result includes ID, severity, path, observed, expected, and fix. Non-strict warnings can exit 0; errors or strict warnings return `E_QA` exit 6 with the report under `error.details.report`. FX warnings flag heavy low-track reverb, high delay feedback, and low-track widening. `generic/synthetic_acoustic` warns when a notes track uses synthesized `strings` or `brass`; use sampled `lib:` strings/brass for acoustic parts. Saw-based lead, bass, supersaw, and pad are normal synth choices; `choir` is saw-based but has no bundled sample and does not trigger this warning. `generic/clipping_risk` is a static onset proxy (threshold 2; chord tones on one notes track add as the square root of their count and slow attacks are weighted down) and ignores compression/limiting, so inspect rendered peaks. `generic/register_collision` compares unique 16th-note onsets of two focal lines. Motif rules (`drill_ny/6`, `boom_bap/6`, `boom_bap/7`, `lofi_hiphop/4`) pass when any focal or sampled melody track satisfies them, independent of track order; beds and bass never count as the melody. `drill_ny/5` counts 808 moves inside each hook. `generic/automation_gain_jump` and `generic/automation_send_jump` flag gain or send lanes more than 12 dB above the static level, because lanes replace it. |
 | `bun bin/music2.js render examples/drill-140.song.json -o /tmp/music2-cli.wav --json` | One song path. `-o`/`--out` defaults to `$MUSIC2_HOME/renders/<song name>.wav` (home `~/.music2`), creating that folder when needed; `--bits 16\|24` defaults to 16. `--bars start:end` is zero-based half-open, default all bars. `--stems dir` writes dry track WAVs. `--mp3`, `--ogg`, and `--loudnorm` are off by default and require ffmpeg; MP3/OGG copies share the WAV basename. Returns WAV/encoded/stem paths, rendered bars, sample rate, frames, duration, peak, true peak, ceiling, and event count. |
 | `bun bin/music2.js analyze /tmp/music2-cli.wav --song examples/drill-140.song.json --out /tmp/music2-cli-analysis --json` | Input is a WAV or song JSON. `--song path` is only for a matching, full-song WAV and enables declared-song context and `pianoroll.png`; a WAV without it has no piano roll. Song JSON is rendered internally and gets a piano roll. `--out dir` defaults to `$MUSIC2_HOME/analysis/<input name>/`. Returns paths for `analysis.json`, `analysis.md`, `spectrogram.png`, `overview.png` (one labelled flow image: section band and rail, loudness curve, activity lanes, 3-band waveform, novelty, brightness and a self-similarity inset; WAV-only input gets a beat or 0.5 s axis and no declared sections), optional `pianoroll.png`, optional `beats.json`, and a summary. With a song, `beats.json` uses the declared song grid. For WAV alone, it uses the audio tempo estimate when available; otherwise `data.beatsJson` is null with `NO_BEATS`. Key estimation is advisory (`KEY_UNCERTAIN` can appear); declared key and `generic/out_of_key` lint are the reliable pitch checks. Tempo estimates include half/double alternatives and label unrelated peaks at 2:3 or 3:2 of the chosen tempo in `analysis.json`. With `--song`, `tempoDeclaredMatch` is the best candidate within 1.5 BPM of the declared tempo (score ≥ 0.9), and the report and overview headline use it when the audio top estimate differs; `estimatedBpm` stays audio-only. |
-| `bun bin/music2.js doctor --json` | No positional arguments. `data.ffmpeg` is path/version/encoders or null; `data.required` reflects `MUSIC2_REQUIRE_FFMPEG`; `data.ready` means both MP3 and OGG encoders are available; `data.home` is the storage home described below. Missing optional ffmpeg returns 0 with `ready:false`. |
+| `bun bin/music2.js doctor --json` | No positional arguments. `data.ffmpeg` is path/version/encoders or null; `data.required` reflects `MUSIC2_REQUIRE_FFMPEG`; `data.ready` means both MP3 and OGG encoders are available; `data.home` is the storage home described below. Missing optional ffmpeg returns 0 with `ready:false`. `data.sampleLibrary` reports available sample roots and an `available` boolean. |
 | `bun bin/music2.js critique /tmp/music2-cli.wav --excerpt 1 --json` | Input is WAV or song JSON. `--model id` defaults to `MUSIC2_CRITIC_MODEL` or `google-antigravity/gemini-3.8-flash`; `--base-url url` defaults to `MUSIC2_CRITIC_BASE_URL` or `http://127.0.0.1:10100`; `--excerpt seconds` defaults to 30 and accepts 1–120. Uses ffmpeg MP3 when available and WAV otherwise. With a working audio-capable Responses route, returns `{review,dsp,audio,model}`; use model advice only when `review.heard_audio` is true. The critic cannot reliably hear sub-bass. A missing route returns `E_PROVIDER`; unsupported audio or `heard_audio:false` returns `E_CAPABILITY`. |
 | `bun bin/music2.js sfx --preset pickup --seed 41 -o /tmp/music2-pickup.wav --json` | No positional arguments. `--preset` is one of the ten transition atoms (`riser`, `pitchriser`, `downlifter`, `impact`, `whoosh`, `revcymbal`, `noisebuild`, `subdrop`, `zap`, `crackle`) or the game/UI presets `pickup`, `laser`, `explosion`, `powerup`, `hit`, `jump`, `blip`, `alert`, `click`, `confirm`, `error`; `-o`/`--out` is a `.wav` path; without it the WAV goes to `$MUSIC2_HOME/sfx/<preset>-<seed>.wav`, or `-2`, `-3`, … when that name is taken, so a default run never overwrites an earlier one. `--seed` 0–4294967295 (default 1), `--seconds` 0.05–30 (default per preset), `--sample-rate 44100\|48000` (default 44100), `--params k=v,...` numeric overrides allowed for that preset. Writes a 16-bit stereo WAV and `<basename>.sfx.json` (generator version, preset, seed, seconds, frames, sample rate, resolved params); `artifacts` lists both. An existing WAV or sidecar returns `E_ACCESS` exit 4 and nothing is overwritten; invalid flags or params return `E_INPUT` exit 2. See [sound effects](../skills/music2/references/sfx.md). |
 | `bun bin/music2.js skill path --json` | Exact subcommand `skill path`; no other positional argument or file write. `data.path` is the absolute directory of the packaged `skills/music2/SKILL.md`. Human mode prints one path line. |
@@ -32,7 +32,57 @@ Analyze warnings are advisory measurements of whole-file six-band power. `LOW_EN
 
 **020 integration note — loop render and analyze checks:** A song with `loop:true` renders the whole song as one loop body: the effects tail wraps onto its start, `loopStartSample` is 0, and `loopEndSample` is the exclusive output-frame count. `render --bars` is invalid for a loop song. Song-backed analyze can report `SECTION_LOUDNESS_FLAT` from ungated `flow.sectionMeans` and `LOOP_SEAM_DISCONTINUITY` from the loop boundary; WAV-only analysis has neither song-backed check. These warnings are advisory measurements, not a claim that audio was heard.
 
-## JSON and failures
+## Match track and layer levels
+
+`music2 balance song.json --section drop --reference kick --target bass=-2 --target bass.growl=-8 --apply --json`
+measures gated RMS, peak and active ratio for every track and each layered track's main and layer sources.
+Track rows are post-fader stems. Main and layer rows are taps before track effects and the track fader;
+layer taps include the layer's effects, gain and pan. Measurement excludes the effects tail, uses 50 ms
+blocks, and excludes blocks below −60 dBFS from RMS. It is a level measurement, not LUFS.
+
+With no targets, the command only measures. Without `--apply`, it previews gain changes.
+Track targets (`kick=-14`) are absolute dBFS, or relative to the read-only `--reference` track
+(`bass=-2` is 2 dB below the reference). Layer targets (`bass.growl=-8`) are always relative
+to that track's main source and edit only the layer gain. `.main` cannot be targeted.
+Layers are adjusted first in memory; track changes are planned from a new measurement so
+simultaneous parent and layer targets use the resulting sum.
+
+| Option | Meaning |
+| --- | --- |
+| `--bars A:B` | Zero-based, end-exclusive range, default the whole arrangement. |
+| `--section ID` | One placement of a section; cannot combine with `--bars`. |
+| `--occurrence N` | 1-based placement of `--section`, default 1; requires `--section`. |
+| `--target ID=DB` | Repeatable track or layer target. Later duplicates override earlier ones. |
+| `--targets FILE` | JSON object such as `{"kick":-14,"bass.growl":-8}`; loaded before target flags. |
+| `--reference TRACK` | Audible instrument track for relative track targets; cannot also be a track target. |
+| `--max-step DB` | Finite nonnegative maximum gain adjustment, default 12 dB; zero makes no changes. Final gains stay within −60..12 dB. |
+| `--apply` | Validate and re-measure changes, then replace the song using a staged file and rename. |
+
+`--apply` **reformats the whole song JSON** with two-space indentation and a trailing newline
+when gains change. With no changes, it preserves file bytes and modification time. The report
+includes `window`, `rows`, `changes`, `warnings`, optional `reference`, and `after` when changes
+are applied; JSON mode prints one standard envelope. Human mode prints a level table and gain changes.
+
+Silent targets are skipped. A silent main skips its layer target with a warning. Gain automation
+skips the track edit while keeping its layers editable. A silent reference, invalid window,
+unknown track/layer/section, `.main` target or audio-track target returns `E_INPUT` (exit 2).
+A whole-song loop is measured without wrapping its tail onto bar 0 and adds `BALANCE_LOOP_UNWRAPPED`. Rendering warnings are retained in the report. Large or nonlinear changes
+may need another measurement and adjustment.
+
+## Local sample library
+
+`library` discovers local sample folders and imports instruments for `"instrument": "user:<id>"` in songs. Human mode prints compact tables; JSON mode uses the standard single-object envelope.
+
+| Invocation | Result and options |
+| --- | --- |
+| `music2 library scan --root ./samples --json` | Returns `data.index` and caches it at `$MUSIC2_HOME/library/index.json`. Repeated `--root dir` replaces all default roots. Without `--root`, `MUSIC2_SAMPLE_ROOTS` supplies OS path-delimiter-separated roots, or macOS uses existing Logic/GarageBand sample directories. No available root returns `E_CAPABILITY` (exit 3). CAF/EXS/AAZ files are counted as skipped. |
+| `music2 library find kick --kind kit --limit 10 --json` | Case-insensitive AND search over paths and filenames. Returns `data.candidates`. `--kind instrument\|kit` and positive integer `--limit` are optional. Uses the cached index; without a cache it scans default roots first. Explicit repeated `--root` rescans those roots and replaces the cache. |
+| `music2 library import ./samples/pad --id lush-pad --as instrument --octave auto --json` | Returns the import report directly in `data`, including `instrument`, `dir`, per-file named/measured notes, octave offsets and confidence. `--id` is required: 1–48 lowercase letters, digits or hyphens, beginning with a letter/digit. `--as instrument\|kit` defaults to filename-based inference; `--filter text` selects filenames. `--octave auto` (default) measures each sample, `none` trusts note names, and integer N applies `named+12N`. `--attack` and `--release` specify envelope seconds (defaults 0.005 and 0.1). Supported import audio is WAV or PCM AIFF/AIFC. |
+| `music2 library import ./samples/drums --id drum-kit --as kit --json` | Creates a local kit. Numbered hits become variants such as `bd:0`, `bd:1`; plain `bd` plays variant 0. Imports live at `$MUSIC2_HOME/instruments/<id>`. An existing ID requires `--force`, which replaces it transactionally. Bad IDs, missing folders and invalid flags return `E_INPUT` (exit 2). |
+| `music2 library verify lush-pad --notes C3,E3,G3,C4 --json` | Renders and measures each note; `--notes` accepts comma-separated note names or MIDI 0–127, defaulting to C3/E3/G3/C4. Returns per-note want/got/cents/ok. Any error above 50 cents returns `E_QA` (exit 6) with the full report at `error.details.report`. Pitch verification requires an SFZ instrument. |
+| `music2 library list --json` | Returns imported manifests in `data.instruments`, sorted by ID. Optional `--kind instrument\|kit` and `--limit` filter the list. |
+
+`user:` SFZ instruments require notes tracks; user kits accept drums or notes tracks. Sampled instruments reject synth `params`. Imports rewrite samples as 24-bit WAV without `smpl` pitch metadata; SFZ carries loops and measured keycenters. MIDI and editable DAW export carry sound-portability warnings for user instruments; frozen audio retains the sound. Only import materializes samples, and it writes into `MUSIC2_HOME`.
 
 ## DAW bridge commands
 
@@ -68,7 +118,7 @@ The version values above illustrate the envelope. A failure has `{ "ok": false, 
 | 3 | Missing ffmpeg or unsupported capability. | `E_CAPABILITY`, `E_FFMPEG_MISSING` |
 | 4 | File access or critic provider failure. | `E_ACCESS`, `E_PROVIDER` |
 | 5 | Audio rendering failure. | `E_RENDER` |
-| 6 | Lint QA failure. | `E_QA` |
+| 6 | Lint or library pitch QA failure. | `E_QA` |
 | 7 | Interrupted operation or timeout. | `E_INTERRUPTED`, `E_TIMEOUT` |
 
 ## Environment
@@ -78,6 +128,7 @@ The version values above illustrate the envelope. A failure has `{ "ok": false, 
 | `MUSIC2_JSON=1` | Make JSON mode the default for CLI calls. |
 | `MUSIC2_BUN_PATH` | For the npm launcher: run this Bun binary instead of the bundled one. An incomplete binary prints a warning and falls back. Another Bun version voids the byte-identity promise. When no Bun can be found the launcher exits 3 (`E_CAPABILITY`), as one JSON object in JSON mode. |
 | `MUSIC2_HOME` | Storage home for default outputs; `~/.music2` when unset or empty. `render` without `-o` writes to `renders/`, `analyze` without `--out` to `analysis/<name>/`, and `sfx` without `-o` to `sfx/`. Explicit paths are used as given. `projects/` is the suggested place for a song's source, renders and analysis together. |
+| `MUSIC2_SAMPLE_ROOTS` | Sample roots separated by the OS path delimiter (`:` on POSIX, `;` on Windows); replaces platform defaults. `library scan/find --root` replaces this setting. Library cache and imported instruments use `$MUSIC2_HOME/library/` and `$MUSIC2_HOME/instruments/`. |
 | `MUSIC2_FFMPEG` | Explicit ffmpeg executable path. If set to an unusable path, probing does not fall back to `PATH`. |
 | `MUSIC2_REQUIRE_FFMPEG=1` | Make `doctor` fail if ffmpeg or required MP3/OGG encoders are unavailable. |
 | `MUSIC2_CRITIC_BASE_URL` | Responses API base URL for `critique`; default `http://127.0.0.1:10100`. |

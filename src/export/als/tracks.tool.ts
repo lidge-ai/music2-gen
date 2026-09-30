@@ -1,3 +1,4 @@
+import type { UserInstrumentKinds } from "../../sampler/index.ts";
 import type { ProjectIR } from "../../project/index.ts";
 import { fnv1a32 } from "../../shared/index.ts";
 import type { StereoBuffer } from "../../audio-io/index.ts";
@@ -32,13 +33,13 @@ function sequencer(type: "midi" | "audio", clips: XmlNode[]): XmlNode {
   ]);
 }
 export function buildAlsTracks(project: ProjectIR, content: AlsContent, rendered: AlsRendered | null,
-  bits: 16 | 24, ids: AlsIdAllocator, kitMaps: Readonly<Record<string, Readonly<Record<string, number>>>> = {}): AlsTracks {
+  bits: 16 | 24, ids: AlsIdAllocator, kitMaps: Readonly<Record<string, Readonly<Record<string, number>>>> = {}, userInstruments: UserInstrumentKinds = {}): AlsTracks {
   const buses = (["reverb", "delay"] as const).filter((bus) => busPresence(project, bus));
   const nodes: XmlNode[] = []; const samples: AlsSample[] = []; const warnings: string[] = [];
   const byId = new Map(rendered?.stems.map((stem) => [stem.trackId, stem]));
   for (const track of project.tracks) {
     if (content !== "audio" && track.type !== "audio") {
-      const clips = buildMidiClips(track, project.markers, project.meter[0]!, ids, kitMaps[track.id]);
+      const clips = buildMidiClips(track, project.markers, project.meter[0]!, ids, kitMaps[track.id], userInstruments);
       warnings.push(...clips.warnings);
       const gain = gainLinear(track.gainDb);
       if (track.gainDb > 6) warnings.push(`ALS_GAIN_CLAMPED:${track.id}`);

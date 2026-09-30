@@ -15,6 +15,8 @@ src/song/
 ├── song.test.ts         # schema, cross-reference, pattern validation cases
 ├── song-daw.schema.ts   # optional note lists, audio clips and automation contract
 ├── song-daw.test.ts     # DAW field bounds, paths and resolved defaults
+├── song-layers.schema.ts # layer shape, voice/FX checks and resolved defaults
+├── song-layers.test.ts  # layer bounds, identities and compatibility vectors
 ├── load.tool.ts         # JSON file loading and read/parse diagnostics
 ├── load.test.ts         # missing file and malformed JSON cases
 ├── arrange.tool.ts      # repeated-section placement expansion
@@ -63,6 +65,8 @@ These signatures are the exact exported declarations in implementation files.
 | Exported signature | Source | Purpose |
 |---|---|---|
 | `export function validateSong(input: unknown): ResolvedSong` | `song.schema.ts` | Validate raw song input and apply defaults. |
+| `export function checkLayers(value: unknown, path: string, kind: "drums" \| "notes", issues: { path: string; message: string }[]): void` | `song-layers.schema.ts` | Collect layer shape, identity, kind, voice and insert issues. |
+| `export function resolveLayers(track: Track): ResolvedLayer[] \| undefined` | `song-layers.schema.ts` | Fill layer defaults; omit absent or empty layers. |
 | `export async function loadSong(path: string): Promise<ResolvedSong>` | `load.tool.ts` | Read, parse, and validate one song file. |
 | `export function arrange(song: ResolvedSong): Placement[]` | `arrange.tool.ts` | Expand entries and repeats to ordered placements. |
 | `export function buildTimeline(song: ResolvedSong): Timeline` | `timeline.tool.ts` | Produce placements and timed events. |
@@ -232,3 +236,13 @@ consumers in other feature folders use the public barrel.
 ## Built-in sampled instruments and voice policy
 
 `song-daw.schema.ts` accepts `lib:<id>` only for notes tracks. It checks the packaged manifest during validation and returns `E_SCHEMA` with valid IDs for unknown references. Song v1 and legacy resolution fields remain unchanged.
+
+## User instrument validation
+
+`song-daw.schema.ts` and the conditional sampled-instrument checks in `song.schema.ts` accept `user:<id>` using the shared user ID syntax. User instruments may appear on notes or drums tracks and reject synth params. Async render/export resolution enforces that an imported SFZ uses notes; imported kits retain pitched notes-track behavior. Song validation preserves identity and does not read user storage. Existing `validateSong`/`loadSong` return contracts are unchanged.
+
+## Track layers
+
+`Track.layers?: Layer[]` and `ResolvedTrack.layers?: ResolvedLayer[]` add up to eight sources per track. `song-layers.schema.ts` publishes `LAYER_JSON_SCHEMA`, `MAX_LAYERS`, `MAX_LAYER_INSERTS`, `Layer` and `ResolvedLayer` through the song boundary. IDs are track-local, unique and bounded; `main` is reserved. Notes layers permit integer transpose -36..36; drums layers permit `only` atom filters. Gain, pan, velocity, explicit built-in params and at most six inserts are checked with existing voice and FX owners. Sampled sources reject even empty explicit params.
+
+Absent or empty layers stay absent in resolved JSON. Layer defaults are transpose/gain/pan 0, velocity 1, explicit params `{}`, inserts `[]`, and `only:null`. Timeline still produces one event stream per main track. Layer transpose overflow is handled at render by dropping notes and warning, not rejected statically. See `docs/song-format.md` for validated examples.

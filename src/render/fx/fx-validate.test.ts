@@ -49,3 +49,41 @@ test("tapestop bounds resolve on tracks and reject invalid or master placement",
     (error: unknown) => error instanceof Music2Error && error.code === "E_SCHEMA" &&
       (error.details?.["issues"] as { path: string }[]).some((issue) => issue.path === "$.master.fx[0].type"));
 });
+
+function layerIssue(error: unknown, suffix: string): boolean {
+  assert.ok(error instanceof Music2Error);
+  assert.equal(error.code, "E_SCHEMA");
+  assert.ok((error.details?.["issues"] as { path: string }[])
+    .some(({ path }) => path === `$.tracks[0].layers[0].fx${suffix}`), JSON.stringify(error.details));
+  return true;
+}
+
+for (const [name, fx, suffix] of [
+  ["unknown type", [{ type: "no-fx" }], "[0].type"],
+  ["missing type", [{}], "[0].type"],
+  ["unknown param", [{ type: "width", unknown: 1 }], "[0].unknown"],
+  ["enum", [{ type: "filter", mode: "sweep" }], "[0].mode"],
+  ["boolean", [{ type: "delay", pingPong: 1 }], "[0].pingPong"],
+  ["nonfinite", [{ type: "drive", amount: Infinity }], "[0].amount"],
+  ["integer", [{ type: "tapestop", startBar: 1.5 }], "[0].startBar"],
+  ["chain limit", Array.from({ length: 7 }, () => ({ type: "width" })), ""],
+  ["eq low/mid order", [{ type: "eq", lowHz: 500, midHz: 300 }], "[0].lowHz"],
+  ["eq mid/high order", [{ type: "eq", midHz: 4000, highHz: 2000 }], "[0].midHz"],
+  ["delay cut order", [{ type: "delay", lowCutHz: 1000, highCutHz: 1000 }], "[0].lowCutHz"],
+] as const) {
+  test(`layer inserts validate ${name} on raw and direct resolved calls`, () => {
+    const raw = { ...base, tracks: [{ ...base.tracks[0], layers: [{ id: "sub", instrument: "lead", fx }] }] };
+    assert.throws(() => validateSong(raw), (error: unknown) => layerIssue(error, suffix));
+    const song = validateSong({ ...base, tracks: [{ ...base.tracks[0], layers: [{ id: "sub", instrument: "lead" }] }] });
+    Object.assign(song.tracks[0]!.layers![0]!, { fx });
+    assert.throws(() => validateResolvedFx(song), (error: unknown) => layerIssue(error, suffix));
+  });
+}
+
+test("layer inserts accept enum/boolean settings, six inserts and tapestop", () => {
+  const fx = [{ type: "filter", mode: "highpass" }, { type: "delay", pingPong: true },
+    { type: "tapestop" }, { type: "eq" }, { type: "width" }, { type: "drive" }];
+  const song = validateSong({ ...base, tracks: [{ ...base.tracks[0], layers: [{ id: "sub", instrument: "lead", fx }] }] });
+  assert.equal(song.tracks[0]!.layers![0]!.fx.length, 6);
+  assert.doesNotThrow(() => validateResolvedFx(song));
+});

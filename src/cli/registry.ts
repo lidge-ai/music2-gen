@@ -3,6 +3,7 @@ import { version } from "./commands/version.ts";
 import { schema } from "./commands/schema.ts";
 import { validate } from "./commands/validate.ts";
 import { events } from "./commands/events.ts";
+import { balance } from "./commands/balance.ts";
 import { render } from "./commands/render.ts";
 import { doctor } from "./commands/doctor.ts";
 import { analyze } from "./commands/analyze.ts";
@@ -16,6 +17,7 @@ import { exportCommand } from "./commands/export.ts";
 import { importCommand } from "./commands/import.ts";
 import { slice } from "./commands/slice.ts";
 import { instruments } from "./commands/instruments.ts";
+import { library } from "./commands/library.ts";
 
 export interface CommandOption {
   type: "string" | "boolean";
@@ -56,4 +58,4 @@ export function register(spec: CommandSpec): void {
   commands.set(spec.name, spec);
 }
 
-for (const spec of [version, help, schema, validate, events, render, doctor, analyze, recipes, instruments, newCommand, lint, critiqueCommand, skillPath, sfx, exportCommand, importCommand, slice]) register(spec);
+for (const spec of [version, help, schema, validate, events, render, balance, doctor, analyze, recipes, instruments, library, newCommand, lint, critiqueCommand, skillPath, sfx, exportCommand, importCommand, slice]) register(spec);

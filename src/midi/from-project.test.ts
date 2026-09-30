@@ -14,6 +14,17 @@ function project(): ProjectIR {
 }
 const events = (ir: ProjectIR) => projectToSmf(ir).file.tracks[1]!.events;
 
+test("MIDI copies layer flattening warnings without changing main note bytes", () => {
+  const ir = project();
+  const original = projectToSmf(ir);
+  ir.warnings = ["LAYERS_FLATTENED:p:2", "PLUGIN_REF_BASENAME:p:softclip"];
+  const result = projectToSmf(ir);
+  assert.deepEqual(result.warnings, ["LAYERS_FLATTENED:p:2", ...original.warnings]);
+  assert.deepEqual(writeSmf(result.file), writeSmf(original.file));
+  assert.equal(result.notes, original.notes);
+  assert.deepEqual(ir.warnings, ["LAYERS_FLATTENED:p:2", "PLUGIN_REF_BASENAME:p:softclip"]);
+});
+
 test("projection writes placement marker, identity, static CC and exact note ticks", () => {
   const result = projectToSmf(project());
   assert.equal(result.file.format, 1);
@@ -145,4 +156,21 @@ test("repeated section placements retain ordered marker names", () => {
     .map((e) => e.kind === "meta" ? [e.tick, String.fromCharCode(...e.data)] : []),
     [[0, "hook"], [3840, "hook (2)"]]);
   assert.equal(result.file.tracks[0]!.endTick, 7680);
+});
+
+test("user kit metadata preserves mappings and pitched-kit channels without reading manifests", () => {
+  const ir = project();
+  const track = ir.tracks[0] as ProjectNoteTrack;
+  track.instrument = { kind: "user", id: "synthetic" };
+  const options = { userInstruments: { synthetic: "kit" as const }, kitMaps: { p: { bd: 47 } } };
+  assert.throws(() => projectToSmf(ir), { code: "E_CAPABILITY", message: "user instrument synthetic is not imported" });
+  const pitched = projectToSmf(ir, options);
+  assert.equal(pitched.channels.p, 10);
+  assert.deepEqual(pitched.file.tracks[1]!.events.flatMap((event) => event.kind === "noteOn" ? [event.key] : []), [60]);
+  assert.ok(pitched.warnings.includes("MIDI_SOUND_NOT_PORTABLE:p:user:synthetic"));
+  track.type = "drums";
+  track.notes[0] = { ...track.notes[0]!, pitch: null, sample: { name: "bd", index: 0 } };
+  const drums = projectToSmf(ir, options);
+  assert.deepEqual(drums.file.tracks[1]!.events.flatMap((event) => event.kind === "noteOn" ? [event.key] : []), [47]);
+  assert.throws(() => projectToSmf(ir, { userInstruments: { synthetic: "sfz" } }), { code: "E_SCHEMA" });
 });

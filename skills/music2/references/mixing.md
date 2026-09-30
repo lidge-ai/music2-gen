@@ -53,3 +53,17 @@ Summed peaks cluster on the last beats of a phrase, where snare rolls, choir or 
 ## Automation lanes replace static levels
 
 Automation lanes are absolute: while a lane is active its value replaces the track's static `gain` or send; it is not added to it. A track with `"gain": -27` that should dip 8 dB into a build uses points like `-27 → -35 → -27`; writing `0 → -8 → 0` plays it 27 dB above its static level. `music2 lint` reports `generic/automation_gain_jump` when a gain lane rises more than 12 dB above the static gain and `generic/automation_send_jump` when a send lane rises more than 12 dB above a nonzero static send.
+
+## Match levels with music2 balance
+
+Use gated RMS over a representative peak section to match track and layer gains. A `loop: true` song is measured without wrapping its tail onto the first bar and the report carries `BALANCE_LOOP_UNWRAPPED`; rerender and check the loop seam afterwards.
+
+```sh
+bun bin/music2.js balance song.json --section drop --reference kick --target bass=-2 --target bass.mid=-8 --apply --json
+```
+
+Replace these IDs with the song's actual section, reference track and layer IDs. Omit `--apply` to preview measurements and proposed changes. Track `bass=-2` means the summed bass is targeted 2 dB below kick; without a reference a track target is absolute dBFS. Layer `bass.mid=-8` means 8 dB below `bass.main`, regardless of the kick reference. `.main` is a read-only measurement row. Start layer gain offsets at −6 to −12 dB, then measure rather than assuming equal energy from equal gain.
+
+Layers adjust first, then the summed track is measured again. Measurements use the premaster track sum and source taps before shared returns/master processing; they are gated RMS, not LUFS. Read `rmsDb`, `peakDb`, `activeRatio`, `targetDb`, `deltaDb`, `skipped` and `warnings`. Silent sources are skipped; gain automation skips the track edit while its layers can still be adjusted. Default adjustments are capped at 12 dB per pass, so a distant target may need another pass. Applying changes edits gains and reformats the song JSON.
+
+After applying, rerender and analyze with the song, as above. Confirm the finished loudness, bands and peaks because bus returns and master processing can change their balance. See [CLI balance options](../../../docs/cli.md#match-track-and-layer-levels).

@@ -1,6 +1,6 @@
 import { fnv1a32, secondsToTicks } from "../shared/index.ts";
 import { valueAt } from "../automation/index.ts";
-import type { ResolvedSong, Timeline } from "../song/index.ts";
+import type { ResolvedSong, ResolvedTrack, Timeline } from "../song/index.ts";
 import type { VoiceEvent } from "./render.schema.ts";
 import { mergeParams, resolveVoice } from "./voices/registry.tool.ts";
 import { isSampleInstrument } from "./instrument.tool.ts";
@@ -30,21 +30,27 @@ export function selectEvents(song: ResolvedSong, timeline: Timeline, start: numb
   for (let index = 0; index < selected.length; index++) {
     const track = song.tracks[index]!;
     const events = selected[index]!;
-    if (track.mono) {
-      for (let i = 0; i < events.length; i++) {
-        const next = events[i + 1];
-        if (next) events[i]!.stopFrame = Math.min(frames, next.startFrame);
-      }
-    } else if (track.kind === "notes" && !isSampleInstrument(track.instrument)) {
-      const voice = resolveVoice(track, index)!;
-      const params = mergeParams(voice, track.params);
-      const releaseMs = voice.id === "bell" ? 120 : voice.id === "pluck" ? 80 : params["releaseMs"];
-      if (releaseMs !== undefined) {
-        // Voice envelopes reach about -120 dB after twice their release time.
-        const tailFrames = Math.ceil(2 * releaseMs * rate / 1000);
-        for (const event of events) event.stopFrame = Math.min(frames, event.startFrame + event.gateFrames + tailFrames);
-      }
-    }
+    limitStops(events, track, index, frames, rate);
   }
   return selected;
+}
+
+/** Recompute lifetime for this voice, rather than inheriting another source's release cutoff. */
+export function limitStops(events: VoiceEvent[], track: ResolvedTrack, trackIndex: number, frames: number, sampleRate: number): void {
+  for (const event of events) event.stopFrame = frames;
+  if (track.mono) {
+    for (let i = 0; i < events.length; i++) {
+      const next = events[i + 1];
+      if (next) events[i]!.stopFrame = Math.min(frames, next.startFrame);
+    }
+  } else if (track.kind === "notes" && !isSampleInstrument(track.instrument)) {
+    const voice = resolveVoice(track, trackIndex)!;
+    const params = mergeParams(voice, track.params);
+    const releaseMs = voice.id === "bell" ? 120 : voice.id === "pluck" ? 80 : params["releaseMs"];
+    if (releaseMs !== undefined) {
+      // Voice envelopes reach about -120 dB after twice their release time.
+      const tailFrames = Math.ceil(2 * releaseMs * sampleRate / 1000);
+      for (const event of events) event.stopFrame = Math.min(frames, event.startFrame + event.gateFrames + tailFrames);
+    }
+  }
 }

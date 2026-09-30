@@ -33,6 +33,23 @@ For `bass` and `lead`, `wave: 0` is saw, `wave: 1` is square, and `wave: 2` is t
 Explicit `unison` or filter envelope controls select the PolyBLEP path for lead, bass, and pad; lead/bass also select it when `detuneCents` is supplied. Omitted controls retain the original sound. `filterEnvAmount` opens the low-pass cutoff by up to four octaves before decay to its base value.
 For supersaw, `mix` sets the relative level of side oscillators: 0 keeps the center oscillator (or center pair for even counts), and 1 gives equal weight to all oscillators. The sum is normalized by its total weight.
 
+## Which instrument for what
+
+Choose the route by the sound you need, then by what you are willing to ship with the song. Run `bun bin/music2.js instruments --json` for current choices. Render one song at a time.
+
+| Route | Choose it when | Strengths | Limits |
+| --- | --- | --- | --- |
+| Built-in synth voices | You want a synth sound: lead, bass, pad, supersaw, 808, bell, keys, pluck, drums, sfx. Saw-based voices are normal here. | No files, same bytes for the same seed, every parameter range-checked by `validate`. | Sounds are synthesized and do not imitate a specific recording. |
+| Built-in acoustic emulations | You need a file-free sketch of piano, organ, flute, marimba or similar, or an explicitly synthetic strings, brass or choir sound. | Same as the synth voices, with a fixed parameter set per voice. | Not recordings. Strings, brass and choir are saw-based; use the sampled route for acoustic strings and brass. |
+| Sampled library (lib: ids) | An acoustic string ensemble, brass section or grand piano. | Recorded, ships with music2-gen, needs no files next to the song. | Notes tracks only, no `params`. Five ids, each with a MIDI range and licence listed by `instruments --json` (the piano needs attribution). A note outside the range is silent. |
+| User imports (`user:<id>`) | You have local Apple content or another sample folder you may use. | `library scan/find/import/verify` builds and checks an instrument under the music2 home; WAV and AIFF imports need no conversion script. | Local to that home; notes for SFZ imports, drums for kit imports; no voice `params`. Share songs or renders only within the content licence. |
+| Role layers (`layers`) | One part needs punch, body or texture from several sources. | Up to eight extra sources share the parent events, with individual gain, pan, effects and note transpose. Drum `only` restricts atoms. | Layers have the parent kind, no independent patterns, and add energy; keep one low owner and measure relative to `.main`. |
+| SFZ multisample (sfz: paths) | You own or generate a multisampled instrument, or convert one from another library. | Key and velocity ranges, forward loops, tuning, groups, stereo kept. Generated `*sine` and `*silence` regions need no WAV. | Notes tracks only. WAV samples only, SFZ subset, lowercase opcodes. The .sfz must sit in the song directory and its samples in the .sfz directory. |
+| Sample kit (kit: paths) | One-shot samples: your own drum hits, slices from `music2 slice`, or one pitched sample. | Simplest manifest. A drums track plays any name in the manifest; a notes track plays the kit's `note` sample (or first name) pitched from `rootMidi`. | Stereo is folded to mono and pitch comes from resampling, so higher notes are shorter. Names outside the manifest are errors. |
+| The sfx voice and the sfx command | Risers, impacts and downlifters. The voice sits on the song grid; `music2 sfx` writes a standalone one-shot WAV plus a JSON sidecar for video or games. | Synthesized, no files, sweep and pitch parameters. | The voice is a drums track and each atom fills its whole slot. The command makes one file of 0.05–30 s. |
+| External plugins | A specific third-party effect that no built-in insert can imitate. | Up to four inserts per track, run in a separate host process. | Opt-in only, needs a configured host, and adds nothing to MIDI or IR export. Keep a no-plugin version when portability matters. |
+| DAW export | You want to finish mixing, arranging or replacing sounds in Logic or another DAW. | MIDI carries editable notes; stems carry the exact sound; ALS and DAWproject bundle both. | Sound and processing do not travel with notes. Nothing here proves a DAW opened the file. |
+
 ## Sampled library
 
 Run `music2 instruments [--json]` for the current voice parameters and bundled instrument list. A notes track may use `lib:<id>`; the SFZ and samples ship with music2-gen and resolve independently of the song directory. MIDI, ALS and DAWproject export editable notes but cannot embed the instrument sound; use rendered stems when sound portability matters. These instruments accept no voice `params`.
@@ -209,7 +226,7 @@ Synthesized `strings` and `brass` voices (saw-based; only when a synth-strings o
 
 ### User-owned sample kit
 
-`kit:<relative-path>` names a `kit.json` relative to the **song file**. For example, if the song and `samples/kit.json` share a directory, use `"instrument": "kit:samples/kit.json"`. The path may also name the directory `kit:samples`; music2 appends `kit.json`. This is a sample instrument, separate from the nine built-in voice IDs. A drum kit accepts the names present in its manifest; a note kit plays its `note` sample (or first sample key) pitched from `rootMidi`.
+`kit:<relative-path>` names a `kit.json` relative to the **song file**. For example, if the song and `samples/kit.json` share a directory, use `"instrument": "kit:samples/kit.json"`. The path may also name the directory `kit:samples`; music2 appends `kit.json`. This is a sample instrument, separate from the built-in voice IDs. A drum kit accepts the names present in its manifest; a note kit plays its `note` sample (or first sample key) pitched from `rootMidi`.
 
 Manifest `samples` must be a nonempty object of names mapped to nonempty arrays of WAV paths relative to `kit.json`:
 
@@ -223,3 +240,11 @@ Manifest `samples` must be a nonempty object of names mapped to nonempty arrays 
 ```
 
 `gainDb` defaults to 0 and accepts -60 to +12; `rootMidi` defaults to 60 and accepts 0–127. Optional `"startMs": { "note": 25 }` trims the first 25 ms of a named sample; use it when a loop-sliced sample has a slow attack and sounds late against the grid (measure the attack, then trim to just before it). A note kit fades the last 5 ms before a note stops, so a sample cut by the next note does not click. The trim applies to rendering only; DAW exports map kit names to MIDI pitches. `bd:3` wraps across the number of `bd` variants. Input files may be mono or stereo PCM 16/24/32-bit or float32 WAV at 8–192 kHz; music2 folds stereo to mono and resamples when needed. Manifest sample paths must stay inside the kit directory, including after symlink resolution. Custom `kit:` samples are user supplied; the bundled `lib:` samples are listed above.
+
+## Layers on one track
+
+A track's `layers` reuse its events, gate and mono/glide behavior. Each layer requires a unique `id` (not `main`) and an `instrument` compatible with the parent `kind`. Up to eight layers can set `gain` (−60 to +12 dB, relative to the main source), `pan` (−1 to +1), `velocity` (0–2 multiplier), `params` and up to six `fx` inserts. Notes layers may set `transpose` (−36 to +36 semitones); drums layers may set `only` to atom names such as `["bd"]`. Start at −6 to −12 dB, then use [layering](layering.md#stack-layers-inside-a-role) and [balance](mixing.md#match-levels-with-music2-balance) to measure. Track gain controls the sum; layer gain controls that source before the sum.
+
+## Logic and GarageBand libraries
+
+Logic Pro and GarageBand install recorded instruments and drum kits on the machine. Use `music2 library` to discover and import usable folders, then reference `user:<id>` from the same music2 home. [Logic and GarageBand libraries](logic-library.md) covers commands, supported files and pitch verification. Check the installed licence before using or distributing that content; never commit or share the imported sample folders.

@@ -1,3 +1,5 @@
+import type { UserInstrumentKinds } from "../../sampler/index.ts";
+import { validateExportUserInstruments } from "../user-instruments.tool.ts";
 import type { ProjectIR } from "../../project/index.ts";
 import { Music2Error } from "../../shared/index.ts";
 import type { ExportPlan } from "../export.schema.ts";
@@ -53,11 +55,12 @@ function validateWav(media: DawMedia, project: ProjectIR): void {
 }
 
 export function planDawproject(project: ProjectIR, media: readonly DawMedia[], regions: readonly DawClipRegion[],
-  options: { content: DawContent; outputName: string;
+  options: { content: DawContent; outputName: string; userInstruments?: UserInstrumentKinds;
     kitMaps?: Readonly<Record<string, Readonly<Record<string, number>>>> }): DawprojectPlan {
   if (!["midi", "audio", "both"].includes(options.content) || !options.outputName.endsWith(".dawproject") ||
     options.outputName.includes("/") || options.outputName.includes("\\"))
     throw new Music2Error("E_INPUT", "invalid DAWproject content or output name");
+  validateExportUserInstruments(project, options.userInstruments);
   const paths = new Set<string>(); const owners = new Set<string>();
   for (const entry of media) {
     if (!/^audio\/[a-z0-9][a-z0-9_-]*\.wav$/.test(entry.path) || paths.has(entry.path)) invalid("invalid or duplicate media path");
@@ -82,7 +85,8 @@ export function planDawproject(project: ProjectIR, media: readonly DawMedia[], r
     options.content === "audio" ? media.filter((entry) => entry.owner.kind !== "source") : [...media];
   if (needed.length !== media.length) invalid("media for unselected content");
   const built = buildProjectXml(project, { content: options.content, media, regions,
-    ...(options.kitMaps ? { kitMaps: options.kitMaps } : {}) });
+    ...(options.kitMaps ? { kitMaps: options.kitMaps } : {}),
+    ...(options.userInstruments ? { userInstruments: options.userInstruments } : {}) });
   const referenced = new Set([...Buffer.from(built.bytes).toString("utf8").matchAll(/<File path="([^"]+)"\s*\/>/g)]
     .map((match) => match[1]!));
   for (const path of referenced) if (!paths.has(path)) invalid(`missing referenced media ${path}`);

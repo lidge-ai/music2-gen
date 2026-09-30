@@ -15,6 +15,10 @@ src/audio-io/
 ├── kweight.test.ts   # mono/stereo power, blocks, silence, invalid PCM
 ├── loudness.tool.ts   # K-weighting, gated loudness, 4x true-peak estimate
 ├── loudness.test.ts   # loudness, peaks, silence, and invalid input
+├── aiff.tool.ts       # PCM AIFF/AIFC decoder and metadata
+├── aiff.test.ts       # generated format and malformed-input vectors
+├── wav-meta.tool.ts   # shared smpl pitch and loop metadata reader
+├── wav-meta.test.ts   # generated metadata vectors
 ├── wav.tool.ts        # RIFF/WAVE reader and PCM writer
 └── wav.test.ts        # format, dither, malformed-file, and empty-data cases
 ```
@@ -38,7 +42,7 @@ mix tracks, or invoke ffmpeg.
 ## Key Function Signatures
 
 These are the exact exported signatures in `src/audio-io/*.tool.ts`.
-`src/audio-io/index.ts` re-exports nine public functions, the three types
+`src/audio-io/index.ts` re-exports the public functions below plus decodeAiff and readWavSmpl, the three types
 from `buffer.schema.ts`, and `LoudnessMetrics` from `loudness.schema.ts`.
 The two validators are exported from
 `buffer.tool.ts` for local use but are not re-exported by the barrel.
@@ -186,3 +190,9 @@ imports before changing the shared PCM or loudness contract.
 - [ ] Check render imports before changing `StereoBuffer` or WAV behavior.
 - [ ] Compare `devlog/_fin/260928_music2_roadmap/020_render_engine.md` when
   the implementation or documented contract changes.
+
+## Library import audio boundaries
+
+`aiff.tool.ts` exports `decodeAiff(bytes: Buffer): {sampleRate; channels: Float32Array[]; bits; baseNote: number | null; loop: {start,end} | null}` through `index.ts`. It decodes AIFF and AIFC NONE/sowt 8/16/24/32-bit PCM, the extended-80 rate, SSND offsets and INST/MARK loop metadata. Truncation and unsupported compression raise `E_INPUT`. Its adjacent tests generate bytes at runtime.
+
+`wav-meta.tool.ts` exports `readWavSmpl(bytes: Buffer): {unityNote: number | null; pitchFraction: number; loop: {start,end} | null; warnings: string[]}` through `index.ts`. Sampler shares this reader without changing playback behavior. Library import measures pitch from audio, rewrites WAV without smpl, and stores loops in SFZ with tune=0. These additions keep binary format parsing below library and sampler.

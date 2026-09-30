@@ -129,8 +129,9 @@ const matchingPlatform = hostFixture !== null && process.platform === hostFixtur
 // cinematic-cue and pop-transition moved from synthesized strings/brass to bundled samples; their entries
 // were recaptured on darwin/Node 24 with the same procedure as this replay. minimal's lint digest was recaptured
 // after clipping_risk calibration (threshold 2, weighted chords and attacks; its 1.6 warning is gone), and
-// cinematic-cue's master and fx stem after revcymbal gained its 5 ms end taper. All other
-// entries are pre-wp2 bytes.
+// cinematic-cue's master and fx stem after revcymbal gained its 5 ms end taper. Every lint digest was recaptured
+// when lint JSON gained the `infos` count and the `generic/thin_peak_layers` info rule (layer unit wp3, wp5); render, stem, validate and events digests were not
+// touched. All other entries are pre-wp2 bytes.
 for (const [song, expected] of Object.entries(replay.examples)) {
   test(`legacy bytes and JSON: ${song}`, {
     skip: !matchingPlatform && `no legacy baseline replayable for ${process.platform}/${process.versions.bun ?? process.version}; D10 unverified on this host`,

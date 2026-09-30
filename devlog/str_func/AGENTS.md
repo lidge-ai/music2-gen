@@ -11,6 +11,7 @@ The index table below is kept in sync with `src/`.
 | pattern | pattern.md | active |
 | song | song.md | active |
 | project | project.md | active |
+| library | library.md | active |
 | sampler | sampler.md | active |
 | automation | automation.md | active |
 | plugin-host | plugin-host.md | active |
@@ -21,6 +22,7 @@ The index table below is kept in sync with `src/`.
 | render | render.md | active |
 | probe | probe.md | active |
 | analyze | analyze.md | active |
+| balance | balance.md | active |
 | recipes | recipes.md | active |
 | usecases | usecases.md | active |
 | critic | critic.md | active |

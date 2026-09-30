@@ -73,3 +73,17 @@ test("808 transitions reset between non-adjacent full-drum runs", () => {
   assert.equal(transitions(g, contiguousRuns(g.full)), 0);
   assert.equal(transitions(g, [g.full]), 1);
 });
+
+test("user kits have the same drum geometry as kit references including muted named tracks", () => {
+  const geometry = (instrument: string) => {
+    const song = validateSong({ version: 1, bpm: 120, tracks: [
+      { id: "kick", kind: "drums", instrument, pattern: "bd hh" },
+      { id: "snare", kind: "drums", instrument, pattern: "sd cp" }],
+      sections: [{ id: "intro", role: "intro", bars: 1, patterns: { kick: null } },
+        { id: "hook", role: "hook", bars: 1 }], arrangement: [{ section: "intro" }, { section: "hook" }] });
+    const g = createGeometry(song, buildTimeline(song));
+    return { full: g.full, hooks: g.hooks, grooves: g.grooves,
+      roles: g.timeline.events.map((event) => [isKick(g, event), isBackbeat(g, event), isHat(g, event)]) };
+  };
+  assert.deepEqual(geometry("user:synthetic"), geometry("kit:synthetic"));
+});

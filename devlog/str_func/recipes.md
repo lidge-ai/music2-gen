@@ -24,6 +24,8 @@ src/recipes/
 ├── lint-layering-harmony.test.ts # harmony boundary vectors
 ├── lint-layering-rhythm.tool.ts # house/techno kick-bass duck warning
 ├── lint-layering-rhythm.test.ts # rhythm boundary vectors
+├── lint-layers.tool.ts         # informational peak-role stack suggestions
+├── lint-layers.test.ts         # peak audibility, source roles, and strict CLI vectors
 ├── lint-rules.tool.ts          # hip-hop and drill genre rules
 ├── lint-rules.test.ts          # genre rule vectors
 ├── lint-rules-dance.tool.ts    # house and techno rules
@@ -93,6 +95,7 @@ re-exports public card, starter, and lint functions and types.
 | `export function buildSongArrangement(song: Song, blocks: RecipeArrangementBlock[]): Song` | `new.tool.ts` | Derive song sections and arrangement from one block list. |
 | `export function transposePattern(pattern: string, delta: number): string` | `new.tool.ts` | Shift note atoms; intentionally absent from barrel. |
 | `export function lintSong(input: unknown, options: LintOptions = {}): LintReport` | `lint.tool.ts` | Produce sorted findings. |
+| `export function summarizeLint(genre: string \| null, barsChecked: number, findings: LintResult[]): LintReport` | `lint.tool.ts` | Sort and count all severities without mutating findings; internal tool export, absent from barrel. |
 | `export function createGeometry(song: ResolvedSong, timeline: Timeline, genre: string \| null = song.genre): LintGeometry` | `lint-geometry.tool.ts` | Address events by bar and role. |
 | `export function genericRules(g: LintGeometry, unknownGenre: boolean): LintResult[]` | `lint-generic.tool.ts` | Apply shared warnings. |
 | `export function genreRules(g: LintGeometry, genre: RecipeId, generic: LintResult[]): LintResult[]` | `lint-rules.tool.ts` | Dispatch genre formulas. |
@@ -100,13 +103,19 @@ re-exports public card, starter, and lint functions and types.
 | `export function lowLayeringRules(g: LintGeometry): LintResult[]` | `lint-layering-low.tool.ts` | Apply L1, L3, and L6 from expanded notes. |
 | `export function harmonyLayeringRules(g: LintGeometry): LintResult[]` | `lint-layering-harmony.tool.ts` | Apply L2 and L5 in placements. |
 | `export function rhythmLayeringRules(g: LintGeometry): LintResult[]` | `lint-layering-rhythm.tool.ts` | Apply L4 for club genres. |
+| `export function thinPeakLayerRules(g: LintGeometry): LintResult[]` | `lint-layers.tool.ts` | Suggest stacks for audible peak roles; internal tool export, absent from barrel. |
 | `export function renderGenreDocs(cards)` (JSDoc: `readonly RecipeCard[]` → `string`) | `scripts/gen-genre-docs.mjs` | Render the generated genre reference. |
 | `export async function main(argv)` (JSDoc: `string[]` → `Promise<number>`) | `scripts/gen-genre-docs.mjs` | Generate or check the reference file. |
 
 `NewSongOptions` requires `genre`; `arrangement`, `bpm`, `key`, `seed`, and `title` are
 optional. `LintOptions` contains optional `genre`. `LintResult` has `id`,
 `severity`, `path`, `observed`, `expected`, and `fix`. `LintReport` has
-`genre`, `barsChecked`, sorted `results`, and error/warning counts.
+`genre`, `barsChecked`, sorted `results`, and `errors`, `warnings`, `infos` counts.
+`severity` accepts `"error"`, `"warning"` and `"info"`; results sort in that order,
+then by ID and path. Parse-only reports also include `infos:0`. CLI
+`lintReportResult(report, strict)` prints each info with the `info` prefix;
+strict mode fails only on errors or warnings. Track sound layers keep the main
+instrument role and do not add arrangement density or extra role tracks.
 
 ### Starter construction
 
@@ -150,6 +159,7 @@ and generic findings are warnings unless noted otherwise.
 | Rule ID | Formula or condition |
 |---|---|
 | `generic/pattern_parse` | Error: mini-notation fails parsing at a track or section pattern offset while the other schema issues are those pattern failures. |
+| `generic/thin_peak_layers` | Info: no track layers on an audible kick, backbeat, bass/808, or first audible melody candidate in arranged hook/groove placements; positive-velocity events determine audibility, without requiring full rhythm bars. |
 | `generic/empty_track` | At least one onset must exist per track. |
 | `generic/unknown_genre` | Declared genre must match a recipe ID when no override is supplied. |
 | `generic/out_of_key` | Every pitched onset must fit the declared major/minor scale. |
@@ -259,3 +269,22 @@ hand.
 ## Built-in sampled instruments and voice policy
 
 Genre card palettes and starter tracks avoid saw-based voice configurations. Bass cards explicitly use triangle `wave:2`; techno melody uses `pluck`. `lint-layering-harmony.tool.ts` uses manifest roles so bundled piano and spiccato strings count as focal and sustained strings as a bed.
+
+## User sample role classification
+
+`lint-geometry.tool.ts`'s `kitRoleSample` accepts `user:` on drum tracks; `lint-roles.tool.ts`'s sampled melody classification accepts `user:` on notes tracks. Static lint applies the existing sampled kit/melody role rules without opening imported manifests. Equivalent imported and song-relative kit sources retain the same lint findings. These responsibility changes add no public exports or filesystem dependency.
+
+## Peak track layer suggestions
+
+`lint-layers.tool.ts` adds `generic/thin_peak_layers` as an info in `lintSong`.
+It checks arranged hook/groove placements using `eventsAt` and velocity > 0,
+without requiring full rhythm bars. An unlayered audible kick, snare/clap,
+bass/808, or the first audible `melodyTrackIds` candidate gets one finding at
+`tracks[i]`. `observed` lists unique audible peak section IDs in arrangement
+order (`no layers in <ids>`); `expected` is `>=1 layer`, and `fix` points at
+the track's `layers`. Empty layers count as absent; unarranged peaks and muted
+events do not qualify. Main instruments retain role ownership, including
+`kit:` and `user:` drums and sampled notes. No public export was added.
+Infos alone pass `lint --strict`. `examples/layered-drop.song.json` demonstrates
+built-in kick and snare/clap stacks, sub/mid/top bass with a high-pass mid
+insert and kick ducking, an octave lead double, and pad support.

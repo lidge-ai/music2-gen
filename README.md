@@ -21,6 +21,10 @@ Open `/tmp/music2-analysis/analysis.md` or `analysis.json` for a text-only agent
 
 The [composition skill](skills/music2/SKILL.md) gives agents a full edit-and-check workflow. `bun bin/music2.js skill path` prints the installed skill directory when the skill is shipped with this copy.
 
+- Import local WAV/AIFF instruments and drum kits with `library scan/find/import/verify`, then use `user:<id>`; see the [Logic and GarageBand guide](skills/music2/references/logic-library.md) for pitch and licence checks.
+- Stack sources inside each role with `layers`, individual gains and inserts, note transpose, or a drum `only` filter; see the [layering guide](skills/music2/references/layering.md#stack-layers-inside-a-role).
+- Match track and layer levels with `balance` (loop songs are measured without the tail wrap), preview or apply gain changes, then rerender and analyze; see the [mixing guide](skills/music2/references/mixing.md#match-levels-with-music2-balance).
+
 ## Commands
 
 Use `bun bin/music2.js <command>`; add `--json` to get one machine-readable object.
@@ -31,6 +35,8 @@ Use `bun bin/music2.js <command>`; add `--json` to get one machine-readable obje
 | `recipes [id]`, `new --genre id` | Inspect a genre card or make an editable starter song; choose `--arrangement id` or `--use preset` for a structure or destination preset. |
 | `validate song.json`, `events song.json`, `lint song.json` | Check schema and timing, inspect timed events, or apply genre/static rules. |
 | `render song.json`, `analyze audio.wav` | Produce WAV and optional encoded copies; measure audio and write reports, an overview, and PNG views. |
+| `library scan/find/import/verify/list` | Discover local samples, import them as `user:` instruments, and check pitched imports. |
+| `balance song.json` | Measure tracks and layers in a section or bar window and optionally apply target gains. |
 | `doctor`, `critique audio.wav` | Check ffmpeg; optionally request an audio-model review. |
 | `sfx --preset name [-o out.wav]` | Generate a standalone sound effect (transition or game/UI) with a reproducible JSON sidecar. |
 | `skill path` | Print the packaged composition skill directory. |

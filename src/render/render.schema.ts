@@ -5,7 +5,10 @@ import type { DecodeBudget } from "../sampler/index.ts";
 export interface ExternalProcessor { readonly warnings?: readonly string[]; process(trackId: string, plugins: readonly NonNullable<ResolvedTrack["plugins"]>[number][], audio: StereoBuffer,
   context: { bpm: number; seed: number; startSeconds: number }): Promise<StereoBuffer> }
 export interface RenderOptions { bars?: { start: number; end: number }; stems?: boolean; returns?: boolean; premaster?: boolean; mastering?: "peak" | "loudnorm" | "lufs";
-  external?: ExternalProcessor; decodeBudget?: DecodeBudget }
+  external?: ExternalProcessor; decodeBudget?: DecodeBudget; layerTaps?: (tap: LayerTap) => void }
+/** Source capture before track processing, in render-window coordinates and before loop folding. */
+export interface LayerTap { trackId: string; source: "main" | "layer"; layerId?: string; audio: StereoBuffer }
+// RenderResult.warnings includes LAYER_NOTES_DROPPED:<track>.<layer>:<count> for out-of-range transposes.
 export interface RenderStem { trackId: string; audio: StereoBuffer }
 export interface RenderResult { warnings?: readonly string[]; deterministic?: false; audio: StereoBuffer; stems: RenderStem[]; returns?: { reverb: StereoBuffer | null; delay: StereoBuffer | null }; premaster?: StereoBuffer; bars: number; durationSeconds: number; peakDbfs: number; truePeakDbtp: number; ceilingDb: number; events: number; loop: { startSample: 0; endSample: number } | null }
 export interface VoiceEvent { midi: number | null; sample: { name: string; index: number } | null; velocity: number; startFrame: number; gateFrames: number; stopFrame: number; eventIndex: number; seed: number; params?: Readonly<Record<string, number>> }
