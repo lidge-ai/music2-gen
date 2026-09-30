@@ -67,9 +67,49 @@ export function mergeParams(spec: VoiceSpec, params: Readonly<Record<string, num
   return merged;
 }
 
+function checkParams(spec: VoiceSpec, params: Readonly<Record<string, unknown>>, basePath: string, issues: Issue[]): void {
+  for (const [name, value] of Object.entries(params)) {
+    const path = `${basePath}.params.${name}`;
+    const rule = Object.hasOwn(spec.params, name) ? spec.params[name] : undefined;
+    if (!rule) issues.push({ path, message: "unknown parameter" });
+    else if (typeof value !== "number" || !Number.isFinite(value)) issues.push({ path, message: "must be finite" });
+    else if (value < rule.min || value > rule.max) {
+      issues.push({ path, message: `must be in [${rule.min},${rule.max}]` });
+    } else if (rule.integer && !Number.isInteger(value)) issues.push({ path, message: "must be an integer" });
+    // Vibraphone tremolo is off at 0 or a musical 2..7 Hz; slower rates read as a volume drift.
+    else if (spec.id === "vibraphone" && name === "tremoloHz" && value > 0 && value < 2) {
+      issues.push({ path, message: "must be 0 (off) or in [2,7]" });
+    }
+  }
+}
+
+/** Collect layer voice errors without changing the main-track validation contract. */
+export function checkLayerVoice(instrument: string, kind: "drums" | "notes",
+  params: Readonly<Record<string, unknown>>, path: string, issues: Issue[]): void {
+  if (isSampleInstrument(instrument)) {
+    if ((instrument.startsWith("sfz:") || instrument.startsWith("lib:")) && kind !== "notes")
+      issues.push({ path: `${path}.instrument`, message: "sampled instrument requires notes track" });
+    if (instrument.slice(instrument.indexOf(":") + 1).length === 0)
+      issues.push({ path: `${path}.instrument`, message: "instrument reference must not be empty" });
+    for (const name of Object.keys(params))
+      issues.push({ path: `${path}.params.${name}`, message: "sampled layers do not support params" });
+    return;
+  }
+  const spec = voiceFor(instrument);
+  if (!spec) {
+    issues.push({ path: `${path}.instrument`, message: `unknown instrument ${instrument}` });
+    return;
+  }
+  if (kind !== spec.kind)
+    issues.push({ path: `${path}.instrument`, message: `instrument ${spec.id} requires ${spec.kind} track` });
+  checkParams(spec, params, path, issues);
+}
+
 export function validateVoiceParams(song: ResolvedSong): void {
   const issues: Issue[] = [];
   song.tracks.forEach((track, index) => {
+    track.layers?.forEach((layer, layerIndex) =>
+      checkLayerVoice(layer.instrument, track.kind, layer.params, `$.tracks[${index}].layers[${layerIndex}]`, issues));
     if (isSampleInstrument(track.instrument)) {
       if ((track.instrument.startsWith("sfz:") || track.instrument.startsWith("lib:")) && track.kind !== "notes") issues.push({ path: `tracks[${index}].kind`, message: "sampled instrument requires notes track" });
       if (track.instrument.startsWith("sfz:") || track.instrument.startsWith("lib:") || track.instrument.startsWith("user:")) for (const name of Object.keys(track.params)) issues.push({ path: `tracks[${index}].params.${name}`, message: "unknown parameter" });
@@ -86,19 +126,7 @@ export function validateVoiceParams(song: ResolvedSong): void {
     if ((spec.id === "bass" || spec.id === "808") && !track.mono) {
       issues.push({ path: `tracks[${index}].mono`, message: `instrument ${spec.id} requires mono:true` });
     }
-    for (const [name, value] of Object.entries(track.params)) {
-      const path = `tracks[${index}].params.${name}`;
-      const rule = Object.hasOwn(spec.params, name) ? spec.params[name] : undefined;
-      if (!rule) issues.push({ path, message: "unknown parameter" });
-      else if (!Number.isFinite(value)) issues.push({ path, message: "must be finite" });
-      else if (value < rule.min || value > rule.max) {
-        issues.push({ path, message: `must be in [${rule.min},${rule.max}]` });
-      } else if (rule.integer && !Number.isInteger(value)) issues.push({ path, message: "must be an integer" });
-      // Vibraphone tremolo is off at 0 or a musical 2..7 Hz; slower rates read as a volume drift.
-      else if (spec.id === "vibraphone" && name === "tremoloHz" && value > 0 && value < 2) {
-        issues.push({ path, message: "must be 0 (off) or in [2,7]" });
-      }
-    }
+    checkParams(spec, track.params, `tracks[${index}]`, issues);
   });
   if (issues.length) throw new Music2Error("E_SCHEMA", `song has ${issues.length} voice issue(s)`, {
     details: { issues },

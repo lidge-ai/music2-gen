@@ -207,3 +207,37 @@ void test("user instruments bypass voices for both kinds and reject params and p
     });
   }
 });
+
+void test("layer params use the layer voice rules on direct resolved calls", () => {
+  const song = validateSong({ version: 1, bpm: 120,
+    tracks: [{ id: "lead", kind: "notes", instrument: "lead", params: { wave: 2 }, layers: [
+      { id: "pad", instrument: "pad", params: { cutoffHz: 12000 } },
+      { id: "bell", instrument: "bell", params: { ratio: 3 } },
+    ] }], sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] });
+  assert.doesNotThrow(() => validateVoiceParams(song));
+  song.tracks[0]!.layers![0]!.params["cutoffHz"] = 12001;
+  song.tracks[0]!.layers![1]!.params["wave"] = 1;
+  assert.throws(() => validateVoiceParams(song), (error: unknown) => {
+    assert.deepEqual(issuePaths(error), ["$.tracks[0].layers[0].params.cutoffHz", "$.tracks[0].layers[1].params.wave"]);
+    return true;
+  });
+});
+
+void test("sampled main tracks still validate their built-in layers and sampled layer params", () => {
+  const song = validateSong({ version: 1, bpm: 120,
+    tracks: [{ id: "sample", kind: "notes", instrument: "user:sample", layers: [
+      { id: "voice", instrument: "lead" }, { id: "kit", instrument: "kit:kit" },
+    ] }], sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] });
+  song.tracks[0]!.layers![0]!.params["wave"] = 0.5;
+  song.tracks[0]!.layers![1]!.params["wave"] = 0;
+  assert.throws(() => validateVoiceParams(song), (error: unknown) => {
+    assert.deepEqual(issuePaths(error), ["$.tracks[0].layers[0].params.wave", "$.tracks[0].layers[1].params.wave"]);
+    return true;
+  });
+  song.tracks[0]!.layers![0]!.instrument = "drums";
+  song.tracks[0]!.layers![0]!.params = {};
+  song.tracks[0]!.layers![1]!.params = {};
+  assert.throws(() => validateVoiceParams(song), (error: unknown) => {
+    assert.deepEqual(issuePaths(error), ["$.tracks[0].layers[0].instrument"]); return true;
+  });
+});

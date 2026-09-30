@@ -11,3 +11,5 @@ export type { ResolvedInsert } from "../render/fx/fx.schema.ts";
 export { appendListEvents } from "./timeline-notes.tool.ts";
 export { loadSong } from "./load.tool.ts";
 export { jsonErrorLocation, jsonErrorOffset } from "./json-location.tool.ts";
+export { checkLayers, resolveLayers, LAYER_JSON_SCHEMA, MAX_LAYERS, MAX_LAYER_INSERTS } from "./song-layers.schema.ts";
+export type { Layer, ResolvedLayer } from "./song-layers.schema.ts";

@@ -5,7 +5,8 @@ import { buildTimeline } from "../song/index.ts";
 import type { ResolvedSong } from "../song/index.ts";
 import { mixTracks } from "./mixer.tool.ts";
 import type { RenderOptions, RenderResult } from "./render.schema.ts";
-import { createDecodeBudget } from "../sampler/index.ts";
+import { createDecodeBudget, readUserManifest } from "../sampler/index.ts";
+import { loadKitMidiMap } from "./kit.tool.ts";
 import { declaredSampleNames, validateDawVoiceLanes, validateVoiceParams } from "./voices/registry.tool.ts";
 
 function visitAtoms(node: Node, visit: (raw: string) => void): void {
@@ -27,21 +28,48 @@ function checkSample(name: string, names: readonly string[], path: string): void
   });
 }
 
-function validateDeclaredSamples(song: ResolvedSong): void {
-  song.tracks.forEach((track, trackIndex) => {
-    const names = declaredSampleNames(track.instrument);
-    if (!names) return;
-    const validatePattern = (pattern: string | null, path: string): void => {
-      if (pattern === null) return;
-      visitAtoms(parseMini(pattern), (raw) => checkSample(parseSampleRef(raw).name, names, path));
-    };
-    validatePattern(track.pattern, `tracks[${trackIndex}].pattern`);
-    song.sections.forEach((section, sectionIndex) => {
-      if (Object.hasOwn(section.patterns, track.id)) {
-        validatePattern(section.patterns[track.id] ?? null, `sections[${sectionIndex}].patterns.${track.id}`);
-      }
+function validatePatterns(song: ResolvedSong, trackIndex: number, names: readonly string[],
+  only: readonly string[] | null = null, layerPath?: string): void {
+  const track = song.tracks[trackIndex]!;
+  const validatePattern = (pattern: string | null, path: string): void => {
+    if (pattern === null) return;
+    visitAtoms(parseMini(pattern), (raw) => {
+      const name = parseSampleRef(raw).name;
+      if (only === null || only.includes(name)) checkSample(name, names, layerPath ?? path);
     });
+  };
+  if (layerPath) track.notes?.forEach((note) => {
+    if (note.sample && (only === null || only.includes(note.sample.name)))
+      checkSample(note.sample.name, names, layerPath);
   });
+  validatePattern(track.pattern, `tracks[${trackIndex}].pattern`);
+  song.sections.forEach((section, sectionIndex) => {
+    if (Object.hasOwn(section.patterns, track.id))
+      validatePattern(section.patterns[track.id] ?? null, `sections[${sectionIndex}].patterns.${track.id}`);
+  });
+}
+
+async function validateDeclaredSamples(song: ResolvedSong, songPath: string): Promise<void> {
+  for (const [trackIndex, track] of song.tracks.entries()) {
+    const mainNames = declaredSampleNames(track.instrument);
+    if (mainNames) validatePatterns(song, trackIndex, mainNames);
+    if (track.kind !== "drums") continue;
+    for (const [layerIndex, layer] of (track.layers ?? []).entries()) {
+      const path = `$.tracks[${trackIndex}].layers[${layerIndex}]`;
+      let names = declaredSampleNames(layer.instrument);
+      if (layer.instrument.startsWith("kit:")) names = (await loadKitMidiMap(songPath, layer.instrument)).names;
+      if (layer.instrument.startsWith("user:")) {
+        const { root, manifest } = await readUserManifest(layer.instrument.slice(5));
+        if (manifest.kind !== "kit") throw new Music2Error("E_SCHEMA", "user SFZ requires notes layer", {
+          details: { issues: [{ path: `${path}.instrument`, message: "user SFZ requires notes layer" }] },
+        });
+        names = (await loadKitMidiMap(songPath, layer.instrument, root)).names;
+      }
+      if (!names) continue;
+      layer.only?.forEach((name, index) => checkSample(name, names, `${path}.only[${index}]`));
+      validatePatterns(song, trackIndex, names, layer.only, `${path}.instrument`);
+    }
+  }
 }
 
 /** Render a validated, resolved song to deterministic stereo PCM. */
@@ -51,7 +79,7 @@ export async function renderSong(song: ResolvedSong, songPath: string,
     throw new Music2Error("E_CAPABILITY", "external plugin audio requires --allow-plugins and --plugin-host or MUSIC2_PLUGIN_HOST");
   validateVoiceParams(song);
   validateDawVoiceLanes(song);
-  validateDeclaredSamples(song);
+  await validateDeclaredSamples(song, songPath);
   const timeline = buildTimeline(song);
   for (const event of timeline.events) {
     const track = song.tracks[event.trackIndex]!;
