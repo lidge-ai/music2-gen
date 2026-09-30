@@ -3,7 +3,7 @@
 import { mkdirSync, readdirSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createStereo, readWav, writeWav } from "../src/audio-io/index.ts";
 import { discoverFfmpeg, encodeAudio } from "../src/probe/index.ts";
@@ -70,6 +70,36 @@ function filesIn(root, subdir, suffix, recursive) {
   }
 }
 
+/** Hard limit for the whole bun test run; per-test limits cannot fire while a test blocks in a sync call. */
+const RUN_LIMIT_MS = 30 * 60 * 1000;
+
+/**
+ * Stream bun test output live and finish when the process exits. Waiting for pipe EOF (spawnSync) can hang
+ * forever when a test leaves a grandchild that inherited the pipes.
+ */
+function runTests(root, env, files) {
+  return new Promise((resolvePromise, reject) => {
+    const child = spawn(process.execPath, ["test", "--parallel=4", "--timeout=600000", ...files],
+      { cwd: root, env, stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "", stderr = "";
+    child.stdout.setEncoding("utf8").on("data", (chunk) => { stdout += chunk; process.stdout.write(chunk); });
+    child.stderr.setEncoding("utf8").on("data", (chunk) => { stderr += chunk; process.stderr.write(chunk); });
+    const limit = setTimeout(() => {
+      console.error(`music2 test: bun test exceeded ${RUN_LIMIT_MS / 60000} minutes; killing it`);
+      child.kill("SIGKILL");
+    }, RUN_LIMIT_MS);
+    child.on("error", (error) => { clearTimeout(limit); reject(error); });
+    child.on("exit", (code, signal) => {
+      clearTimeout(limit);
+      // Give the pipes a moment to drain, then stop waiting for any process that still holds them.
+      setTimeout(() => {
+        child.stdout.destroy(); child.stderr.destroy();
+        resolvePromise({ status: signal ? null : code, stdout, stderr });
+      }, 1000);
+    });
+  });
+}
+
 try {
   const { root, unit, e2e } = options(process.argv.slice(2));
   const files = [
@@ -83,18 +113,10 @@ try {
     const home = mkdtempSync(join(tmpdir(), "music2-test-"));
     const env = { ...process.env, MUSIC2_HOME: home };
     await checkFfmpeg(home, env);
-    const child = spawnSync(process.execPath, ["test", "--parallel=4", "--timeout=600000", ...files], {
-      cwd: root,
-      env,
-      encoding: "utf8",
-      maxBuffer: 32 * 1024 * 1024,
-    });
-    if (child.error) throw child.error;
-    if (child.stdout) process.stdout.write(child.stdout);
-    if (child.stderr) process.stderr.write(child.stderr);
+    const child = await runTests(root, env, files);
     process.exitCode = child.status ?? 1;
     // bun test treats each path as a filter and only notes filters that match nothing, so count what ran.
-    const ran = /Ran \d+ tests? across (\d+) files?/.exec(`${child.stdout ?? ""}\n${child.stderr ?? ""}`);
+    const ran = /Ran \d+ tests? across (\d+) files?/.exec(`${child.stdout}\n${child.stderr}`);
     if (!ran || Number(ran[1]) !== files.length) {
       console.error(`music2 test: bun test ran ${ran ? ran[1] : "no"} of ${files.length} files`);
       process.exitCode = 1;
