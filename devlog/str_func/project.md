@@ -45,3 +45,7 @@ The public library API (`src/index.ts`) and `music2 export ir` use `src/project/
 ## Built-in sampled instruments and voice policy
 
 `ProjectInstrument` now includes `{kind:"lib",id}`. `buildProject` retains that ID in IR without resolving package paths or changing existing voice/SFZ bytes.
+
+## User instrument projection
+
+`ProjectInstrument` includes `{kind:"user"; id:string}`. `buildProject` preserves `user:<id>` as this identity without reading storage or embedding a root, entry path or manifest kind. Async render/export code resolves SFZ versus kit through sampler. ProjectIR stays deterministic and filesystem-free; synchronous MIDI and DAW planners consume caller-supplied user-kind metadata.

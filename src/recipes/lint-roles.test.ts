@@ -55,3 +55,12 @@ test("drill_ny/5 counts 808 moves inside each hook only (issue #1 repro 2)", () 
   const found = lintSong(song).results.find((result) => result.id === "drill_ny/5");
   assert.equal(found?.observed, 0);
 });
+
+test("user sampled melodies and drum kits preserve kit lint results", () => {
+  const tracks = (instrument: string): Song["tracks"] => [
+    ...drums.map((track) => ({ ...track, instrument })), sub, { ...guitar, instrument }];
+  const kit = drill(tracks("kit:synthetic"));
+  const user = drill(tracks("user:synthetic"));
+  assert.deepEqual(melodyTrackIds(geometry(tracks("user:synthetic"))), ["guitar"]);
+  assert.deepEqual(lintSong(user).results, lintSong(kit).results);
+});

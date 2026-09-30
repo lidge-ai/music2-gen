@@ -360,7 +360,7 @@ export function validateSong(input: unknown): ResolvedSong {
     });
     if (issues.length === 0 && (input["audioTracks"] !== undefined || tracks.some((raw) => object(raw) &&
       (raw["notes"] !== undefined || raw["automation"] !== undefined ||
-        (typeof raw["instrument"] === "string" && (raw["instrument"].startsWith("sfz:") || raw["instrument"].startsWith("lib:"))))))) validateDawFields(input, issues);
+        (typeof raw["instrument"] === "string" && (raw["instrument"].startsWith("sfz:") || raw["instrument"].startsWith("lib:") || raw["instrument"].startsWith("user:"))))))) validateDawFields(input, issues);
   }
   if (issues.length) throw new Music2Error("E_SCHEMA", `song has ${issues.length} issue(s)`, { details: { issues } });
   validateFxFields(input);

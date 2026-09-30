@@ -7,3 +7,5 @@ export { planAls } from "./als.tool.ts";
 export type { AlsContent, AlsRendered, AlsOptions, AlsData, AlsPlan } from "./als.tool.ts";
 export { planDawproject } from "./dawproject/index.ts";
 export type { DawContent, DawMedia, DawClipRegion, DawData, DawprojectPlan } from "./dawproject/index.ts";
+
+export { loadExportInstruments } from "./user-instruments.tool.ts";

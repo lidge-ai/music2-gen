@@ -74,13 +74,13 @@ function parseManifest(input: unknown, kitPath: string): KitManifest {
 }
 
 /** Read mapping metadata only; never decode samples for MIDI interchange. */
-export async function loadKitMidiMap(songPath: string, instrument: string): Promise<{ names: string[]; explicit: Record<string, number> }> {
-  if (!instrument.startsWith("kit:") || instrument.length === 4) throw schemaError(instrument, "expected kit:<path>");
-  const ref = instrument.slice(4);
+export async function loadKitMidiMap(songPath: string, instrument: string, confinedRoot?: string): Promise<{ names: string[]; explicit: Record<string, number> }> {
+  if (confinedRoot === undefined && (!instrument.startsWith("kit:") || instrument.length === 4)) throw schemaError(instrument, "expected kit:<path>");
+  const ref = confinedRoot === undefined ? instrument.slice(4) : "kit.json";
   if (isAbsolute(ref) || /^[A-Za-z]:[\\/]/.test(ref) || ref.startsWith("\\") ||
       ref.split(/[\\/]/).includes("..") || ref.includes("\0"))
     throw accessError(ref, "kit path escapes song directory");
-  const root = await realpath(dirname(songPath)).catch((cause: unknown) => { throw accessError(songPath, "cannot access song directory", undefined, cause); });
+  const root = await realpath(confinedRoot ?? dirname(songPath)).catch((cause: unknown) => { throw accessError(songPath, "cannot access song directory", undefined, cause); });
   const path = resolve(root, ref.endsWith("kit.json") ? ref : join(ref, "kit.json"));
   if (!confined(root, path)) throw accessError(path, "kit path escapes song directory");
   let canonical: string;
@@ -98,10 +98,10 @@ export async function loadKitMidiMap(songPath: string, instrument: string): Prom
 }
 
 /** Kit data and its decode cache belong to one load/render invocation. */
-export async function loadKit(songPath: string, instrument: string, sampleRate: number): Promise<LoadedKit> {
-  if (!instrument.startsWith("kit:") || instrument.length === 4) throw schemaError(instrument, "expected kit:<path>");
-  const kitRef = instrument.slice(4);
-  const kitPath = resolve(dirname(songPath), kitRef.endsWith("kit.json") ? kitRef : join(kitRef, "kit.json"));
+export async function loadKit(songPath: string, instrument: string, sampleRate: number, confinedRoot?: string): Promise<LoadedKit> {
+  if (confinedRoot === undefined && (!instrument.startsWith("kit:") || instrument.length === 4)) throw schemaError(instrument, "expected kit:<path>");
+  const kitRef = confinedRoot === undefined ? instrument.slice(4) : "kit.json";
+  const kitPath = resolve(confinedRoot ?? dirname(songPath), kitRef.endsWith("kit.json") ? kitRef : join(kitRef, "kit.json"));
   let kitRoot: string;
   let raw: string;
   try {

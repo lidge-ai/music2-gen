@@ -271,3 +271,9 @@ The only runtime package dependency is the pinned `bun` runtime. Tests use `node
 ## Built-in sampled instruments and voice policy
 
 `instrument.tool.ts` recognizes `lib:` as a sampled note instrument and confines loading to its packaged ID directory. `select.tool.ts` skips synth release lookup for sampled tracks. Bass and lead accept opt-in `wave:2` triangle in both legacy and enhanced synthesis paths; default parameters and legacy paths are unchanged.
+
+## Imported user instruments
+
+`isSampleInstrument` accepts `user:<id>`. `loadSampleInstrument(songPath, track, rate, budget?)` resolves sampler's `readUserManifest`, then loads confined SFZ or kit content. SFZ requires a notes track (`E_SCHEMA` otherwise); kits retain pitched notes-track playback. All user samples stay under the resolved import root, and sampled instruments reject synth params.
+
+`loadKit(songPath, instrument, sampleRate, confinedRoot?: string)` and `loadKitMidiMap(songPath, instrument, confinedRoot?: string)` accept an imported root; with it, resolution uses `<root>/kit.json` and confines every sample to that root. Without it, existing song-relative kit resolution applies. `registry.tool.ts` validates user syntax and voice-lane boundaries; sampler owns identity and filesystem confinement, keeping render independent of library.

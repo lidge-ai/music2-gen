@@ -1,5 +1,5 @@
 import { VOICES } from "../../render/voices/registry.tool.ts";
-import { libraryManifest } from "../../sampler/index.ts";
+import { libraryManifest, listUserInstruments } from "../../sampler/index.ts";
 import { Music2Error } from "../../shared/index.ts";
 import type { CommandSpec } from "../registry.ts";
 
@@ -27,9 +27,12 @@ export const instruments: CommandSpec = {
     });
     const library = libraryManifest().instruments.map(({ id, title, family, range, role, license }) =>
       ({ id, instrument: `lib:${id}`, title, family, range, role, license, source: "sampled" as const }));
+    const user = (await listUserInstruments()).map((item) => ({ id: item.id, instrument: `user:${item.id}`,
+      kind: item.kind, zones: item.zones?.length ?? 0, role: item.role ?? null }));
     const text = ["SYNTH VOICES", ...voices.map((voice) =>
       `${voice.id.padEnd(16)} ${voice.kind.padEnd(6)} ${voice.source.padEnd(8)} emulates:${voice.emulates ?? "-"}`), "", "SAMPLED LIBRARY",
-    ...library.map((item) => `${item.instrument.padEnd(24)} ${item.role.padEnd(5)} ${item.family.padEnd(8)} ${item.title} (${item.range.join("–")})`)].join("\n");
-    return { command: "instruments", data: { voices, library }, text };
+    ...library.map((item) => `${item.instrument.padEnd(24)} ${item.role.padEnd(5)} ${item.family.padEnd(8)} ${item.title} (${item.range.join("–")})`), "", "USER INSTRUMENTS",
+      ...user.map((item) => `${item.instrument.padEnd(24)} ${item.kind.padEnd(5)} zones:${item.zones} role:${item.role ?? "-"}`)].join("\n");
+    return { command: "instruments", data: { voices, library, user }, text };
   },
 };

@@ -14,7 +14,7 @@ export const isFocalInstrument = (instrument: string): boolean =>
 export const isBedInstrument = (instrument: string): boolean =>
   libraryRole(instrument) === "bed" || BED_VOICES.has(instrument);
 export const isBassInstrument = (instrument: string): boolean => instrument === "bass" || instrument === "808";
-const isSampledMelody = (instrument: string): boolean => instrument.startsWith("kit:") || instrument.startsWith("sfz:");
+const isSampledMelody = (instrument: string): boolean => instrument.startsWith("kit:") || instrument.startsWith("sfz:") || instrument.startsWith("user:");
 
 /**
  * Every notes track that may carry the melody, in track order. Focal voices and user samples come first;

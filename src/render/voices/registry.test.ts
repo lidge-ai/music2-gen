@@ -190,3 +190,20 @@ void test("SFZ bypasses built-in voices and rejects drum-kind tracks", () => {
     return true;
   });
 });
+
+void test("user instruments bypass voices for both kinds and reject params and parameter lanes", () => {
+  for (const kind of ["notes", "drums"] as const) {
+    const song = songWith([{ id: "u", kind, instrument: "user:synthetic" }]);
+    assert.equal(resolveVoice(song.tracks[0]!, 0), null);
+    assert.equal(declaredSampleNames("user:synthetic"), null);
+    assert.doesNotThrow(() => validateVoiceParams(song));
+    song.tracks[0]!.params = { cutoffHz: 1000 };
+    assert.throws(() => validateVoiceParams(song), (error: unknown) => {
+      assert.deepEqual(issuePaths(error), ["tracks[0].params.cutoffHz"]); return true;
+    });
+    song.tracks[0]!.automation = [{ target: "param.cutoffHz", points: [{ tick: 0, value: 1000, curve: "hold" }] }];
+    assert.throws(() => validateDawVoiceLanes(song), (error: unknown) => {
+      assert.deepEqual(issuePaths(error), ["$.tracks[0].automation[0].target"]); return true;
+    });
+  }
+});

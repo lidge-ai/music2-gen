@@ -2,7 +2,7 @@ import { noteToMidi, parseSampleRef } from "../pattern/index.ts";
 import { AUTOMATABLE_INSERT_PARAMS, INSERT_SPECS } from "../render/fx/fx.schema.ts";
 import type { InsertInput, ParamSpec, ResolvedInsert } from "../render/fx/fx.schema.ts";
 import { beatsToTicks, Music2Error, PPQ } from "../shared/index.ts";
-import { libraryInstrument } from "../sampler/index.ts";
+import { libraryInstrument, USER_ID_PATTERN } from "../sampler/index.ts";
 import type { ResolvedTrack, Song, Track } from "./song.schema.ts";
 export interface PluginUse { id: string; params?: Readonly<Record<string, number | string | boolean>> }
 
@@ -259,6 +259,9 @@ export function validateDawFields(input: unknown, issues: Issue[]): void {
         catch (cause) { add(issues, `${path}.instrument`, cause instanceof Error ? cause.message : "invalid library instrument"); }
       }
     }
+    if (typeof track["instrument"] === "string" && track["instrument"].startsWith("user:") &&
+      !USER_ID_PATTERN.test(track["instrument"].slice(5)))
+      add(issues, `${path}.instrument`, "invalid user instrument id");
     validateLanes(track["automation"], `${path}.automation`, body, track["fx"], false, issues);
   });
   const listIds = new Set(tracks.filter(object).filter((track) => track["notes"] !== undefined).map((track) => track["id"]));

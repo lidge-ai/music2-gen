@@ -1,3 +1,5 @@
+import type { UserInstrumentKinds } from "../sampler/index.ts";
+import { validateExportUserInstruments } from "./user-instruments.tool.ts";
 import type { ProjectIR } from "../project/index.ts";
 import { Music2Error } from "../shared/index.ts";
 import type { ExportPlan } from "./export.schema.ts";
@@ -8,7 +10,7 @@ import { serializeXml } from "./xml.tool.ts";
 import type { XmlNode } from "./xml.tool.ts";
 
 export type { AlsContent, AlsRendered } from "./als/tracks.tool.ts";
-export interface AlsOptions { content: AlsContent; bits: 16 | 24;
+export interface AlsOptions { userInstruments?: UserInstrumentKinds; content: AlsContent; bits: 16 | 24;
   kitMaps?: Readonly<Record<string, Readonly<Record<string, number>>>> }
 export interface AlsData { als: string; samples: string[]; tracks: number; content: AlsContent;
   quantization: ProjectIR["quantization"]; experimental: true }
@@ -95,9 +97,10 @@ export function planAls(project: ProjectIR, rendered: AlsRendered | null, option
     const dataSize = first.left.length * 2 * options.bits / 8;
     if (!Number.isSafeInteger(dataSize) || 36 + dataSize > 0xffffffff) renderError("ALS WAV exceeds RIFF size");
   }
+  validateExportUserInstruments(project, options.userInstruments);
   const firstGlobal = preflightXml(project);
   const ids = createAlsIds(firstGlobal);
-  const built = buildAlsTracks(project, options.content, rendered, options.bits, ids, options.kitMaps);
+  const built = buildAlsTracks(project, options.content, rendered, options.bits, ids, options.kitMaps, options.userInstruments);
   const root = buildAlsSkeleton(project, built.nodes, ids);
   assertAlsIds(root, firstGlobal, ids.nextPointeeId);
   const xmlBytes = serializeXml(root);

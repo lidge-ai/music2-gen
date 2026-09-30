@@ -1,7 +1,7 @@
 import { createStereo } from "../audio-io/index.ts";
 import { relative } from "node:path";
 import type { StereoBuffer } from "../audio-io/index.ts";
-import { libraryInstrument, loadSfz, renderSfz } from "../sampler/index.ts";
+import { libraryInstrument, loadSfz, readUserManifest, renderSfz } from "../sampler/index.ts";
 import type { DecodeBudget, LoadedSfz, SfzWarning } from "../sampler/index.ts";
 import { confinedRealpath, Music2Error, packageRoot } from "../shared/index.ts";
 import type { ResolvedTrack } from "../song/index.ts";
@@ -11,9 +11,16 @@ import type { LoadedKit, VoiceContext } from "./render.schema.ts";
 export type LoadedSampleInstrument = { kind: "kit"; resource: LoadedKit; warnings: readonly SfzWarning[] } |
   { kind: "sfz"; resource: LoadedSfz; warnings: readonly SfzWarning[] };
 export function isSampleInstrument(instrument: string): boolean {
-  return instrument.startsWith("kit:") || instrument.startsWith("sfz:") || instrument.startsWith("lib:");
+  return instrument.startsWith("kit:") || instrument.startsWith("sfz:") || instrument.startsWith("lib:") || instrument.startsWith("user:");
 }
 export async function loadSampleInstrument(songPath: string, track: ResolvedTrack, rate: number, budget?: DecodeBudget): Promise<LoadedSampleInstrument | null> {
+  if (track.instrument.startsWith("user:")) {
+    const { root, manifest } = await readUserManifest(track.instrument.slice(5));
+    if (manifest.kind === "kit") return { kind: "kit", resource: await loadKit(songPath, track.instrument, rate, root), warnings: [] };
+    if (track.kind !== "notes") throw new Music2Error("E_SCHEMA", "user SFZ requires notes track");
+    const resource = await loadSfz(songPath, manifest.entry, rate, budget, root);
+    return { kind: "sfz", resource, warnings: resource.instrument.warnings };
+  }
   if (track.instrument.startsWith("kit:")) return { kind: "kit", resource: await loadKit(songPath, track.instrument, rate), warnings: [] };
   if (track.instrument.startsWith("lib:")) {
     if (track.kind !== "notes") throw new Music2Error("E_SCHEMA", "library instrument requires notes track");

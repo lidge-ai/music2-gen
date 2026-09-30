@@ -1,6 +1,6 @@
 # Export — Structure & Functions
 
-`src/export` builds deterministic, relative-path artifact plans. It does not render audio or write files.
+`src/export` builds deterministic, relative-path artifact plans. Pure planners consume supplied metadata and audio; the async user-instrument adapter resolves storage before planning. The feature does not render audio or write files.
 
 ## File Tree
 
@@ -8,6 +8,8 @@
 src/export/
 ├── export.schema.ts   # generic ExportPlan<D> and file descriptors
 ├── manifest.schema.ts # ordered stem manifest and validation
+├── user-instruments.tool.ts # async identity adapter and pure kind checks
+├── user-instruments.test.ts # imported identity, kit mapping and planner parity
 ├── stems.tool.ts      # pure stem bundle planner and float sum proof
 ├── stems.test.ts      # contract vectors
 └── index.ts           # public feature boundary
@@ -30,7 +32,7 @@ The CLI owns rendering once, directory policy, per-file staging, WAV writing, an
 
 ## Dependencies
 
-Song and Timeline provide tracks, bus parameters and placements; RenderResult provides captured Float32 audio; audio-io supplies `StereoBuffer`; shared supplies deterministic hash seeds and typed errors. There are no filesystem imports or runtime package dependencies in this feature.
+Song and Timeline provide tracks, bus parameters and placements; RenderResult provides captured Float32 audio; audio-io supplies `StereoBuffer`; shared supplies deterministic hash seeds and typed errors. Pure planners do not read files. The async user-instrument adapter depends on sampler, render kit metadata and MIDI mapping; no runtime package dependency is imported.
 
 ## Dependents
 
@@ -62,3 +64,9 @@ For MIDI content, `planDawproject` emits `PLUGIN_NOT_PORTABLE:<trackId>` once pe
 ## Built-in sampled instruments and voice policy
 
 ALS MIDI clip planning and DAWproject XML add a sound portability warning for `lib:` tracks. Their editable notes and frozen-audio modes retain the existing contracts.
+
+## User instrument metadata and portability
+
+`user-instruments.tool.ts` adds the public async adapter `loadExportInstruments(project, songPath, includeKitMaps = true, validateSamples = true): Promise<{userInstruments,kitMaps,warnings}>`, exported through `index.ts`. It resolves every user manifest through sampler, validates SFZ/track compatibility, loads confined kit MIDI maps through render, and supplies plain metadata before a synchronous planner runs. Its local `exportInstrumentKind` and `validateExportUserInstruments` helpers resolve/validate caller-supplied kinds without storage reads.
+
+`planAls` and `planDawproject` options accept optional `userInstruments: UserInstrumentKinds`, with existing track-keyed kitMaps. Missing user-kind entries raise `E_CAPABILITY`; user SFZ on drums raises `E_SCHEMA`. User kits use kit note mappings and existing pitched-kit policy. Editable output warns explicitly about `user:` sound portability; frozen audio retains the source sound. ProjectIR stores only user ID; paths remain at the async boundary.

@@ -232,3 +232,7 @@ consumers in other feature folders use the public barrel.
 ## Built-in sampled instruments and voice policy
 
 `song-daw.schema.ts` accepts `lib:<id>` only for notes tracks. It checks the packaged manifest during validation and returns `E_SCHEMA` with valid IDs for unknown references. Song v1 and legacy resolution fields remain unchanged.
+
+## User instrument validation
+
+`song-daw.schema.ts` and the conditional sampled-instrument checks in `song.schema.ts` accept `user:<id>` using the shared user ID syntax. User instruments may appear on notes or drums tracks and reject synth params. Async render/export resolution enforces that an imported SFZ uses notes; imported kits retain pitched notes-track behavior. Song validation preserves identity and does not read user storage. Existing `validateSong`/`loadSong` return contracts are unchanged.

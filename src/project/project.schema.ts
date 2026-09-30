@@ -35,7 +35,8 @@ export type ProjectInstrument =
   | { kind: "voice"; id: string; params: Record<string, number> }
   | { kind: "kit"; ref: string }
   | { kind: "sfz"; ref: string }
-  | { kind: "lib"; id: string };
+  | { kind: "lib"; id: string }
+  | { kind: "user"; id: string };
 export interface ProjectNoteTrack extends ProjectTrackBase {
   type: "notes" | "drums"; instrument: ProjectInstrument; mono: boolean; notes: ProjectNote[];
 }

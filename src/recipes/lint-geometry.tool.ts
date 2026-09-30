@@ -56,7 +56,7 @@ export function at(step: number, event: TimedEvent): boolean {
 export function eventsAt(g: LintGeometry, bar: number): TimedEvent[] { return g.events.get(bar) ?? []; }
 function kitRoleSample(g: LintGeometry, event: TimedEvent): string | null {
   const track = g.song.tracks[event.trackIndex];
-  return track?.kind === "drums" && (track.instrument === "drums" || track.instrument.startsWith("kit:"))
+  return track?.kind === "drums" && (track.instrument === "drums" || track.instrument.startsWith("kit:") || track.instrument.startsWith("user:"))
     ? event.sample?.name ?? null : null;
 }
 export function isKick(g: LintGeometry, event: TimedEvent): boolean {
@@ -158,7 +158,7 @@ export function createGeometry(song: ResolvedSong, timeline: Timeline, genre: st
   const kickTracks = new Set(timeline.events.filter((event) => isKick(geometry, event)).map((event) => event.track));
   const snareTracks = new Set(timeline.events.filter((event) => isBackbeat(geometry, event)).map((event) => event.track));
   for (const track of song.tracks.filter((item) => item.kind === "drums" &&
-    (item.instrument === "drums" || item.instrument.startsWith("kit:")))) {
+    (item.instrument === "drums" || item.instrument.startsWith("kit:") || item.instrument.startsWith("user:")))) {
     if (track.id === "kick") kickTracks.add(track.id);
     if (track.id === "snare" || track.id === "clap") snareTracks.add(track.id);
   }

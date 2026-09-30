@@ -16,7 +16,7 @@ src/midi/
 └── index.ts             # public feature boundary
 ```
 
-Every tool and schema has a colocated test file. All feature files import only local modules, `project` or `shared`; `from-project` consumes ProjectIR types but never changes them. `to-song` returns a structural Song v1 object and does not import the song validator. CLI is the filesystem and validation boundary.
+Every tool and schema has a colocated test file. All feature files import local modules, `project`, `shared`, or type-only sampler user-kind metadata; `from-project` consumes ProjectIR types but never changes them. `to-song` returns a structural Song v1 object and does not import the song validator. CLI is the filesystem and validation boundary.
 
 ## Key Function Signatures
 
@@ -25,7 +25,7 @@ Every tool and schema has a colocated test file. All feature files import only l
 | `writeSmf(file: SmfFile): Uint8Array` | Write deterministic type-1 SMF with explicit EOT and statuses. |
 | `readSmf(bytes: Uint8Array): SmfFile` | Read format-0/1 SMF with 16 MiB input bound and chunk-local cursors. |
 | `writeVlq(value: number): Uint8Array` / `readVlq(bytes, offset, end)` | Encode/decode MIDI VLQ up to `0x0FFFFFFF`. |
-| `projectToSmf(project: ProjectIR, options?: { kitMaps? }): MidiProjection` | Project conductor, track identities, programs, static and automated CC7/CC10, and notes. |
+| `projectToSmf(project: ProjectIR, options?: { kitMaps?; userInstruments? }): MidiProjection` | Project conductor, track identities, programs, static and automated CC7/CC10, and notes. |
 | `smfToSong(file: SmfFile, options?: { title?; strict?; kitMaps? }): MidiImport` | Pair notes, convert PPQ, reconstruct Song sections, hold CC lanes and warnings. |
 | `kitMidiMap(names, explicit?): { byName; warnings }` | Deterministic kit note assignment. |
 | `keyToSmf(key)` / `smfToKey(sf, mi)` | Circle-of-fifths key-signature mapping. |
@@ -41,3 +41,7 @@ CC7 uses `round(127×10^(dB/40))`; CC10 uses `round(64+63×pan)`. Incoming CC7 0
 ## Built-in sampled instruments and voice policy
 
 `programForInstrument` maps bundled piano, sustained strings and staccato strings to GM programs 0, 48 and 45. `projectToSmf` emits an explicit sound portability warning for `lib:` tracks while preserving editable notes.
+
+## User instruments
+
+`projectToSmf(project, options?: {kitMaps?; userInstruments?: UserInstrumentKinds})` resolves the filesystem-free `{kind:"user",id}` through the supplied map. Missing identity raises `E_CAPABILITY`; user SFZ on drums raises `E_SCHEMA`. Imported kits use caller-provided atom/note maps and existing pitched-kit channel policy. Editable notes carry a warning naming `user:<id>` because MIDI cannot preserve sample sound. `UserInstrumentKinds` is a type-only sampler dependency; CLI/export's async adapter resolves storage before projection.

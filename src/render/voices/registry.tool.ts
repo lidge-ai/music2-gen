@@ -72,7 +72,7 @@ export function validateVoiceParams(song: ResolvedSong): void {
   song.tracks.forEach((track, index) => {
     if (isSampleInstrument(track.instrument)) {
       if ((track.instrument.startsWith("sfz:") || track.instrument.startsWith("lib:")) && track.kind !== "notes") issues.push({ path: `tracks[${index}].kind`, message: "sampled instrument requires notes track" });
-      if (track.instrument.startsWith("sfz:") || track.instrument.startsWith("lib:")) for (const name of Object.keys(track.params)) issues.push({ path: `tracks[${index}].params.${name}`, message: "unknown parameter" });
+      if (track.instrument.startsWith("sfz:") || track.instrument.startsWith("lib:") || track.instrument.startsWith("user:")) for (const name of Object.keys(track.params)) issues.push({ path: `tracks[${index}].params.${name}`, message: "unknown parameter" });
       return;
     }
     const spec = voiceFor(track.instrument);

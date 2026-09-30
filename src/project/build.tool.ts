@@ -108,6 +108,7 @@ function instrument(track: ResolvedTrack): ProjectNoteTrack["instrument"] {
   if (track.instrument.startsWith("kit:")) return { kind: "kit", ref: track.instrument.slice(4) };
   if (track.instrument.startsWith("sfz:")) return { kind: "sfz", ref: track.instrument.slice(4) };
   if (track.instrument.startsWith("lib:")) return { kind: "lib", id: track.instrument.slice(4) };
+  if (track.instrument.startsWith("user:")) return { kind: "user", id: track.instrument.slice(5) };
   return { kind: "voice", id: track.instrument, params: track.params };
 }
 function sampleKey(sample: ProjectSample): string { return `${sample.role}\0${sample.ref}`; }

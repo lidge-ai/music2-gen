@@ -166,3 +166,14 @@ test("a send lane decides bus presence in place of the static send level", () =>
   assert.equal(ir.buses.reverb?.kind, "reverb");
   assert.equal(ir.buses.delay, null);
 });
+
+test("user identity remains filesystem-free and does not become a song-relative sample", () => {
+  const song = validateSong({ version: 1, bpm: 120, tracks: [
+    { id: "melody", kind: "notes", instrument: "user:unimported", pattern: "c4" },
+    { id: "kit", kind: "drums", instrument: "user:unimported-kit", pattern: "bd" }],
+    sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] });
+  const ir = buildProject(song, buildTimeline(song));
+  assert.deepEqual(ir.tracks.map((track) => track.type === "audio" ? null : track.instrument), [
+    { kind: "user", id: "unimported" }, { kind: "user", id: "unimported-kit" }]);
+  assert.deepEqual(ir.samples, []);
+});

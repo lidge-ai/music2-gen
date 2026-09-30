@@ -259,3 +259,7 @@ hand.
 ## Built-in sampled instruments and voice policy
 
 Genre card palettes and starter tracks avoid saw-based voice configurations. Bass cards explicitly use triangle `wave:2`; techno melody uses `pluck`. `lint-layering-harmony.tool.ts` uses manifest roles so bundled piano and spiccato strings count as focal and sustained strings as a bed.
+
+## User sample role classification
+
+`lint-geometry.tool.ts`'s `kitRoleSample` accepts `user:` on drum tracks; `lint-roles.tool.ts`'s sampled melody classification accepts `user:` on notes tracks. Static lint applies the existing sampled kit/melody role rules without opening imported manifests. Equivalent imported and song-relative kit sources retain the same lint findings. These responsibility changes add no public exports or filesystem dependency.

@@ -3,8 +3,6 @@ import { tmpdir } from "node:os";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { buildProject } from "../../project/index.ts";
 import { projectToSmf, writeSmf } from "../../midi/index.ts";
-import { kitMidiMap } from "../../midi/gm.tool.ts";
-import { loadKitMidiMap } from "../../render/kit.tool.ts";
 import { Music2Error } from "../../shared/index.ts";
 import { buildTimeline, loadSong } from "../../song/index.ts";
 import { renderSong } from "../../render/index.ts";
@@ -12,7 +10,7 @@ import { createExternalProcessor, loadPluginConfig, parseHostArgv } from "../../
 import type { ResolvedSong } from "../../song/index.ts";
 import type { ExternalProcessor } from "../../render/render.schema.ts";
 import { readWav, writeWav } from "../../audio-io/index.ts";
-import { planAls, planDawproject, planStems, type DawClipRegion, type DawContent, type DawMedia } from "../../export/index.ts";
+import { loadExportInstruments, planAls, planDawproject, planStems, type DawClipRegion, type DawContent, type DawMedia } from "../../export/index.ts";
 import { confinedRealpath, fnv1a32 } from "../../shared/index.ts";
 import { validateDawVoiceLanes } from "../../render/voices/registry.tool.ts";
 import { assertDistinct, commitNoReplace, commitReplace, stage } from "../files.ts";
@@ -138,19 +136,12 @@ async function exportAls(input: string, output: string, values: Record<string, u
     return within === "" || (within !== ".." && !within.startsWith("../") && !within.startsWith("..\\") && !isAbsolute(within));
   })) throw inputError("ALS output directory contains an input/source file");
   await assertDistinct([input, ...sourcePaths], [output]);
-  const kitMaps: Record<string, Record<string, number>> = {};
-  if (content !== "audio") for (const track of project.tracks) if (track.type !== "audio" && track.instrument.kind === "kit") {
-    const { names, explicit } = await loadKitMidiMap(input, `kit:${track.instrument.ref}`);
-    const declared = new Set(names);
-    for (const note of track.notes) if (note.sample && !declared.has(note.sample.name))
-      throw new Music2Error("E_SCHEMA", `kit ${track.id} is missing sample ${note.sample.name}`);
-    kitMaps[track.id] = kitMidiMap(names, explicit).byName;
-  }
+  const { kitMaps, userInstruments } = await loadExportInstruments(project, input, content !== "audio");
   const external = content === "midi" ? undefined : await audioProcessor(song, values);
   const rendered = content === "midi" ? null : await renderSong(song, input,
     { stems: true, returns: true, ...(external ? { external } : {}) });
   const plan = planAls(project, rendered ? { stems: rendered.stems,
-    returns: rendered.returns ?? { reverb: null, delay: null } } : null, { content, bits, kitMaps });
+    returns: rendered.returns ?? { reverb: null, delay: null } } : null, { content, bits, kitMaps, userInstruments });
   const finals = plan.files.map((file) => join(output, file.path));
   await assertDistinct([input, ...sourcePaths], finals);
   const createdDirectories: string[] = [];
@@ -228,12 +219,7 @@ async function exportDawproject(input: string, output: string, values: Record<st
         channels: wav.sourceChannels, owner: { kind: "source", sampleIndex } });
     }
   }
-  const kitMaps: Record<string, Record<string, number>> = {};
-  if (content !== "audio") for (const track of project.tracks) if (track.type !== "audio" && track.instrument.kind === "kit") {
-    const { names, explicit } = await loadKitMidiMap(input, `kit:${track.instrument.ref}`);
-    const mapping = kitMidiMap(names, explicit);
-    kitMaps[track.id] = mapping.byName;
-  }
+  const { kitMaps, userInstruments } = await loadExportInstruments(project, input, content !== "audio", false);
   const regions: DawClipRegion[] = [];
   if (content !== "audio") for (const track of project.tracks) if (track.type === "audio")
     for (const [clipIndex, clip] of track.clips.entries()) {
@@ -270,7 +256,7 @@ async function exportDawproject(input: string, output: string, values: Record<st
       }
     }
     const plan = planDawproject(project, media, regions,
-      { content, outputName: output.split(/[\\/]/).at(-1)!, kitMaps });
+      { content, outputName: output.split(/[\\/]/).at(-1)!, kitMaps, userInstruments });
     const staged = stage(output);
     try {
       const artifact = plan.files[0]!;
@@ -334,18 +320,8 @@ export const exportCommand: CommandSpec = {
     validateDawVoiceLanes(song);
     const ir = buildProject(song, buildTimeline(song));
     if (midi && output !== undefined) {
-      const kitMaps: Record<string, Record<string, number>> = {};
-      const kitWarnings: string[] = [];
-      for (const track of ir.tracks) if (track.type !== "audio" && track.instrument.kind === "kit") {
-        const { names, explicit } = await loadKitMidiMap(input, `kit:${track.instrument.ref}`);
-        const declared = new Set(names);
-        for (const note of track.notes) if (note.sample && !declared.has(note.sample.name))
-          throw new Music2Error("E_SCHEMA", `kit ${track.id} is missing sample ${note.sample.name}`);
-        const mapping = kitMidiMap(names, explicit);
-        kitMaps[track.id] = mapping.byName;
-        kitWarnings.push(...mapping.warnings.map((warning) => `${warning}:${track.id}`));
-      }
-      const projected = projectToSmf(ir, { kitMaps });
+      const { kitMaps, userInstruments, warnings: kitWarnings } = await loadExportInstruments(ir, input);
+      const projected = projectToSmf(ir, { kitMaps, userInstruments });
       const bytes = writeSmf(projected.file);
       const staged = stage(output);
       try {

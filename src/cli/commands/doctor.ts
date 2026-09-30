@@ -1,3 +1,4 @@
+import { defaultSampleRoots } from "../../library/index.ts";
 import { discoverFfmpeg } from "../../probe/index.ts";
 import { music2Home, Music2Error } from "../../shared/index.ts";
 import type { DoctorData } from "../../probe/index.ts";
@@ -31,6 +32,8 @@ export const doctor: CommandSpec = {
       const code = cause instanceof Music2Error && cause.code === "E_ACCESS" ? "E_ACCESS" : "E_INPUT";
       plugins = { configured: null, probed: false, error: code };
     }
-    return { command: "doctor", data: { ...data, home: music2Home(), plugins } };
+    const roots = defaultSampleRoots();
+    return { command: "doctor", data: { ...data, home: music2Home(), plugins,
+      sampleLibrary: { roots, available: roots.length > 0 } } };
   },
 };

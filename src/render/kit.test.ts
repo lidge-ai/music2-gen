@@ -184,3 +184,23 @@ void test("kit startMs trims each sample name and rejects bad values", async (t)
   await writeFile(kitPath, JSON.stringify({ version: 1, samples: { note: ["ramp.wav"] }, startMs: { note: 46 } }));
   await assert.rejects(loadKit(songPath, "kit:kit", 44100), errorCode("E_SCHEMA"));
 });
+
+void test("explicit kit root ignores the instrument reference and confines manifest and samples", async (t) => {
+  const { dir, kitDir } = await setup(t);
+  const songPath = join(dir, "absent-song-directory", "song.json");
+  const manifest = { version: 1, samples: { bd: ["a.wav"] }, midi: { bd: 47 } };
+  await writeFile(join(kitDir, "kit.json"), JSON.stringify(manifest));
+  const loaded = await loadKit(songPath, "user:synthetic", 44100, kitDir);
+  assert.deepEqual(loaded.manifest, manifest);
+  assert.deepEqual(await loadKitMidiMap(songPath, "ignored:anything", kitDir), { names: ["bd"], explicit: { bd: 47 } });
+  await rm(join(kitDir, "kit.json"));
+  await writeFile(join(dir, "outside.json"), JSON.stringify(manifest));
+  await symlink(join(dir, "outside.json"), join(kitDir, "kit.json"));
+  await assert.rejects(loadKit(songPath, "user:synthetic", 44100, kitDir), errorCode("E_ACCESS"));
+  await assert.rejects(loadKitMidiMap(songPath, "user:synthetic", kitDir), errorCode("E_ACCESS"));
+  await rm(join(kitDir, "kit.json"));
+  await writeFile(join(kitDir, "kit.json"), JSON.stringify(manifest));
+  await symlink(join(dir, "outside.json"), join(kitDir, "escape.wav"));
+  await writeFile(join(kitDir, "kit.json"), JSON.stringify({ ...manifest, samples: { bd: ["escape.wav"] } }));
+  await assert.rejects(loadKit(songPath, "user:synthetic", 44100, kitDir), errorCode("E_ACCESS"));
+});

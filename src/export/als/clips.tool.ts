@@ -1,3 +1,5 @@
+import type { UserInstrumentKinds } from "../../sampler/index.ts";
+import { exportInstrumentKind } from "../user-instruments.tool.ts";
 import type { ProjectIR, ProjectNote, ProjectNoteTrack } from "../../project/index.ts";
 import { drumNoteFor, kitMidiMap, sfxNoteFor } from "../../midi/index.ts";
 import { element as x, value as v, type XmlNode } from "../xml.tool.ts";
@@ -26,13 +28,16 @@ function clipDefaults(start: number, end: number, name: string, meter: ProjectIR
     x("ScaleInformation")];
 }
 export function buildMidiClips(track: ProjectNoteTrack, markers: readonly ProjectIR["markers"][number][],
-  meter: ProjectIR["meter"][number], ids: AlsIdAllocator, kitExplicit: Readonly<Record<string, number>> = {}): { clips: XmlNode[]; warnings: string[] } {
+  meter: ProjectIR["meter"][number], ids: AlsIdAllocator, kitExplicit: Readonly<Record<string, number>> = {}, userInstruments: UserInstrumentKinds = {}): { clips: XmlNode[]; warnings: string[] } {
   const warnings: string[] = [];
-  const kit = track.instrument.kind === "kit" ? kitMidiMap([...new Set(track.notes.flatMap((note) =>
-    note.sample ? [note.sample.name] : []))], kitExplicit) : null;
+  const names = [...new Set(track.notes.flatMap((note) => note.sample ? [note.sample.name] : []))];
+  const explicit = track.instrument.kind === "user" ? Object.fromEntries(names.filter((name) => Object.hasOwn(kitExplicit, name))
+    .map((name) => [name, kitExplicit[name]!])) : kitExplicit;
+  const kit = exportInstrumentKind(track.instrument, userInstruments) === "kit" ? kitMidiMap(names, explicit) : null;
   if (kit) warnings.push(...kit.warnings.map((message) => `${message}:${track.id}`));
   if (track.instrument.kind === "voice" && track.instrument.id === "sfx") warnings.push(`ALS_SFX_PRIVATE_NOTES:${track.id}`);
   if (track.instrument.kind === "lib") warnings.push(`ALS_SOUND_NOT_PORTABLE:${track.id}:lib:${track.instrument.id}`);
+  if (track.instrument.kind === "user") warnings.push(`ALS_SOUND_NOT_PORTABLE:${track.id}:user:${track.instrument.id}`);
   const placements = [...markers].sort((a, b) => a.tick - b.tick || a.ordinal - b.ordinal);
   const clips: XmlNode[] = [];
   for (const placement of placements) {

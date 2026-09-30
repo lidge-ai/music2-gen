@@ -1,3 +1,4 @@
+import type { UserInstrumentKinds } from "../sampler/index.ts";
 import type { ProjectIR, ProjectNote, ProjectNoteTrack } from "../project/index.ts";
 import { Music2Error } from "../shared/index.ts";
 import { gainDbToCc7, panToCc10, laneToCcEvents, gainCcClippedWarning,
@@ -32,14 +33,14 @@ function ordered(events: SmfEvent[]): SmfEvent[] {
 }
 function instrumentId(track: ProjectNoteTrack): string {
   if (track.instrument.kind === "voice") return track.instrument.id;
-  if (track.instrument.kind === "lib") return `lib:${track.instrument.id}`;
+  if (track.instrument.kind === "lib" || track.instrument.kind === "user") return `${track.instrument.kind}:${track.instrument.id}`;
   return `${track.instrument.kind}:${track.instrument.ref}`;
 }
 function noteKey(track: ProjectNoteTrack, note: ProjectNote, kit: Record<string, number> | undefined): number | undefined {
   if (track.type === "notes") return note.pitch ?? undefined;
   const name = note.sample?.name;
   if (!name) return undefined;
-  if (track.instrument.kind === "kit") return kit?.[name];
+  if (kit) return kit[name];
   if (track.instrument.kind === "voice" && track.instrument.id === "sfx") return sfxNoteFor(name);
   return drumNoteFor(name, note.sample?.index ?? 0);
 }
@@ -111,7 +112,7 @@ function clipSharedChannels(tracks: SmfTrack[], dropped: Record<string, number>)
 }
 
 /** ProjectIR to deterministic format-1, 960-PPQ SMF without changing render timing. */
-export function projectToSmf(project: ProjectIR, options: { kitMaps?: Readonly<Record<string, Readonly<Record<string, number>>>> } = {}): MidiProjection {
+export function projectToSmf(project: ProjectIR, options: { userInstruments?: UserInstrumentKinds; kitMaps?: Readonly<Record<string, Readonly<Record<string, number>>>> } = {}): MidiProjection {
   if (project.ppq !== 960) throw new Music2Error("E_INPUT", "ProjectIR must use 960 PPQ");
   const warnings: string[] = []; const dropped: Record<string, number> = { drumVariantsDropped: 0, zeroLengthDropped: 0 };
   const conductor: SmfEvent[] = [meta(0, 3, ascii(project.title))];
@@ -137,11 +138,17 @@ export function projectToSmf(project: ProjectIR, options: { kitMaps?: Readonly<R
       warnings.push(midiAutomationOmittedWarning(track.id, lane));
     if (track.type === "audio") { count(dropped, "audioTracksDropped"); warnings.push(`AUDIO_TRACK_DROPPED:${track.id}`); continue; }
     const id = instrumentId(track);
-    if (track.instrument.kind === "lib") warnings.push(`MIDI_SOUND_NOT_PORTABLE:${track.id}:${id}`);
+    const kind = track.instrument.kind === "user" ?
+      (options.userInstruments && Object.hasOwn(options.userInstruments, track.instrument.id) ?
+        options.userInstruments[track.instrument.id] : undefined) : track.instrument.kind;
+    if (!kind) throw new Music2Error("E_CAPABILITY", `user instrument ${track.instrument.kind === "user" ? track.instrument.id : id} is not imported`);
+    if (track.instrument.kind === "user" && kind === "sfz" && track.type !== "notes")
+      throw new Music2Error("E_SCHEMA", `user SFZ ${track.instrument.id} requires notes track`);
+    if (track.instrument.kind === "lib" || track.instrument.kind === "user") warnings.push(`MIDI_SOUND_NOT_PORTABLE:${track.id}:${id}`);
     if (track.instrument.kind === "voice" && Object.keys(track.instrument.params).length > 0) {
       count(dropped, "voiceParamsDropped"); warnings.push(`VOICE_PARAMS_DROPPED:${track.id}`);
     }
-    const drum = track.type === "drums" || id === "sfx" || track.instrument.kind === "kit";
+    const drum = track.type === "drums" || id === "sfx" || kind === "kit";
     const channel = drum ? 9 : melodic[melodicIndex++ % melodic.length]!;
     channels[track.id] = channel + 1;
     if (!drum && melodicIndex > melodic.length) { warnings.push(`CHANNEL_REUSED:${track.id}`); warnings.push(`DAW_CHANNEL_MERGE:${track.id}`); }
@@ -172,7 +179,7 @@ export function projectToSmf(project: ProjectIR, options: { kitMaps?: Readonly<R
     }
     if (drum && !drumMix) drumMix = { gain, pan };
     let kit: Record<string, number> | undefined;
-    if (track.instrument.kind === "kit") {
+    if (kind === "kit") {
       const names = [...new Set(track.notes.flatMap((note) => note.sample ? [note.sample.name] : []))];
       const supplied = options.kitMaps?.[track.id];
       const relevant = Object.fromEntries(names.filter((name) => supplied?.[name] !== undefined)
