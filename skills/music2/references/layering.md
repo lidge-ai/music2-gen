@@ -17,7 +17,7 @@ An owner is the part you want to carry a band's main musical job, not an exclusi
 
 ### One low owner at a time
 
-Choose whether the sustained floor is `808`, `bass`, or a low `pad`; let the kick own its transient. If two low tracks play together, set one section's `patterns` override to `null`, shorten or stagger its notes, or move its line up an octave. A high-pass on the secondary sound is common mix advice, but Song v1 has no per-track HPF control; revoice or remove the low notes in music2. [Sound On Sound: choose one main bass source (V)](https://www.soundonsound.com/techniques/mixing-bass), [iZotope: kick/bass masking (V)](https://www.izotope.com/community/blog/how-to-mix-kick-and-bass).
+Choose whether the sustained floor is `808`, `bass`, or a low `pad`; let the kick own its transient. If two low tracks play together, set one section's `patterns` override to `null`, shorten or stagger its notes, or move its line up an octave. Use a `filter` insert with `mode: "highpass"` on the secondary sound, or revoice/remove its low notes; an octave-up line alone is not a high-pass. [Sound On Sound: choose one main bass source (V)](https://www.soundonsound.com/techniques/mixing-bass), [iZotope: kick/bass masking (V)](https://www.izotope.com/community/blog/how-to-mix-kick-and-bass).
 
 For house/techno bass that sounds across kick hits, put `"duck": {"by":"kick","amount":0.2,"releaseMs":110}` on the **bass** track, where `kick` is the ID of a drum track playing `bd`. `amount` 0.2–0.35 is an **I starting range**, then listen and remeasure; it is roughly 2–3.7 dB of instantaneous attenuation in music2's envelope. The lint rule treats a duck below 0.1 as effectively unmanaged, and its kick test requires an actual `bd` source. A source track containing hats or snare also triggers ducking on those events, so a dedicated kick track is easier to control. [Sound On Sound: modest kick ducking (V)](https://www.soundonsound.com/techniques/mixing-bass), [Attack: rolling techno kick space (V)](https://www.attackmagazine.com/technique/tutorials/warehouse-rolling-techno-bass), [EDMProd: 50–150 ms sub recovery guide (V)](https://www.edmprod.com/sub-bass/).
 
@@ -42,6 +42,59 @@ Center `808`/`bass` (`"pan":0`) and the kick. Pan higher support parts such as h
 ### Levels are starting conventions
 
 As a **convention**, place kick and sustained bass first, then bring hats and melody up until they read without covering the focal part. One trap producer's starting sheet puts hats roughly 10–12 dB and melody 12–15 dB below kick/808; another generic template puts pads 10–14 dB below kick. Those are examples, not music2 `gain` requirements. Music2 voices and their parameters produce different energy, so a JSON `gain` offset does **not** predict their rendered relative level. Change `gain`, velocity, note duration, or voice parameters, then read `analyze` bands and peak/loudness results. [Trap starting sheet (V)](https://louisromani.com/blog/how-to-mix-trap-drums), [generic level template (V)](https://pointprimerecordings.com/blog/volume-balancing-cheat-sheet/), [Sound On Sound: gain staging and headroom (V)](https://www.soundonsound.com/techniques/gain-staging-your-daw-software).
+
+## Stack layers inside a role
+
+Keep the role's pattern on one track. `layers` play those same events with their own instrument, gain, pan, velocity multiplier and inserts; notes layers can transpose, and drums layers can filter atom names with `only`. A layer cannot write its own pattern. Layer IDs are unique within a track; `main` is reserved for its original source.
+
+Start supporting layer `gain` at −6 to −12 dB. This offset is relative to the main source before track gain, not a promise about measured RMS: different timbres have different energy. Track gain then controls the complete sum. For non-loop songs use `balance --target bass.mid=-8` to match the mid layer to `bass.main`, and `--target bass=-2 --reference kick` to match the summed bass track to kick. Keep sub mono and centered; only one source should carry the sustained fundamental. Put drive before a highpass when drive creates low harmonics. See [balance](mixing.md#match-levels-with-music2-balance).
+
+This complete bass sketch keeps a triangle-like main under a driven octave layer. Save it as `bass-stack.song.json`, then validate and render:
+
+```json
+{
+  "version": 1,
+  "bpm": 124,
+  "key": "C minor",
+  "seed": 124,
+  "tracks": [
+    { "id": "kick", "kind": "drums", "instrument": "drums", "pattern": "bd*4", "gain": -9, "params": { "kit": 1, "decayMs": 100 } },
+    { "id": "bass", "kind": "notes", "instrument": "bass", "pattern": "c2 ~ g2 ~", "mono": true, "pan": 0, "gain": -12,
+      "params": { "wave": 2, "cutoffHz": 180 },
+      "duck": { "by": "kick", "amount": 0.25, "releaseMs": 110 },
+      "layers": [
+        { "id": "mid", "instrument": "bass", "transpose": 12, "gain": -8,
+          "params": { "wave": 0, "cutoffHz": 1800 },
+          "fx": [{ "type": "drive", "amount": 2, "mix": 0.25 }, { "type": "filter", "mode": "highpass", "cutoffHz": 180 }] }
+      ] }
+  ],
+  "sections": [{ "id": "drop", "bars": 2, "role": "groove" }],
+  "arrangement": [{ "section": "drop" }]
+}
+```
+
+This complete kick/clap sketch adds short kick body and snare/clap crack. `only` matches atom names before their `:index` variants: the body plays `bd` and `bd:1`, while the crack plays only `sd`/`cp`. It prevents a kick layer from doubling hats or backbeats on a mixed drum track.
+
+```json
+{
+  "version": 1,
+  "bpm": 124,
+  "seed": 125,
+  "tracks": [
+    { "id": "kick", "kind": "drums", "instrument": "drums", "pattern": "bd ~ bd:1 ~", "gain": -9,
+      "params": { "kit": 1, "decayMs": 100 },
+      "layers": [{ "id": "body", "instrument": "drums", "gain": -9, "only": ["bd"], "params": { "kit": 2, "decayMs": 140 } }] },
+    { "id": "clap", "kind": "drums", "instrument": "drums", "pattern": "~ [sd,cp] ~ [sd,cp]", "gain": -12,
+      "params": { "kit": 3 },
+      "layers": [{ "id": "crack", "instrument": "drums", "gain": -8, "only": ["sd", "cp"], "params": { "kit": 1, "tone": 0.8 },
+        "fx": [{ "type": "filter", "mode": "highpass", "cutoffHz": 500 }] }] }
+  ],
+  "sections": [{ "id": "drop", "bars": 2, "role": "hook" }],
+  "arrangement": [{ "section": "drop" }]
+}
+```
+
+`generic/thin_peak_layers` is an `info` reminder, not a strict-lint failure. It inspects arranged `hook`/`groove` sections and reports one finding per audible, unlayered kick, backbeat, bass/808 or first audible melody track. Its `observed` lists the peak section IDs and its fix points to `layers`. An intentional single source can stay; a declared layer does not prove useful energy, so check layer RMS after rendering. Tracks muted or with no positive-velocity events in the peak do not count.
 
 ## Read genre balance as a warning guide
 
