@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, symlink, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { readUserManifest, parseUserManifest, listUserInstruments, userInstrumentsDir } from "./user-instrument.tool.ts";
 
 function manifest(id = "pad"): unknown { return { version: 1, id, kind: "sfz", entry: `${id}.sfz`, source: { folder: "Samples" }, warnings: [] }; }
@@ -45,4 +45,17 @@ test("read missing is E_CAPABILITY, sorted list skips dot dirs, symlink escapes 
     await symlink(join(outside, "instrument.json"), join(root, "instrument.json"));
     await assert.rejects(readUserManifest("entry-escape"), { code: "E_ACCESS" });
   } finally { if (old === undefined) delete process.env["MUSIC2_HOME"]; else process.env["MUSIC2_HOME"] = old; await rm(temp, { recursive: true, force: true }); }
+});
+
+test("a relative MUSIC2_HOME resolves imported instruments once", async () => {
+  const temp = await mkdtemp(join(tmpdir(), "music2-user-rel-")); const old = process.env["MUSIC2_HOME"];
+  process.env["MUSIC2_HOME"] = relative(process.cwd(), join(temp, "home"));
+  try {
+    const dir = join(userInstrumentsDir(), "pad"); await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, "instrument.json"), JSON.stringify(manifest("pad"))); await writeFile(join(dir, "pad.sfz"), "<region> sample=*sine");
+    assert.equal((await readUserManifest("pad")).manifest.id, "pad");
+  } finally {
+    if (old === undefined) delete process.env["MUSIC2_HOME"]; else process.env["MUSIC2_HOME"] = old;
+    await rm(temp, { recursive: true, force: true });
+  }
 });

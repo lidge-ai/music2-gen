@@ -117,26 +117,28 @@ export async function importFolder(folder: string, options: ImportOptions): Prom
   const base = userInstrumentsDir(); const dir = join(base, options.id);
   const staging = join(base, `.staging-${options.id}-${process.pid}-${++stagingCounter}`);
   const trash = join(base, `.trash-${options.id}-${process.pid}`);
-  let movedOld = false; let installed = false;
+  let movedOld = false; let installed = false; let report: Omit<ImportReport, "dir" | "instrument">;
   try {
     await mkdir(base, { recursive: true });
     if (await exists(dir) && !options.force) throw new Music2Error("E_INPUT", `instrument ${options.id} already exists; use --force`);
     await mkdir(staging);
-    const report = await build(staging, canonical, names, options);
+    report = await build(staging, canonical, names, options);
     if (await exists(dir)) {
       if (!options.force) throw new Music2Error("E_INPUT", `instrument ${options.id} already exists; use --force`);
       if (await exists(trash)) throw new Music2Error("E_ACCESS", "previous replacement backup needs recovery");
       await rename(dir, trash); movedOld = true;
     }
+    // Installing the staged directory is the commit point; nothing after it rolls back.
     await rename(staging, dir); installed = true;
-    if (movedOld) { await rm(trash, { recursive: true, force: true }); movedOld = false; }
-    return { ...report, dir, instrument: `user:${options.id}` };
   } catch (cause) {
-    if (movedOld) {
-      if (installed) await rm(dir, { recursive: true, force: true });
-      await rename(trash, dir);
-    }
+    if (movedOld && !installed) await rename(trash, dir);
     if (cause instanceof Music2Error) throw cause;
     throw new Music2Error("E_ACCESS", "cannot import sample folder", { cause });
   } finally { await rm(staging, { recursive: true, force: true }); }
+  const warnings = [...report.warnings];
+  if (movedOld) {
+    try { await rm(trash, { recursive: true, force: true }); }
+    catch { warnings.push(`previous import kept at ${basename(trash)}; remove it once the new import is confirmed`); }
+  }
+  return { ...report, warnings, dir, instrument: `user:${options.id}` };
 }

@@ -64,7 +64,7 @@ export async function readUserManifest(id: string): Promise<{ root: string; entr
     if ((cause as NodeJS.ErrnoException).code === "ENOENT") throw new Music2Error("E_CAPABILITY", `user instrument ${id} is not imported`);
     throw new Music2Error("E_ACCESS", "cannot access user instrument", { cause });
   }
-  const root = await confinedRealpath(userInstrumentsDir(), directory);
+  const root = await confinedRealpath(userInstrumentsDir(), id);
   try { await lstat(join(root, "instrument.json")); }
   catch (cause) {
     if ((cause as NodeJS.ErrnoException).code === "ENOENT") throw new Music2Error("E_CAPABILITY", `user instrument ${id} is not imported`);
