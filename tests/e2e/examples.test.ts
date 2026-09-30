@@ -29,6 +29,7 @@ const examples: ExampleCase[] = [
   { file: "boom-bap-90", genre: "boom_bap", bpm: 90, key: "C minor" },
   { file: "lofi-75", genre: "lofi_hiphop", bpm: 75, key: "A minor" },
   { file: "house-124", genre: "house", bpm: 124, key: "A minor" },
+  { file: "layered-drop", genre: "house", bpm: 124, key: "A minor" },
   { file: "dogfood/boom-bap-dogfood", genre: "boom_bap", bpm: 90, key: "D minor" },
   { file: "trap-hook-first-142", genre: "trap", bpm: 142, key: "A minor" },
   { file: "drill-uk-moving-snare-144", genre: "drill_uk", bpm: 144, key: "C minor" },
@@ -106,7 +107,12 @@ for (const example of examples) {
 
       const lint = data(cli("lint", [song, "--strict"]));
       assert.equal(lint["genre"], example.genre);
-      assert.deepEqual(lint["results"], []);
+      assert.equal(lint["errors"], 0);
+      assert.equal(lint["warnings"], 0);
+      const findings = lint["results"] as { id: string; severity: string }[];
+      assert.ok(findings.every((finding) => finding.id === "generic/thin_peak_layers" && finding.severity === "info"),
+        JSON.stringify(findings));
+      if (example.file === "layered-drop") assert.deepEqual(findings, []);
 
       const wav = join(directory, `${basename(example.file)}.wav`);
       const rendered = data(cli("render", [song, "-o", wav]));

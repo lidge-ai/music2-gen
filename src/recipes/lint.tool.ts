@@ -12,6 +12,7 @@ import { genreRules } from "./lint-rules.tool.ts";
 import { lowLayeringRules } from "./lint-layering-low.tool.ts";
 import { harmonyLayeringRules } from "./lint-layering-harmony.tool.ts";
 import { rhythmLayeringRules } from "./lint-layering-rhythm.tool.ts";
+import { thinPeakLayerRules } from "./lint-layers.tool.ts";
 
 export interface LintResult { id: string; severity: "error" | "warning" | "info"; path: string; observed: string | number; expected: string | number; fix: string }
 export interface LintReport { genre: string | null; barsChecked: number; results: LintResult[]; errors: number; warnings: number; infos: number }
@@ -121,6 +122,6 @@ export function lintSong(input: unknown, options: LintOptions = {}): LintReport 
   // house/6 checks 8-bar phrase changes inside grooves, a different cause, so both can appear.
   const duplicateDensity = genreResults.some((result) => ["trap/7", "techno/5"].includes(result.id));
   const results = [...generic.filter((result) => result.id !== "generic/no_density_contrast" || !duplicateDensity), ...genreResults,
-    ...lowLayeringRules(g), ...harmonyLayeringRules(g), ...rhythmLayeringRules(g), ...fxRules(song), ...automationRules(song)];
+    ...lowLayeringRules(g), ...harmonyLayeringRules(g), ...rhythmLayeringRules(g), ...thinPeakLayerRules(g), ...fxRules(song), ...automationRules(song)];
   return summarizeLint(genre, timeline.bars, results);
 }

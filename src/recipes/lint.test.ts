@@ -27,7 +27,8 @@ test("lint aggregates errors, warnings and infos in severity then id/path order"
   ]);
   assert.deepEqual([report.errors, report.warnings, report.infos], [1, 2, 2]);
   assert.deepEqual(findings, original);
-  assert.equal(lintSong(base()).infos, 0);
+  const plain = lintSong(base());
+  assert.equal(plain.infos, plain.results.filter((result) => result.id === "generic/thin_peak_layers").length);
 });
 
 test("layers do not supply extra lint instrument roles and empty layers match absent layers", () => {
@@ -35,7 +36,9 @@ test("layers do not supply extra lint instrument roles and empty layers match ab
   song.tracks[3]!.instrument = "bass";
   const layered = { ...song, tracks: song.tracks.map((track) => track.id === "bass" ?
     { ...track, layers: [{ id: "sub", instrument: "808" }] } : track) };
-  assert.deepEqual(lintSong(layered), lintSong(song));
+  const withoutLayerInfo = (report: ReturnType<typeof lintSong>) => ({ ...report, infos: 0,
+    results: report.results.filter((result) => result.id !== "generic/thin_peak_layers") });
+  assert.deepEqual(withoutLayerInfo(lintSong(layered)), withoutLayerInfo(lintSong(song)));
   assert.ok(ids(layered).includes("drill_uk/5"));
   assert.deepEqual(lintSong({ ...song, tracks: song.tracks.map((track) => ({ ...track, layers: [] })) }), lintSong(song));
 });

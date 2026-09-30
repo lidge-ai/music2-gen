@@ -17,6 +17,7 @@ const documents = [
   "SKILL.md", "references/mini-notation.md", "references/instruments.md",
   "references/genres.md", "references/mixing.md", "references/prompts.md",
   "references/daw-bridge.md", "references/ableton-als.md",
+  "references/layering.md", "references/logic-library.md",
 ] as const;
 
 test("skill relative links resolve", async () => {
@@ -95,5 +96,23 @@ test("each documented built-in voice has a validating track and exact parameter 
     const song = validateSong({ version: 1, bpm: 120, tracks: [track],
       sections: [{ id: "main", bars: 1 }], arrangement: [{ section: "main" }] });
     assert.doesNotThrow(() => validateVoiceParams(song), `${String(track["instrument"])} track`);
+  }
+});
+
+test("layering and Logic library JSON examples parse and song examples validate", async () => {
+  for (const name of ["references/layering.md", "references/logic-library.md"]) {
+    const source = await readFile(resolve(skillDir, name), "utf8");
+    const examples = [...source.matchAll(/```json\s*\n([\s\S]*?)\n```/g)];
+    assert.ok(examples.length > 0, `${name}: no JSON examples`);
+    for (const [index, match] of examples.entries()) {
+      const value: unknown = JSON.parse(match[1]!);
+      if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+      const example = value as Record<string, unknown>;
+      // CLI result envelopes are parsed above; full songs and standalone tracks also use the real validators.
+      const input = "tracks" in example ? example : "instrument" in example
+        ? { version: 1, bpm: 120, tracks: [example], sections: [{ id: "main", bars: 1 }], arrangement: [{ section: "main" }] }
+        : null;
+      if (input) assert.doesNotThrow(() => validateVoiceParams(validateSong(input)), `${name}: JSON example ${index + 1}`);
+    }
   }
 });
