@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { readFile, realpath, rename, stat, unlink, writeFile } from "node:fs/promises";
+import { chmod, readFile, realpath, rename, stat, unlink, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { renderSong } from "../render/index.ts";
 import { Music2Error } from "../shared/index.ts";
@@ -84,9 +84,14 @@ export function applyChanges(rawJson: string, changes: BalanceChange[]): string 
   return JSON.stringify(raw, null, 2) + "\n";
 }
 
+const ACCESS_CODES = new Set(["EACCES", "EPERM"]);
+export function readError(what: string, path: string, cause: unknown): Music2Error {
+  const code = (cause as NodeJS.ErrnoException | undefined)?.code;
+  return new Music2Error(code && ACCESS_CODES.has(code) ? "E_ACCESS" : "E_INPUT", `cannot read ${what}: ${path}`, { cause });
+}
 async function readSource(path: string): Promise<string> {
   try { return await readFile(path, "utf8"); }
-  catch (cause) { throw new Music2Error("E_INPUT", `cannot read song: ${path}`, { cause }); }
+  catch (cause) { throw readError("song", path, cause); }
 }
 function resolvedSource(raw: string): ResolvedSong {
   let input: unknown;
@@ -96,18 +101,20 @@ function resolvedSource(raw: string): ResolvedSong {
 }
 async function replaceSource(path: string, original: string, updated: string): Promise<void> {
   // Preserve a symlink's referent and permissions; stage beside the actual destination.
-  const final = await realpath(path);
-  const temporary = join(dirname(final), `.${basename(final)}.${randomUUID()}.tmp`);
+  let temporary: string | undefined;
   try {
-    const mode = (await stat(final)).mode;
+    const final = await realpath(path);
+    temporary = join(dirname(final), `.${basename(final)}.${randomUUID()}.tmp`);
+    const mode = (await stat(final)).mode & 0o7777;
     await writeFile(temporary, updated, { flag: "wx", mode });
+    await chmod(temporary, mode);
     if (await readFile(final, "utf8") !== original)
       throw new Music2Error("E_INPUT", "song changed while balance was running; retry");
     await rename(temporary, final);
   } catch (cause) {
     if (cause instanceof Music2Error) throw cause;
     throw new Music2Error("E_ACCESS", `cannot apply balance: ${path}`, { cause });
-  } finally { await unlink(temporary).catch(() => undefined); }
+  } finally { if (temporary) await unlink(temporary).catch(() => undefined); }
 }
 
 /** Preview and apply share the same layer-first, then track planning path. */

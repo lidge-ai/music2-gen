@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { balanceSong, parseTarget } from "../../balance/index.ts";
+import { balanceSong, parseTarget, readError } from "../../balance/index.ts";
 import type { BalanceReport, BalanceTarget } from "../../balance/index.ts";
 import { Music2Error } from "../../shared/index.ts";
 import type { CommandSpec } from "../registry.ts";
@@ -16,7 +16,10 @@ function numeric(value: unknown, name: string): number | undefined {
 }
 async function fileTargets(path: string): Promise<BalanceTarget[]> {
   let input: unknown;
-  try { input = JSON.parse(await readFile(path, "utf8")) as unknown; }
+  let text: string;
+  try { text = await readFile(path, "utf8"); }
+  catch (cause) { throw readError("targets JSON", path, cause); }
+  try { input = JSON.parse(text) as unknown; }
   catch (cause) { throw new Music2Error("E_INPUT", "cannot read targets JSON", { cause }); }
   if (!input || typeof input !== "object" || Array.isArray(input))
     throw new Music2Error("E_INPUT", "targets JSON must be an object mapping ids to dB numbers");

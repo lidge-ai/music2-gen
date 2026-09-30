@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -220,4 +220,12 @@ test("measurement uses render validation and failed validation cannot rewrite so
   const { path, source } = await setup(t, raw);
   await assert.rejects(balanceSong(path, { targets: [{ track: "bass", db: -30 }], apply: true }), { code: "E_SCHEMA" });
   assert.equal(await readFile(path, "utf8"), source);
+});
+
+test("apply keeps the song file's permission bits", { skip: process.platform === "win32" && "POSIX modes only" }, async (t) => {
+  const { path } = await setup(t);
+  await chmod(path, 0o664);
+  const before = await balanceSong(path, { bars: "1:2", targets: [] });
+  await balanceSong(path, { bars: "1:2", targets: [{ track: "bass", db: row(before.rows, "bass").rmsDb! + 3 }], apply: true });
+  assert.equal((await stat(path)).mode & 0o777, 0o664);
 });
