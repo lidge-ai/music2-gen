@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { performance } from "node:perf_hooks";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { packageRoot } from "../shared/index.ts";
 import { buildTimeline, validateSong } from "../song/index.ts";
 import { buildProject } from "./build.tool.ts";
 
@@ -8,6 +11,45 @@ const basic = (tracks: object[], extras: Record<string, unknown> = {}) => ({
   version: 1, title: "IR fixture", bpm: 120, seed: 13, key: "C minor", tracks,
   sections: [{ id: "hook", role: "hook", bars: 1 }], arrangement: [{ section: "hook", repeats: 2 }],
   ...extras,
+});
+
+test("published song-format JSON examples validate and the layered example projects warnings", () => {
+  const docs = readFileSync(join(packageRoot(), "docs/song-format.md"), "utf8");
+  const examples = [...docs.matchAll(/```json\n([\s\S]*?)\n```/g)];
+  assert.ok(examples.length >= 2);
+  let layered = 0;
+  for (const example of examples) {
+    const song = validateSong(JSON.parse(example[1]!) as unknown);
+    const ir = buildProject(song, buildTimeline(song));
+    if (song.tracks.some((track) => track.layers?.length)) {
+      layered++;
+      assert.deepEqual(ir.warnings, ["LAYERS_FLATTENED:bass:2", "LAYERS_FLATTENED:kick:1"]);
+    }
+  }
+  assert.equal(layered, 1);
+});
+
+test("ProjectIR warns once per layered track and retains only main instruments and notes", () => {
+  const tracks = [
+    { id: "bass", kind: "notes", instrument: "bass", pattern: "c2 e2",
+      layers: [{ id: "sub", instrument: "lead", transpose: -12, params: { wave: 2 } },
+        { id: "growl", instrument: "supersaw", transpose: 12 }] },
+    { id: "kick", kind: "drums", instrument: "drums", pattern: "bd sd",
+      layers: [{ id: "kit", instrument: "drums", only: ["bd"] }] },
+    { id: "plain", kind: "notes", instrument: "piano", pattern: "c4", layers: [] },
+  ];
+  const song = validateSong(basic(tracks));
+  const ir = buildProject(song, buildTimeline(song));
+  const legacy = validateSong(basic(tracks.map((track) =>
+    Object.fromEntries(Object.entries(track).filter(([key]) => key !== "layers")))));
+  const plain = buildProject(legacy, buildTimeline(legacy));
+  assert.deepEqual(ir.warnings, ["LAYERS_FLATTENED:bass:2", "LAYERS_FLATTENED:kick:1"]);
+  assert.deepEqual(ir.tracks, plain.tracks);
+  assert.deepEqual(ir.samples, plain.samples);
+  assert.equal(ir.tracks.length, 3);
+  assert.equal(Object.hasOwn(plain, "warnings"), false);
+  const empty = validateSong(basic(tracks.map((track) => ({ ...track, layers: [] }))));
+  assert.deepEqual(buildProject(empty, buildTimeline(empty)), plain);
 });
 
 test("ProjectIR preserves only declared plugin fields and omits the key from legacy tracks", () => {

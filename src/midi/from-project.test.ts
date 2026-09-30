@@ -14,6 +14,17 @@ function project(): ProjectIR {
 }
 const events = (ir: ProjectIR) => projectToSmf(ir).file.tracks[1]!.events;
 
+test("MIDI copies layer flattening warnings without changing main note bytes", () => {
+  const ir = project();
+  const original = projectToSmf(ir);
+  ir.warnings = ["LAYERS_FLATTENED:p:2", "PLUGIN_REF_BASENAME:p:softclip"];
+  const result = projectToSmf(ir);
+  assert.deepEqual(result.warnings, ["LAYERS_FLATTENED:p:2", ...original.warnings]);
+  assert.deepEqual(writeSmf(result.file), writeSmf(original.file));
+  assert.equal(result.notes, original.notes);
+  assert.deepEqual(ir.warnings, ["LAYERS_FLATTENED:p:2", "PLUGIN_REF_BASENAME:p:softclip"]);
+});
+
 test("projection writes placement marker, identity, static CC and exact note ticks", () => {
   const result = projectToSmf(project());
   assert.equal(result.file.format, 1);

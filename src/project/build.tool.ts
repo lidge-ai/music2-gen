@@ -132,6 +132,7 @@ export function buildProject(song: ResolvedSong, timeline: Timeline): ProjectIR 
   const sampleMap = new Map<string, ProjectSample>();
   const addSample = (sample: ProjectSample): void => { sampleMap.set(sampleKey(sample), sample); };
   const noteTracks: ProjectNoteTrack[] = song.tracks.map((track, index) => {
+    if (track.layers?.length) warnings.push(`LAYERS_FLATTENED:${track.id}:${track.layers.length}`);
     const resolvedInstrument = instrument(track);
     if (resolvedInstrument.kind === "kit" || resolvedInstrument.kind === "sfz")
       addSample({ role: resolvedInstrument.kind, ref: resolvedInstrument.ref });

@@ -114,7 +114,8 @@ function clipSharedChannels(tracks: SmfTrack[], dropped: Record<string, number>)
 /** ProjectIR to deterministic format-1, 960-PPQ SMF without changing render timing. */
 export function projectToSmf(project: ProjectIR, options: { userInstruments?: UserInstrumentKinds; kitMaps?: Readonly<Record<string, Readonly<Record<string, number>>>> } = {}): MidiProjection {
   if (project.ppq !== 960) throw new Music2Error("E_INPUT", "ProjectIR must use 960 PPQ");
-  const warnings: string[] = []; const dropped: Record<string, number> = { drumVariantsDropped: 0, zeroLengthDropped: 0 };
+  const warnings = (project.warnings ?? []).filter((warning) => warning.startsWith("LAYERS_FLATTENED:"));
+  const dropped: Record<string, number> = { drumVariantsDropped: 0, zeroLengthDropped: 0 };
   const conductor: SmfEvent[] = [meta(0, 3, ascii(project.title))];
   if ([...project.title].some((c) => c.codePointAt(0)! < 32 || c.codePointAt(0)! > 126)) warnings.push("TEXT_REPLACED:title");
   for (const meter of project.meter) conductor.push(meta(meter.tick, 0x58, Uint8Array.of(meter.numerator, 2, 24, 8)));

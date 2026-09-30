@@ -8,7 +8,7 @@ import { createStereo, readWav, writeWav } from "../../src/audio-io/index.ts";
 
 const root = resolve(import.meta.dirname, "../.."), launcher = join(root, "bin/music2.js");
 interface Envelope {
-  ok: boolean; command: string; artifacts: string[];
+  ok: boolean; command: string; artifacts: string[]; warnings: string[];
   data: { index: { roots: string[]; instruments: { path: string }[]; kits: { path: string }[] };
     candidates: { path: string; kind: string }[]; instruments: { id: string; kind: string }[];
     instrument: string; kind: string; files: { named: number | null; measured: number; offset: number }[];
@@ -102,5 +102,19 @@ test("synthetic sample library scans, finds, imports SFZ and kit, verifies and r
     assert.equal(rendered.data.wav, output); assert.equal(rendered.data.frames, 88200);
     const audio = await readWav(output);
     assert.equal(audio.left.length, 88200); assert.ok(audio.left.some((sample) => Math.abs(sample) > .001));
+    const layered = join(dir, "layered.json"), layeredOutput = join(dir, "layered.wav");
+    await writeFile(layered, JSON.stringify({ version: 1, seed: 19, bpm: 120, sampleRate: 44100, tailSeconds: 0,
+      tracks: [{ id: "bass", kind: "notes", instrument: "bass", pattern: "c3 e3 g3 c4", gain: -12,
+        layers: [{ id: "sample", instrument: imported.data.instrument, gain: -6 }] },
+        { id: "kick", kind: "drums", instrument: "drums", pattern: "bd sd hh bd", gain: -12,
+          layers: [{ id: "sample", instrument: kit.data.instrument, only: ["bd"], gain: -6 }] }],
+      sections: [{ id: "one", bars: 1 }], arrangement: [{ section: "one" }] }));
+    const layeredRender = cli(dir, ["render", layered, "-o", layeredOutput]);
+    assert.equal(layeredRender.data.frames, 88200);
+    const layeredAudio = await readWav(layeredOutput);
+    assert.ok(layeredAudio.left.some((sample) => Math.abs(sample) > .001));
+    const midi = cli(dir, ["export", "midi", layered, "-o", join(dir, "layered.mid")]);
+    assert.deepEqual(midi.warnings.filter((warning) => warning.startsWith("LAYERS_FLATTENED:")),
+      ["LAYERS_FLATTENED:bass:1", "LAYERS_FLATTENED:kick:1"]);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });

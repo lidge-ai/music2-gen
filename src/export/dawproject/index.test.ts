@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createHash } from "node:crypto";
 import type { ProjectIR } from "../../project/index.ts";
+import { buildProject } from "../../project/index.ts";
+import { buildTimeline, validateSong } from "../../song/index.ts";
 import { planDawproject, type DawMedia } from "./index.ts";
 
 function wav(frames: number): Uint8Array {
@@ -24,6 +26,19 @@ function fixture(): ProjectIR {
     buses: { reverb: null, delay: null }, master: { gainDb: 0, ceilingDb: -1, targetLufs: null, inserts: [] },
     samples: [{ role: "clip", ref: "source.wav" }], quantization: { events: 0, inexact: 0, maxErrorTicks: 0 } };
 }
+test("DAWproject surfaces layer flattening warnings in editable and frozen modes", () => {
+  const song = validateSong({ version: 1, bpm: 120, sampleRate: 48000, tailSeconds: 0,
+    tracks: [{ id: "lead", kind: "notes", instrument: "piano", pattern: "c4",
+      layers: [{ id: "double", instrument: "lead", transpose: 12 }] }],
+    sections: [{ id: "a", bars: 1 }], arrangement: [{ section: "a" }] });
+  const ir = buildProject(song, buildTimeline(song));
+  for (const content of ["midi", "audio", "both"] as const) {
+    const media: DawMedia[] = content === "midi" ? [] : [{ path: "audio/stem-lead.wav", bytes: wav(96000),
+      frames: 96000, sampleRate: 48000, channels: 2, owner: { kind: "stem", trackId: "lead" } }];
+    const plan = planDawproject(ir, media, [], { content, outputName: "layers.dawproject" });
+    assert.equal(plan.warnings.filter((warning) => warning === "LAYERS_FLATTENED:lead:1").length, 1);
+  }
+});
 test("MIDI DAWproject warns once for a track with external plugins", () => {
   const project = fixture();
   project.tracks[0]!.plugins = [{ id: "softclip" }];

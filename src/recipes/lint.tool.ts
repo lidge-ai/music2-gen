@@ -13,9 +13,19 @@ import { lowLayeringRules } from "./lint-layering-low.tool.ts";
 import { harmonyLayeringRules } from "./lint-layering-harmony.tool.ts";
 import { rhythmLayeringRules } from "./lint-layering-rhythm.tool.ts";
 
-export interface LintResult { id: string; severity: "error" | "warning"; path: string; observed: string | number; expected: string | number; fix: string }
-export interface LintReport { genre: string | null; barsChecked: number; results: LintResult[]; errors: number; warnings: number }
+export interface LintResult { id: string; severity: "error" | "warning" | "info"; path: string; observed: string | number; expected: string | number; fix: string }
+export interface LintReport { genre: string | null; barsChecked: number; results: LintResult[]; errors: number; warnings: number; infos: number }
 export interface LintOptions { genre?: string }
+
+/** Shared aggregation for validated-song and parse-only findings. */
+export function summarizeLint(genre: string | null, barsChecked: number, findings: LintResult[]): LintReport {
+  const rank = { error: 0, warning: 1, info: 2 };
+  const results = [...findings].sort((a, b) => rank[a.severity] - rank[b.severity] ||
+    a.id.localeCompare(b.id) || a.path.localeCompare(b.path));
+  return { genre, barsChecked, results, errors: results.filter((r) => r.severity === "error").length,
+    warnings: results.filter((r) => r.severity === "warning").length,
+    infos: results.filter((r) => r.severity === "info").length };
+}
 
 function visitAtoms(node: Node, visit: (raw: string, offset: number) => void): void {
   switch (node.type) {
@@ -87,8 +97,7 @@ function parseOnly(input: unknown, error: Music2Error, genre: string | null): Li
         failures.has((issue as { path?: string }).path ?? ""))) return null;
   const results: LintResult[] = [...failures].map(([path, failure]) => ({ id: "generic/pattern_parse", severity: "error", path,
     observed: `${failure.message} (offset ${failure.offset})`, expected: "valid mini-notation", fix: "Correct mini-notation at caret." }));
-  results.sort((a, b) => a.path.localeCompare(b.path));
-  return { genre, barsChecked: 0, results, errors: results.length, warnings: 0 };
+  return summarizeLint(genre, 0, results);
 }
 export function lintSong(input: unknown, options: LintOptions = {}): LintReport {
   if (options.genre !== undefined && !isRecipeId(options.genre)) throw new Music2Error("E_NOT_FOUND", `unknown recipe: ${options.genre}`, { fix: "choose an id from music2 recipes" });
@@ -113,7 +122,5 @@ export function lintSong(input: unknown, options: LintOptions = {}): LintReport 
   const duplicateDensity = genreResults.some((result) => ["trap/7", "techno/5"].includes(result.id));
   const results = [...generic.filter((result) => result.id !== "generic/no_density_contrast" || !duplicateDensity), ...genreResults,
     ...lowLayeringRules(g), ...harmonyLayeringRules(g), ...rhythmLayeringRules(g), ...fxRules(song), ...automationRules(song)];
-  results.sort((a, b) => (a.severity === "error" ? 0 : 1) - (b.severity === "error" ? 0 : 1) || a.id.localeCompare(b.id) || a.path.localeCompare(b.path));
-  return { genre, barsChecked: timeline.bars, results, errors: results.filter((r) => r.severity === "error").length,
-    warnings: results.filter((r) => r.severity === "warning").length };
+  return summarizeLint(genre, timeline.bars, results);
 }

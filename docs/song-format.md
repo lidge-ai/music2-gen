@@ -94,8 +94,55 @@ The supported SFZ subset includes `<region>` sample/key/velocity ranges, pitch c
 | `fx` | Ordered array of up to 12 insert effects, applied before pan/gain/duck/sends. Includes the track-only `tapestop` (`startBar` absolute 1-based bar, `beats`). | `[]` |
 | `duck` | Object with required `by` (another track ID) and `amount` 0–1; optional `releaseMs` >=0. Cannot duck itself. | `null`; release 180 ms when set |
 | `params` | Voice-specific finite numeric parameters, within the voice registry's ranges. | Voice defaults |
+| `layers` | Up to 8 additional sound sources driven by this track's events; see below. | Absent; `[]` is equivalent |
 
 The JSON Schema accepts numeric `params` keys, then the voice registry checks supported names and bounds during rendering. `validate` checks the song, pattern syntax and the voice rules `render` applies (known instrument, track kind, `mono` for bass/808, parameter names and bounds), so an out-of-range parameter exits 2 at `validate`; `render` additionally loads kits and samples. A built-in drum pattern uses sample atoms such as `bd`, `sd`, and `hh`; an `sfx` pattern uses the transition atoms `riser`, `pitchriser`, `downlifter`, `impact`, `whoosh`, `revcymbal`, `noisebuild`, `subdrop`, `zap`, `crackle` (see [sound effects](../skills/music2/references/sfx.md)). `render` rejects unknown atoms in a track's base pattern and in every section override for that track, even sections that are never placed, with `E_SCHEMA` and the exact pattern path; a note pattern uses pitches such as `d2`, `f4`, `bb3`, or MIDI numbers 0–127. Drum `name:index` selects a timbre variant. A `kit:` manifest points to user-owned PCM WAV files and is resolved relative to the song; sample paths must stay within the kit directory. Its optional `startMs` object trims the start of named samples (0–10000 ms) for loop slices whose attack arrives late. The `lib:` SFZ and WAV files are bundled.
+
+## Track sound layers
+
+The track's `instrument` remains its main sound. Every `layers[]` entry plays the same event timing, gate and deterministic seeds through another instrument. Layers inherit the track's mono/glide behavior and add their transpose to the track's transpose. Each source gets its own release limit. Missing or empty `layers` keeps the existing rendered bytes and stays absent in resolved JSON.
+
+| Layer field | Type and accepted values | Default |
+| --- | --- | --- |
+| `id` | Required ID matching `^[a-z0-9][a-z0-9_-]{0,31}$`, unique within the track; `main` is reserved. | — |
+| `instrument` | Required built-in or sampled instrument compatible with the track's kind. Notes can use `sfz:` or `lib:`; imported `user:<id>` can supply an SFZ or kit. | — |
+| `transpose` | Integer -36–36 semitones, notes tracks only. Out-of-range resulting MIDI pitches are dropped during rendering. | `0` |
+| `gain` | Number -60–12 dB, relative to the track fader. | `0` |
+| `pan` | Number -1–1, applied before the track's pan using the same pan law. | `0` |
+| `velocity` | Number 0–2 multiplying event velocity, clamped to 1. | `1` |
+| `params` | Built-in voice parameters within that layer voice's supported ranges. Sampled layers reject this field, including `{}`. For `lead`, `wave` is 0–2. | Voice defaults |
+| `fx` | Up to 6 inserts with the track insert rules, including `tapestop`; `drive.amount` is 1–12. | `[]` |
+| `only` | Drums only: 1–16 atom names such as `bd`, filtering events before layer rendering. Names must belong to the layer instrument's vocabulary. | All events |
+
+Layer inserts run first, followed by layer gain and pan. Main and layer sources sum into one stereo track, which then receives the track inserts, plugins, fader or gain automation, pan, ducking and sends. A layered track still produces one stem. Track `param.*` automation affects only the main voice; layers use their own explicit parameters. The track retains its main instrument role for lint, and layers do not count as additional arrangement tracks.
+
+Rendering reports one `LAYER_NOTES_DROPPED:<track>.<layer>:<count>` warning per layer when transpose moves notes outside MIDI 0–127. ProjectIR and editable MIDI, ALS and DAWproject exports retain the main instrument and notes, with `LAYERS_FLATTENED:<trackId>:<count>` warnings for omitted layer sources. Frozen audio includes the summed layered sound. Lint reports contain `errors`, `warnings` and `infos`; info findings sort last, print with an `info` prefix, and do not fail `--strict`.
+
+This example uses two synth layers on bass and a kick-only drum layer. After `music2 library import` creates an instrument or kit, a layer can instead use its `user:<id>` reference; omit `params` for those sampled sources.
+
+```json
+{
+  "version": 1,
+  "bpm": 120,
+  "seed": 7,
+  "tracks": [
+    {
+      "id": "bass", "kind": "notes", "instrument": "bass", "pattern": "c2 ~ g2 ~", "gain": -12,
+      "layers": [
+        { "id": "sub", "instrument": "lead", "transpose": -12, "gain": -4, "params": { "wave": 2 } },
+        { "id": "growl", "instrument": "supersaw", "transpose": 12, "gain": -10,
+          "fx": [{ "type": "drive", "amount": 3 }, { "type": "filter", "mode": "highpass", "cutoffHz": 300 }] }
+      ]
+    },
+    {
+      "id": "kick", "kind": "drums", "instrument": "drums", "pattern": "bd sd hh bd", "gain": -12,
+      "layers": [{ "id": "extra", "instrument": "drums", "only": ["bd"], "params": { "kit": 1 }, "gain": -6 }]
+    }
+  ],
+  "sections": [{ "id": "groove", "bars": 2, "role": "groove" }],
+  "arrangement": [{ "section": "groove" }]
+}
+```
 
 ## Sections and arrangement
 

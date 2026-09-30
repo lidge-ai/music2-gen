@@ -93,6 +93,7 @@ re-exports public card, starter, and lint functions and types.
 | `export function buildSongArrangement(song: Song, blocks: RecipeArrangementBlock[]): Song` | `new.tool.ts` | Derive song sections and arrangement from one block list. |
 | `export function transposePattern(pattern: string, delta: number): string` | `new.tool.ts` | Shift note atoms; intentionally absent from barrel. |
 | `export function lintSong(input: unknown, options: LintOptions = {}): LintReport` | `lint.tool.ts` | Produce sorted findings. |
+| `export function summarizeLint(genre: string \| null, barsChecked: number, findings: LintResult[]): LintReport` | `lint.tool.ts` | Sort and count all severities without mutating findings; internal tool export, absent from barrel. |
 | `export function createGeometry(song: ResolvedSong, timeline: Timeline, genre: string \| null = song.genre): LintGeometry` | `lint-geometry.tool.ts` | Address events by bar and role. |
 | `export function genericRules(g: LintGeometry, unknownGenre: boolean): LintResult[]` | `lint-generic.tool.ts` | Apply shared warnings. |
 | `export function genreRules(g: LintGeometry, genre: RecipeId, generic: LintResult[]): LintResult[]` | `lint-rules.tool.ts` | Dispatch genre formulas. |
@@ -106,7 +107,12 @@ re-exports public card, starter, and lint functions and types.
 `NewSongOptions` requires `genre`; `arrangement`, `bpm`, `key`, `seed`, and `title` are
 optional. `LintOptions` contains optional `genre`. `LintResult` has `id`,
 `severity`, `path`, `observed`, `expected`, and `fix`. `LintReport` has
-`genre`, `barsChecked`, sorted `results`, and error/warning counts.
+`genre`, `barsChecked`, sorted `results`, and `errors`, `warnings`, `infos` counts.
+`severity` accepts `"error"`, `"warning"` and `"info"`; results sort in that order,
+then by ID and path. Parse-only reports also include `infos:0`. CLI
+`lintReportResult(report, strict)` prints each info with the `info` prefix;
+strict mode fails only on errors or warnings. Track sound layers keep the main
+instrument role and do not add arrangement density or extra role tracks.
 
 ### Starter construction
 

@@ -45,3 +45,7 @@ CC7 uses `round(127×10^(dB/40))`; CC10 uses `round(64+63×pan)`. Incoming CC7 0
 ## User instruments
 
 `projectToSmf(project, options?: {kitMaps?; userInstruments?: UserInstrumentKinds})` resolves the filesystem-free `{kind:"user",id}` through the supplied map. Missing identity raises `E_CAPABILITY`; user SFZ on drums raises `E_SCHEMA`. Imported kits use caller-provided atom/note maps and existing pitched-kit channel policy. Editable notes carry a warning naming `user:<id>` because MIDI cannot preserve sample sound. `UserInstrumentKinds` is a type-only sampler dependency; CLI/export's async adapter resolves storage before projection.
+
+## Layer projection warnings
+
+`projectToSmf` copies `LAYERS_FLATTENED:<trackId>:<count>` warnings from ProjectIR before appending MIDI-specific warnings. Layers do not add MIDI tracks, notes, programs or channels: ProjectIR retains the main source. Warning propagation leaves SMF bytes unchanged and does not mutate ProjectIR. Other IR warnings retain their existing handling at DAW/IR export boundaries.

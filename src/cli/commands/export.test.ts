@@ -7,7 +7,7 @@ import { main } from "../main.ts";
 import type { ProjectIR } from "../../project/index.ts";
 
 interface Envelope {
-  command: string; artifacts: string[];
+  command: string; artifacts: string[]; warnings: string[];
   data: { ir: ProjectIR; quantization: ProjectIR["quantization"] };
   error: { code: string };
 }
@@ -24,6 +24,25 @@ async function invoke(argv: string[], cwd: string): Promise<{ exit: number; stdo
     stderr: { write(chunk: string) { stderr += chunk; return true; } } as NodeJS.WritableStream });
   return { exit, stdout, stderr };
 }
+
+test("IR and MIDI CLI envelopes surface layer flattening while keeping main tracks", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "music2-layer-export-"));
+  try {
+    await writeFile(join(dir, "song.json"), JSON.stringify({ ...source,
+      tracks: source.tracks.map((track) => ({ ...track, layers: [{ id: "double", instrument: "lead", transpose: 12 }] })) }));
+    for (const args of [["ir"], ["ir", "-o", "ir.json"], ["midi", "-o", "song.mid"]]) {
+      const [kind, ...options] = args;
+      const result = await invoke(["export", kind!, "song.json", ...options, "--json"], dir);
+      assert.equal(result.exit, 0, result.stdout + result.stderr);
+      assert.equal(result.stdout.trim().split("\n").length, 1);
+      assert.ok(envelope(result.stdout).warnings.includes("LAYERS_FLATTENED:lead:1"));
+    }
+    const ir = JSON.parse(await readFile(join(dir, "ir.json"), "utf8")) as ProjectIR;
+    assert.equal(ir.tracks.length, 1);
+    assert.deepEqual(ir.tracks[0]?.type === "notes" ? ir.tracks[0].instrument : null,
+      { kind: "voice", id: "piano", params: {} });
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
 
 test("export ir prints one JSON envelope or formatted human IR", async () => {
   const dir = await mkdtemp(join(tmpdir(), "music2-ir-cli-"));

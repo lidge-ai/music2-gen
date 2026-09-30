@@ -335,8 +335,8 @@ export const exportCommand: CommandSpec = {
         ...(hasPlugins(song) ? [EDITABLE_PLUGIN_WARNING] : [])], text: `wrote ${output}` };
     }
     const formatted = JSON.stringify(ir, null, 2) + "\n";
-    const warnings = ir.quantization.inexact > 0 ?
-      [`${ir.quantization.inexact} inexact event(s); max error ${ir.quantization.maxErrorTicks} ticks`] : [];
+    const warnings = [...(ir.warnings ?? []), ...(ir.quantization.inexact > 0 ?
+      [`${ir.quantization.inexact} inexact event(s); max error ${ir.quantization.maxErrorTicks} ticks`] : [])];
     if (hasPlugins(song)) warnings.push(EDITABLE_PLUGIN_WARNING);
     if (output === undefined) return { command: "export", data: { ir }, artifacts: [], warnings, text: formatted.trimEnd() };
     const staged = stage(output);

@@ -49,3 +49,7 @@ The public library API (`src/index.ts`) and `music2 export ir` use `src/project/
 ## User instrument projection
 
 `ProjectInstrument` includes `{kind:"user"; id:string}`. `buildProject` preserves `user:<id>` as this identity without reading storage or embedding a root, entry path or manifest kind. Async render/export code resolves SFZ versus kit through sampler. ProjectIR stays deterministic and filesystem-free; synchronous MIDI and DAW planners consume caller-supplied user-kind metadata.
+
+## Layer projection
+
+`buildProject` appends one `LAYERS_FLATTENED:<trackId>:<count>` warning per track with nonempty layers, in song-track order. Main instruments, notes and sample references remain the editable projection; layer identities and extra notes are not serialized into IR. Absent or empty layers add no warning and preserve legacy IR JSON. ALS/DAWproject already surface IR warnings, MIDI copies the layer warning subset, and the IR CLI envelope carries the full optional list. Frozen stems retain all rendered sources within one track stem.

@@ -16,6 +16,9 @@ src/render/
 ├── plugin.tool.ts              # optional structural plugin processor seam and output checks
 ├── select.tool.ts              # legacy event-window selection
 ├── select.test.ts              # seeded selection and mono stop vectors
+├── layers.tool.ts              # source loading, layer event projection and stereo summing
+├── layers.test.ts              # layer sound, release, crop and tap vectors
+├── layers-baseline.test.ts     # immutable pre-layer PCM/stem digests
 ├── instrument.tool.ts          # kit/SFZ sample adapter
 ├── instrument.test.ts          # adapter stereo and confinement vectors
 ├── audio-tracks.tool.ts        # clip lanes, inserts, gain/pan/duck/sends/stems
@@ -89,7 +92,7 @@ ffmpeg encoding, optional two-pass loudnorm processing, and CLI envelopes belong
 
 These signatures are exported by implementation files. `src/render/index.ts`
 re-exports only `renderSong`, `VOICES`, `RenderOptions`, `RenderResult`,
-`RenderStem`, and `KitManifest`.
+`RenderStem`, `KitManifest`, and `LayerTap`.
 
 | Exported signature | Source | Purpose |
 |---|---|---|
@@ -104,6 +107,12 @@ re-exports only `renderSong`, `VOICES`, `RenderOptions`, `RenderResult`,
 | `export async function loadKit(songPath: string, instrument: string, sampleRate: number): Promise<LoadedKit>` | `kit.tool.ts` | Read and decode a confined sample kit; apply per-name `startMs` trims to the cached decode. |
 | `export function renderKit(ctx: VoiceContext, kit: LoadedKit): Float32Array` | `kit.tool.ts` | Sum selected kit samples into mono PCM; notes tracks fade `KIT_RELEASE_MS` (5 ms, at most half the note) before a cut. |
 | `export function selectEvents(song: ResolvedSong, timeline: Timeline, start: number, end: number, frames: number): VoiceEvent[][]` | `select.tool.ts` | Preserve legacy event selection and seeded order. |
+| `limitStops(events: VoiceEvent[], track: ResolvedTrack, trackIndex: number, frames: number, sampleRate: number): void` | `select.tool.ts` | Reset stop frames, then apply mono or voice-specific release limits. |
+| `hasLayers(track: ResolvedTrack): boolean` | `layers.tool.ts` | Select layered paths only for nonempty layers. |
+| `layerTrack(track: ResolvedTrack, layer: ResolvedLayer): ResolvedTrack` | `layers.tool.ts` | Substitute source instrument/params/inserts and combine transpose. |
+| `loadLayerInstruments(songPath: string, track: ResolvedTrack, rate: number, budget: DecodeBudget): Promise<(LoadedSampleInstrument \| null)[]>` | `layers.tool.ts` | Load sampled layers under the shared decode budget. |
+| `layerEvents(events: VoiceEvent[], track: ResolvedTrack, layer: ResolvedLayer, trackIndex: number, frames: number, sampleRate: number): VoiceEvent[]` | `layers.tool.ts` | Clone/filter notes, strip main automation params, scale velocity and recompute release limits. |
+| `renderLayeredSource(input: { ctx: VoiceContext; mainKit: LoadedSampleInstrument \| null; mainParams: Record<string, number> \| null; layerKits: (LoadedSampleInstrument \| null)[]; startSeconds: number; secondsPerBar: number; bpm: number; cropOffset?: number; taps?: (tap: LayerTap) => void; windowFrames?: number }): StereoBuffer` | `layers.tool.ts` | Render and sum sources before the track processing path. |
 | `export function isSampleInstrument(instrument: string): boolean` | `instrument.tool.ts` | Identify kit/SFZ resource lanes. |
 | `export async function loadSampleInstrument(songPath: string, track: ResolvedTrack, rate: number): Promise<LoadedSampleInstrument \| null>` | `instrument.tool.ts` | Load tagged kit/SFZ resources. |
 | `export function renderSampleInstrument(ctx: VoiceContext, loaded: LoadedSampleInstrument): StereoBuffer` | `instrument.tool.ts` | Render sample lane in stereo. |
@@ -277,3 +286,10 @@ The only runtime package dependency is the pinned `bun` runtime. Tests use `node
 `isSampleInstrument` accepts `user:<id>`. `loadSampleInstrument(songPath, track, rate, budget?)` resolves sampler's `readUserManifest`, then loads confined SFZ or kit content. SFZ requires a notes track (`E_SCHEMA` otherwise); kits retain pitched notes-track playback. All user samples stay under the resolved import root, and sampled instruments reject synth params.
 
 `loadKit(songPath, instrument, sampleRate, confinedRoot?: string)` and `loadKitMidiMap(songPath, instrument, confinedRoot?: string)` accept an imported root; with it, resolution uses `<root>/kit.json` and confines every sample to that root. Without it, existing song-relative kit resolution applies. `registry.tool.ts` validates user syntax and voice-lane boundaries; sampler owns identity and filesystem confinement, keeping render independent of library.
+
+## Layered source rendering
+
+`layers.tool.ts` renders the main source and each filtered layer with shared timing/seeds and per-source release limits. Layer explicit params stay separate from merged voice defaults; main onset parameter automation is stripped from cloned layer events. Layer inserts, relative dB gain and pan precede stereo summing. The sum then uses track inserts, plugins, automated/static faders, ducking, sends and one stem. Static, automation and tape-stop pre-roll paths share this source adapter; an absent or empty layer array keeps the legacy arithmetic path.
+
+`RenderOptions.layerTaps?: (tap: LayerTap) => void` captures only layered tracks. `LayerTap` contains `trackId`, `source:"main"|"layer"`, optional `layerId`, and stereo `audio`. Each tap follows source inserts/gain/pan, precedes track inserts and loop-tail folding, and uses the cropped render window's origin. A post-fader stem is `<track>`; source identities are `<track>.main` and `<track>.<layer>`. Pitch overflow emits `LAYER_NOTES_DROPPED:<track>.<layer>:<count>` once per affected layer. Layer drum vocabularies and insert chains are validated at the existing boundaries.
+- `mixer-master.tool.ts` holds `masterAudio` (loudness targeting, soft clip and look-ahead limiting), split out of `mixer.tool.ts`; `layers.tool.ts` renders a layered track source (main + layers after layer inserts, gain and pan) before the unchanged track chain.

@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { gunzipSync } from "node:zlib";
 import type { ProjectIR, ProjectNoteTrack } from "../project/index.ts";
+import { buildProject } from "../project/index.ts";
+import { buildTimeline, validateSong } from "../song/index.ts";
 import { planAls } from "./als.tool.ts";
 import { readOwnXml } from "./als/xml-reader.test.ts";
 
@@ -16,6 +18,19 @@ const project = { version: 1, ppq: 960, title: "A & B", seed: 1, sampleRate: 480
   quantization: { events: 0, inexact: 0, maxErrorTicks: 0 },
 } as unknown as ProjectIR;
 const audio = { left: new Float32Array(96000), right: new Float32Array(96000), sampleRate: 48000 as const, sourceChannels: 2 as const };
+test("ALS surfaces layer flattening warnings in editable and frozen modes", () => {
+  const song = validateSong({ version: 1, bpm: 120, sampleRate: 48000, tailSeconds: 0,
+    tracks: [{ id: "lead", kind: "notes", instrument: "piano", pattern: "c4",
+      layers: [{ id: "double", instrument: "lead", transpose: 12 }] }],
+    sections: [{ id: "a", bars: 1 }], arrangement: [{ section: "a" }] });
+  const ir = buildProject(song, buildTimeline(song));
+  for (const content of ["midi", "audio", "both"] as const) {
+    const captured = content === "midi" ? null : { stems: [{ trackId: "lead", audio }],
+      returns: { reverb: null, delay: null } };
+    const plan = planAls(ir, captured, { content, bits: 24 });
+    assert.equal(plan.warnings.filter((warning) => warning === "LAYERS_FLATTENED:lead:1").length, 1);
+  }
+});
 test("MIDI ALS warns once per plugin-bearing track", () => {
   const withPlugins = { ...project, tracks: [{ ...project.tracks[0]!,
     plugins: [{ id: "softclip", params: { drive: 0.5 } }] }] } as ProjectIR;
